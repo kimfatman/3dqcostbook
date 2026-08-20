@@ -352,13 +352,7 @@ export default function Home() {
     const latestCost = latestTrend?.cost ?? 0;
     const previousCost = previousTrend?.cost ?? 0;
     const costChange = previousCost > 0 ? (latestCost - previousCost) / previousCost * 100 : 0;
-    const trendInsight = previousCost <= 0
-      ? `本月成本已形成真实账本基线，优先复核${template.risk}`
-      : costChange > 0
-        ? `本月成本较上月增加 ${costChange.toFixed(1)}%，优先复核${template.risk}`
-        : costChange < 0
-          ? `本月成本较上月下降 ${Math.abs(costChange).toFixed(1)}%，继续关注${template.risk}`
-          : `本月成本与上月持平，优先复核${template.risk}`;
+    const trendInsight = previousCost <= 0 ? "本月成本基线" : `较上月 ${costChange >= 0 ? "↑" : "↓"} ${Math.abs(costChange).toFixed(1)}%`;
     const maxTrendCost = Math.max(...trend.map((point) => point.cost), 1);
     const homeProfile = industryHomeProfiles[book.activeIndustryId];
     const focusCategory = totals.categoryTotals.find((category) => category.key === homeProfile.insight.focusCategoryKey);
