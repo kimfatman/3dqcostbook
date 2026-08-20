@@ -25,4 +25,9 @@ describe("成本卡单位成本与毛利", () => {
     const edited = { ...card, labor: 4.2, items: card.items.map((item) => item.id === "bom-2" ? { ...item, amount: 7.8 } : item) };
     expect(calcCard(edited)).toEqual({ material: 27.8, cost: 36.1, marginRate: 46.9 });
   });
+
+  it("多项材料会在同一张成本卡内累计，不会覆盖此前已录入的材料", () => {
+    const withThirdMaterial = { ...card, items: [...card.items, { id: "bom-3", name: "封口贴", spec: "单件", quantity: "1 张", amount: 1.8 }] };
+    expect(calcCard(withThirdMaterial)).toEqual({ material: 27.4, cost: 34.7, marginRate: 49 });
+  });
 });

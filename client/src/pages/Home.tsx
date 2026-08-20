@@ -49,6 +49,7 @@ import type { OrderChannel, RefundReason, ReturnRecoveryStatus } from "@/lib/ord
 type TabId = "home" | "records" | "analysis" | "profile";
 type SubPage = "industry" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "budget" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | null;
 type RecordFilter = "all" | RecordType;
+type DraftMaterial = { name: string; spec: string; quantity: string; amount: number };
 
 const format = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
 const yuan = (amount: number) => `¥${format.format(Math.round(amount))}`;
@@ -79,6 +80,7 @@ export default function Home() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderLineId, setOrderLineId] = useState<string | null>(null);
   const [draftOrderLines, setDraftOrderLines] = useState<{ skuId: string; quantity: number }[]>([]);
+  const [draftMaterials, setDraftMaterials] = useState<DraftMaterial[]>([]);
 
   const { template, categories, records, cards, skus, skuMetrics, orders, refunds, suppliers, reports, totals, trend, hiddenCosts, currentPeriod } = book;
   const IndustryIcon = iconByIndustry[book.activeIndustryId];
@@ -145,8 +147,8 @@ export default function Home() {
 
   function openRecordDetail(id: string) { setRecordId(id); goSub("recordDetail"); }
   function openCard(id: string) { setCardId(id); goSub("cardDetail"); }
-  function openNewCard() { setCardId(null); goSub("cardForm"); }
-  function editCard() { if (activeCard) goSub("cardForm"); }
+  function openNewCard() { setCardId(null); setDraftMaterials([{ name: "直接材料", spec: "", quantity: `1 ${template.unitLabel}`, amount: 0 }]); goSub("cardForm"); }
+  function editCard() { if (!activeCard) return; setDraftMaterials(activeCard.items.map((item) => ({ name: item.name, spec: item.spec, quantity: item.quantity, amount: item.amount }))); goSub("cardForm"); }
   function openReport(id: string) { setReportId(id); goSub("reportDetail"); }
   function openOrder(id: string) { setOrderId(id); setOrderLineId(null); goSub("orderDetail"); }
   function openNewOrder() { if (!skus.length) return notify("当前行业暂无可用 SKU"); setDraftOrderLines([{ skuId: skus[0].id, quantity: 1 }]); setOrderId(null); goSub("orderForm"); }
@@ -239,9 +241,10 @@ export default function Home() {
     const salePrice = Number(data.get("salePrice"));
     const labor = Number(data.get("labor") || 0);
     const overhead = Number(data.get("overhead") || 0);
-    const materialCost = Number(data.get("materialCost") || 0);
-    if (!name || salePrice <= 0 || materialCost < 0 || labor < 0 || overhead < 0) return notify("请填写名称、售价和正确的成本金额");
-    const input = { name, kind: String(data.get("kind") || "").trim(), unit: String(data.get("unit") || "").trim(), salePrice, labor, overhead, materialName: String(data.get("materialName") || "").trim(), materialCost };
+    const items = draftMaterials.map((item) => ({ ...item, name: item.name.trim(), spec: item.spec.trim(), quantity: item.quantity.trim(), amount: Number(item.amount) }));
+    if (!name || salePrice <= 0 || labor < 0 || overhead < 0) return notify("请填写名称、售价和正确的成本金额");
+    if (!items.length || items.some((item) => !item.name || !item.quantity || !Number.isFinite(item.amount) || item.amount < 0)) return notify("请至少保留一项材料，并补齐名称、数量和金额");
+    const input = { name, kind: String(data.get("kind") || "").trim(), unit: String(data.get("unit") || "").trim(), salePrice, labor, overhead, items };
     if (activeCard) { book.updateCard(activeCard.id, input); notify("成本卡已更新，SKU 将同步用于后续订单"); setSubPage("cardDetail"); }
     else { book.addCard(input); notify("成本卡已新增，并自动创建关联 SKU"); setSubPage("cards"); }
   }
@@ -372,8 +375,8 @@ export default function Home() {
 
   function CardFormPage() {
     const editing = activeCard;
-    const material = editing?.items[0];
-    return <><section className="sub-intro compact"><span>{template.label} · {template.entityLabel}定价</span><h1>{editing ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`}</h1><p>保存后会自动创建或同步 SKU。更新后的售价和成本只应用于之后创建的订单，历史订单保留成交快照。</p></section><form className="record-form" onSubmit={saveCard}><label>{template.entityLabel}名称<input name="name" defaultValue={editing?.name || ""} placeholder={`例如：${template.entityLabel}名称`} autoFocus /></label><label>类型 / 标签<input name="kind" defaultValue={editing?.kind || ""} placeholder="例如：平台 SKU / 热菜 / 服务项目" /></label><label>计量单位<input name="unit" defaultValue={editing?.unit || template.unitLabel} placeholder={`例如：${template.unitLabel}`} /></label><label>销售单价<div className="amount-input"><span>¥</span><input name="salePrice" type="number" min="0.01" step="0.01" defaultValue={editing?.salePrice || ""} /></div></label><section className="form-section"><span>基础单位成本</span><div className="form-two-col"><label>直接材料名称<input name="materialName" defaultValue={material?.name || "直接材料"} /></label><label>材料成本<input name="materialCost" type="number" min="0" step="0.01" defaultValue={material?.amount ?? ""} /></label><label>人工分摊<input name="labor" type="number" min="0" step="0.01" defaultValue={editing?.labor ?? "0"} /></label><label>固定分摊<input name="overhead" type="number" min="0" step="0.01" defaultValue={editing?.overhead ?? "0"} /></label></div></section><button className="fixed-primary form-save" type="submit"><Plus size={18} />{editing ? "保存成本卡" : "创建成本卡与 SKU"}</button></form></>;
+    const visibleMaterials = draftMaterials.length ? draftMaterials : [{ name: "直接材料", spec: "", quantity: `1 ${template.unitLabel}`, amount: 0 }];
+    return <><section className="sub-intro compact"><span>{template.label} · {template.entityLabel}定价</span><h1>{editing ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`}</h1><p>可连续添加多项材料。保存后会自动创建或同步 SKU；更新只应用于之后创建的订单，历史订单保留成交快照。</p></section><form className="record-form" onSubmit={saveCard}><label>{template.entityLabel}名称<input name="name" defaultValue={editing?.name || ""} placeholder={`例如：${template.entityLabel}名称`} autoFocus /></label><label>类型 / 标签<input name="kind" defaultValue={editing?.kind || ""} placeholder="例如：平台 SKU / 热菜 / 服务项目" /></label><label>计量单位<input name="unit" defaultValue={editing?.unit || template.unitLabel} placeholder={`例如：${template.unitLabel}`} /></label><label>销售单价<div className="amount-input"><span>¥</span><input name="salePrice" type="number" min="0.01" step="0.01" defaultValue={editing?.salePrice || ""} /></div></label><section className="form-section material-editor"><span>基础材料清单</span><div className="material-list">{visibleMaterials.map((material, index) => <div className="material-row" key={`${index}-${material.name}`}><div className="material-row-head"><b>材料 {index + 1}</b>{visibleMaterials.length > 1 && <button type="button" onClick={() => setDraftMaterials((current) => current.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={14} />删除</button>}</div><div className="form-two-col"><label>名称<input value={material.name} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} placeholder="例如：包装盒" /></label><label>金额<input type="number" min="0" step="0.01" value={material.amount} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, amount: Number(event.target.value) } : item))} placeholder="0.00" /></label><label>规格<input value={material.spec} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, spec: event.target.value } : item))} placeholder="例如：500g" /></label><label>数量<input value={material.quantity} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: event.target.value } : item))} placeholder="例如：1 件" /></label></div></div>)}</div><button className="add-material" type="button" onClick={() => setDraftMaterials((current) => [...(current.length ? current : visibleMaterials), { name: "", spec: "", quantity: `1 ${template.unitLabel}`, amount: 0 }])}><Plus size={16} />新增材料</button></section><section className="form-section"><span>其他单位成本</span><div className="form-two-col"><label>人工分摊<input name="labor" type="number" min="0" step="0.01" defaultValue={editing?.labor ?? "0"} /></label><label>固定分摊<input name="overhead" type="number" min="0" step="0.01" defaultValue={editing?.overhead ?? "0"} /></label></div></section><button className="fixed-primary form-save" type="submit"><Plus size={18} />{editing ? "保存成本卡" : "创建成本卡与 SKU"}</button></form></>;
   }
 
   function BomFormPage() {
