@@ -47,21 +47,45 @@ import {
 } from "@/lib/cost-book";
 import { channelLabel, type OrderChannel, type RefundReason, type ReturnRecoveryStatus } from "@/lib/order-ledger";
 import { breakEvenPrice, quotePrice } from "@/lib/pricing";
+import { availableMonths, matchesMonth, matchesQuery } from "@/lib/list-search";
 
 type TabId = "home" | "records" | "analysis" | "profile";
 type SubPage = "industry" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "pricing" | "budget" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | null;
 type RecordFilter = "all" | RecordType;
 type DraftMaterial = { name: string; spec: string; quantity: string; amount: number };
+type QuickAction = "order" | "budget" | "cards" | "record" | "analysis";
+type IndustryHomeProfile = {
+  quick: { action: QuickAction; label: string; detail: string; icon: LucideIcon }[];
+  insight: { eyebrow: string; title: string; copy: string; focusCategoryKey: string };
+};
 
 const deepLinkTabs: TabId[] = ["home", "records", "analysis", "profile"];
 const deepLinkSubPages: Exclude<SubPage, null>[] = ["industry", "record", "cards", "cardDetail", "cardForm", "pricing", "budget", "reports", "suppliers", "supplierForm", "categories", "categoryForm", "orders", "orderForm", "skus"];
-const requestedScreen = new URLSearchParams(window.location.search).get("screen");
+const requestedParams = new URLSearchParams(window.location.search);
+const requestedScreen = requestedParams.get("screen");
+const requestedQuery = requestedParams.get("q") || "";
+const requestedMonth = requestedParams.get("month") || "all";
 const initialTab: TabId = deepLinkTabs.includes(requestedScreen as TabId) ? requestedScreen as TabId : "home";
 const initialSubPage: SubPage = deepLinkSubPages.includes(requestedScreen as Exclude<SubPage, null>) ? requestedScreen as Exclude<SubPage, null> : null;
 
 const format = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
 const yuan = (amount: number) => `¥${format.format(Math.round(amount))}`;
 const iconByIndustry: Record<IndustryId, LucideIcon> = { canteen: Utensils, retail: ShoppingBag, ecommerce: ShoppingCart, beauty: ClipboardList, stall: Store };
+const industryHomeProfiles: Record<IndustryId, IndustryHomeProfile> = {
+  canteen: { quick: [{ action: "order", label: "录菜品订单", detail: "菜品销量与食材成本", icon: Plus }, { action: "budget", label: "看食材预算", detail: "采购与损耗占用", icon: WalletCards }, { action: "cards", label: "菜品成本卡", detail: "配方、毛利与售价", icon: Utensils }], insight: { eyebrow: "餐饮经营提示", title: "先核对食材损耗与采购差价", copy: "把报损、日盘点与高耗用菜品放在同一张账里，避免毛利被看不见的食材损耗吞掉。", focusCategoryKey: "food_purchase" } },
+  retail: { quick: [{ action: "order", label: "录零售订单", detail: "商品销售与进货成本", icon: Plus }, { action: "cards", label: "商品成本卡", detail: "进货、毛利与定价", icon: PackageOpen }, { action: "analysis", label: "看库存风险", detail: "周转与折价复核", icon: TrendingDown }], insight: { eyebrow: "零售经营提示", title: "低周转库存正在占用资金", copy: "优先筛选近 60 天未动销商品，结合折扣与搭售计划，把库存资金重新转成可售现金流。", focusCategoryKey: "goods_purchase" } },
+  ecommerce: { quick: [{ action: "order", label: "记平台订单", detail: "SKU 销售与渠道费用", icon: Plus }, { action: "cards", label: "商品成本卡", detail: "SKU 成本与毛利", icon: PackageOpen }, { action: "analysis", label: "看投放回报", detail: "退款与广告复核", icon: BarChart3 }], insight: { eyebrow: "电商经营提示", title: "退款与广告投放需要成对复核", copy: "先把退款后的实收与投放消耗放在同一张账，停掉低转化计划，再核对平台佣金和履约费用。", focusCategoryKey: "ad_spend" } },
+  beauty: { quick: [{ action: "order", label: "登记到店服务", detail: "项目成交与服务耗用", icon: CalendarDays }, { action: "budget", label: "看工时预算", detail: "人工与耗材占用", icon: WalletCards }, { action: "cards", label: "服务成本卡", detail: "耗用、工时与定价", icon: ClipboardList }], insight: { eyebrow: "美业经营提示", title: "低峰工时与爽约正在拉低利润", copy: "先看预约密度和技师排班，再为低峰时段设计到店提醒与复购方案，让可售工时真正转成收入。", focusCategoryKey: "technician_labor" } },
+  stall: { quick: [{ action: "order", label: "记出摊订单", detail: "货品销售与当日成本", icon: Plus }, { action: "record", label: "记进货与摊费", detail: "当天收支及时入账", icon: ReceiptText }, { action: "analysis", label: "看尾货风险", detail: "折价与客流复核", icon: TrendingUp }], insight: { eyebrow: "出摊经营提示", title: "尾货折价要在日终前主动处理", copy: "按客流分批进货、记录摊位费占比，临近收摊优先清尾，别把固定成本和隔夜损耗留到明天。", focusCategoryKey: "clearance_loss" } },
+};
+const monthLabel = (month: string) => month === "all" ? "全部月份" : `${Number(month.slice(5))} 月`;
+function Highlight({ value, query }: { value: string; query: string }) {
+  const keyword = query.trim();
+  const start = value.toLocaleLowerCase().indexOf(keyword.toLocaleLowerCase());
+  if (!keyword || start < 0) return <>{value}</>;
+  const end = start + keyword.length;
+  return <>{value.slice(0, start)}<mark>{value.slice(start, end)}</mark>{value.slice(end)}</>;
+}
 const today = "2026-07-14";
 
 export default function Home() {
@@ -70,7 +94,8 @@ export default function Home() {
   const [subPage, setSubPage] = useState<SubPage>(initialSubPage);
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryId>(book.activeIndustryId);
   const [recordFilter, setRecordFilter] = useState<RecordFilter>("all");
-  const [recordSearch, setRecordSearch] = useState("");
+  const [recordSearch, setRecordSearch] = useState(requestedScreen === "records" ? requestedQuery : "");
+  const [recordMonth, setRecordMonth] = useState(requestedScreen === "records" ? requestedMonth : "all");
   const [selectedCategoryKey, setSelectedCategoryKey] = useState("");
   const [recordType, setRecordType] = useState<RecordType>("expense");
   const [recordId, setRecordId] = useState<string | null>(null);
@@ -98,6 +123,8 @@ export default function Home() {
   const [competitorHigh, setCompetitorHigh] = useState(0);
   const [promotionDiscount, setPromotionDiscount] = useState(0);
   const [orderChannel, setOrderChannel] = useState<OrderChannel>("platform");
+  const [orderMonth, setOrderMonth] = useState(requestedScreen === "orders" ? requestedMonth : "all");
+  const [orderSearch, setOrderSearch] = useState(requestedScreen === "orders" ? requestedQuery : "");
 
   const { template, categories, records, cards, skus, skuMetrics, orders, refunds, suppliers, reports, totals, trend, hiddenCosts, currentPeriod, channelTemplates, orderWarnings } = book;
   const IndustryIcon = iconByIndustry[book.activeIndustryId];
@@ -111,13 +138,23 @@ export default function Home() {
   const activeBomItem = activeCard?.items.find((item) => item.id === bomItemId) ?? null;
   const cardCost = activeCard ? calcCard(activeCard) : null;
   const currentCategoryKey = selectedCategoryKey || categories[0]?.key || "";
+  const recordMonths = useMemo(() => availableMonths(records.map((record) => record.date)), [records]);
+  const orderMonths = useMemo(() => availableMonths(orders.map((order) => order.occurredAt)), [orders]);
 
   const filteredRecords = records.filter((record) => {
     const search = recordSearch.trim().toLowerCase();
     const matchesType = recordFilter === "all" || record.type === recordFilter;
+    const matchesCurrentMonth = matchesMonth(record.date, recordMonth);
     const category = categoryByKey.get(record.categoryKey)?.label || "";
-    const matchesSearch = !search || [record.merchant, record.note, category, record.date].join(" ").toLowerCase().includes(search);
-    return matchesType && matchesSearch;
+    const matchesSearch = matchesQuery([record.merchant, record.note, category, record.date], search);
+    return matchesType && matchesCurrentMonth && matchesSearch;
+  });
+
+  const filteredOrders = orders.filter((order) => {
+    const search = orderSearch.trim().toLowerCase();
+    const matchesCurrentMonth = matchesMonth(order.occurredAt, orderMonth);
+    const matchesSearch = matchesQuery([order.orderNo, order.buyer, channelLabel[order.channel], order.occurredAt, ...order.lines.flatMap((line) => [line.skuName, line.skuCode])], search);
+    return matchesCurrentMonth && matchesSearch;
   });
 
   const groupedRecords = useMemo(() => {
@@ -136,6 +173,13 @@ export default function Home() {
   }
 
   function goSub(page: SubPage) { setSubPage(page); }
+  function runQuickAction(action: QuickAction) {
+    if (action === "order") { openNewOrder(); return; }
+    if (action === "record") { openNewRecord(); return; }
+    if (action === "budget") { goSub("budget"); return; }
+    if (action === "cards") { goSub("cards"); return; }
+    setTab("analysis");
+  }
   function goBack() {
     if (subPage === "bomForm") { setSubPage("cardDetail"); return; }
     if (subPage === "pricing") { setSubPage("cardDetail"); return; }
@@ -315,19 +359,23 @@ export default function Home() {
           ? `本月成本较上月下降 ${Math.abs(costChange).toFixed(1)}%，继续关注${template.risk}`
           : `本月成本与上月持平，优先复核${template.risk}`;
     const maxTrendCost = Math.max(...trend.map((point) => point.cost), 1);
+    const homeProfile = industryHomeProfiles[book.activeIndustryId];
+    const focusCategory = totals.categoryTotals.find((category) => category.key === homeProfile.insight.focusCategoryKey);
     return <>
       <section className="dashboard-kicker"><span>工作台 · {currentPeriod.replace("-", " 年 ")} 月</span><h1><IndustryIcon size={20} />{template.label}经营账本</h1><em>{template.storeName} · 本期已过账交易</em></section>
       <section className="summary-card"><div className="summary-head"><span><IndustryIcon size={16} />{template.label} · 本期成本核对</span><button onClick={() => goSub("industry")}>行业模板 <ChevronRight size={14} /></button></div><div className="summary-main"><div><span>本月经营成本</span><strong>{yuan(totals.totalCost)}</strong><em>销售成本 <b>{yuan(totals.cogs)}</b> · 费用 {yuan(totals.operatingExpense)}</em></div><img src="/manus-storage/mobile-cost-dashboard_efecf7a5.png" alt="账本成本标注" /></div><div className="summary-grid"><span><b>{totals.budgetUsed.toFixed(1)}%</b>预算占用</span><span><b>{yuan(totals.budgetRemaining)}</b>{totals.budgetRemaining >= 0 ? "可用余额" : "预算超支"}</span><span><b>{totals.grossMarginRate}%</b>毛利率</span></div><div className="summary-risk"><CircleAlert size={14} /><span>优先风险</span><strong>{template.risk}</strong></div></section>
       {book.state.workspace.dataMode === "legacy_review" && totals.grossSales === 0 && <button className="risk-card" onClick={openNewRecord}><span className="risk-symbol"><CircleAlert size={19} /></span><span><em>账本升级待复核</em><strong>尚未确认销售收入，净营收暂按 ¥0 计算</strong><small>历史模板营收未自动迁入，避免重复确认；请从“记一笔”补录销售日结。</small></span><ChevronRight size={18} /></button>}
       {!(book.state.workspace.dataMode === "legacy_review" && totals.grossSales === 0) && <button className="risk-card" onClick={() => setTab("analysis")}><span className="risk-symbol"><CircleAlert size={19} /></span><span><em>优先风险</em><strong>{template.risk}</strong><small>{template.riskNote}</small></span><ChevronRight size={18} /></button>}
-      <section className="section-block"><div className="section-title"><div><span>今日经营</span><h2>快捷查看</h2></div><button onClick={() => goSub("orders")}>订单 <ChevronRight size={15} /></button></div><div className="quick-grid"><button onClick={openNewOrder}><span className="quick-icon blue"><Plus size={20} /></span><b>记订单</b><em>SKU 销售与成本</em></button><button onClick={() => goSub("budget")}><span className="quick-icon green"><WalletCards size={20} /></span><b>看预算</b><em>本月占用 {totals.budgetUsed.toFixed(0)}%</em></button><button onClick={() => goSub("cards")}><span className="quick-icon orange"><ClipboardList size={20} /></span><b>成本卡</b><em>{template.entityLabel}成本与毛利</em></button></div></section>
+      <section className="section-block"><div className="section-title"><div><span>{template.label}今日经营</span><h2>快捷查看</h2></div><button onClick={() => goSub("orders")}>订单 <ChevronRight size={15} /></button></div><div className="quick-grid industry-quick-grid">{homeProfile.quick.map((item) => { const Icon = item.icon; return <button key={item.label} onClick={() => runQuickAction(item.action)}><span className="quick-icon"><Icon size={20} /></span><b>{item.label}</b><em>{item.detail}</em></button>; })}</div></section>
+      <section className="industry-insight-card"><div className="insight-stamp"><IndustryIcon size={18} /></div><div><span>{homeProfile.insight.eyebrow}</span><h2>{homeProfile.insight.title}</h2><p>{homeProfile.insight.copy}</p>{focusCategory && <button onClick={() => { setRecordFilter("all"); setRecordMonth(currentPeriod); setRecordSearch(focusCategory.label); setTab("records"); }}><b>{focusCategory.label}</b><strong>{yuan(focusCategory.amount)}</strong><ChevronRight size={14} /></button>}</div></section>
       <section className="section-block"><div className="section-title"><div><span>成本构成</span><h2>本月花在哪</h2></div><button onClick={() => setTab("analysis")}>分析 <ChevronRight size={15} /></button></div><div className="category-card">{totals.categoryTotals.slice(0, 5).map((category) => <button className="category-cell" key={category.key} onClick={() => { setRecordFilter("all"); setRecordSearch(category.label); setTab("records"); }}><span className="category-dot" style={{ background: category.color }} /><span className="category-info"><b>{category.label}</b><em>{category.hint}</em></span><strong>{yuan(category.amount)}</strong><ChevronRight size={15} /></button>)}</div></section>
       <section className="mini-trend-card"><div><span>近 6 月真实成本趋势</span><strong>{yuan(latestCost)} 本月成本</strong></div><div className="mini-bars">{trend.map((point, index) => <i key={point.month} style={{ height: `${Math.max(8, point.cost / maxTrendCost * 100)}%`, background: index === trend.length - 1 ? "#1677FF" : "#bddbff" }} />)}</div><em className="trend-insight">{trendInsight}</em><button onClick={() => setTab("analysis")}><LineChart size={15} />查看趋势</button></section>
     </>;
   }
 
   function OrdersPage() {
-    return <><section className="sub-intro compact"><span>{template.label} · 订单经营</span><h1>订单账本</h1><p>订单会同时确认销售收入和 SKU 已售成本；退款必须关联原订单与商品明细。</p></section><div className="report-list">{orders.map((order) => <button key={order.id} onClick={() => openOrder(order.id)}><span><ReceiptText size={20} /></span><div><b>{order.orderNo}</b><em>{order.occurredAt} · {order.channel === "platform" ? "平台" : order.channel === "live" ? "直播" : order.channel === "store" ? "到店" : order.channel === "private" ? "私域" : "其他"} · {order.lines.length} 个 SKU</em></div><strong>{yuan(order.lines.reduce((sum, line) => sum + line.unitPriceFen * line.quantity / 100, 0))}<small>{order.status === "paid" ? "已支付" : order.status === "partially_refunded" ? "部分退款" : "已退款"}</small></strong><ChevronRight size={16} /></button>)}{!orders.length && <div className="empty-state">还没有订单。通过“记录订单”选择 SKU 后，销售收入与商品成本会自动入账。</div>}</div><button className="fixed-primary list-primary" onClick={openNewOrder}><Plus size={18} />记录订单</button></>;
+    const hasFilter = orderMonth !== "all" || Boolean(orderSearch.trim());
+    return <><section className="sub-intro compact"><span>{template.label} · 订单经营</span><h1>订单账本</h1><p>订单会同时确认销售收入和 SKU 已售成本；退款必须关联原订单与商品明细。</p></section><div className="list-toolbox"><label className="month-filter"><CalendarDays size={16} /><select aria-label="筛选订单月份" value={orderMonth} onChange={(event) => setOrderMonth(event.target.value)}><option value="all">全部月份</option>{orderMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}</select></label><label className="search-field compact-search"><Search size={16} /><input value={orderSearch} onChange={(event) => setOrderSearch(event.target.value)} placeholder="搜索订单号、客户或 SKU" /></label></div><div className="result-summary">{hasFilter ? `已找到 ${filteredOrders.length} 笔订单` : `共 ${orders.length} 笔订单`}</div><div className="report-list">{filteredOrders.map((order) => { const channel = channelLabel[order.channel]; return <button key={order.id} onClick={() => openOrder(order.id)}><span><ReceiptText size={20} /></span><div><b><Highlight value={order.orderNo || "未编号订单"} query={orderSearch} /></b><em><Highlight value={`${order.occurredAt} · ${channel} · ${order.buyer || "散客"} · ${order.lines.map((line) => line.skuName).join(" / ")}`} query={orderSearch} /></em></div><strong>{yuan(order.lines.reduce((sum, line) => sum + line.unitPriceFen * line.quantity / 100, 0))}<small>{order.status === "paid" ? "已支付" : order.status === "partially_refunded" ? "部分退款" : "已退款"}</small></strong><ChevronRight size={16} /></button>; })}{!filteredOrders.length && <div className="empty-state">{hasFilter ? `没有匹配“${orderSearch || monthLabel(orderMonth)}”的订单，试试更换月份或关键词。` : "还没有订单。通过“记录订单”选择 SKU 后，销售收入与商品成本会自动入账。"}</div>}</div><button className="fixed-primary list-primary" onClick={openNewOrder}><Plus size={18} />记录订单</button></>;
   }
 
   function OrderFormPage() {
@@ -356,7 +404,8 @@ export default function Home() {
   }
 
   function RecordsPage() {
-    return <><section className="screen-title"><span>成本账</span><h1>每一笔都能说清楚</h1><p>收入、支出、附件与核算状态都保存在当前行业账本中。</p></section><div className="record-filter"><button className={recordFilter === "all" ? "active" : ""} aria-pressed={recordFilter === "all"} onClick={() => setRecordFilter("all")}>全部</button><button className={recordFilter === "expense" ? "active" : ""} aria-pressed={recordFilter === "expense"} onClick={() => setRecordFilter("expense")}>支出</button><button className={recordFilter === "income" ? "active" : ""} aria-pressed={recordFilter === "income"} onClick={() => setRecordFilter("income")}>收入</button><button className={recordFilter === "refund" ? "active" : ""} aria-pressed={recordFilter === "refund"} onClick={() => setRecordFilter("refund")}>退款</button><button onClick={() => notify("当前查看 2026 年 7 月")}><CalendarDays size={14} />7 月</button></div><label className="search-field"><Search size={16} /><input value={recordSearch} onChange={(event) => setRecordSearch(event.target.value)} placeholder="搜索商户、备注或分类" /></label><section className="record-list">{groupedRecords.length === 0 && <div className="empty-state">没有匹配的流水，试试更换筛选条件。</div>}{groupedRecords.map((group) => <div key={group.date} className="record-group"><h3>{book.dateLabel(group.date)}<span>{group.date.replaceAll("-", " / ")}</span></h3>{group.records.map((record) => { const category = categoryByKey.get(record.categoryKey); const isIncome = record.type === "income"; return <button className="record-row" key={record.id} onClick={() => openRecordDetail(record.id)}><span className="record-icon" style={{ color: category?.color, background: `${category?.color || "#1677FF"}18` }}><ReceiptText size={18} /></span><span><b>{record.merchant}</b><em>{category?.label || "未分类"} · {record.note || "无备注"}{record.hasAttachment ? " · 有凭证" : ""}</em></span><strong className={isIncome ? "income" : ""}>{isIncome ? "+" : "-"}{yuan(record.amount)}</strong><ChevronRight size={16} /></button>; })}</div>)}</section><button className="floating-add" onClick={openNewRecord}><Plus size={22} />记一笔</button></>;
+    const hasFilter = recordMonth !== "all" || recordFilter !== "all" || Boolean(recordSearch.trim());
+    return <><section className="screen-title"><span>成本账</span><h1>每一笔都能说清楚</h1><p>收入、支出、附件与核算状态都保存在当前行业账本中。</p></section><div className="record-filter"><button className={recordFilter === "all" ? "active" : ""} aria-pressed={recordFilter === "all"} onClick={() => setRecordFilter("all")}>全部</button><button className={recordFilter === "expense" ? "active" : ""} aria-pressed={recordFilter === "expense"} onClick={() => setRecordFilter("expense")}>支出</button><button className={recordFilter === "income" ? "active" : ""} aria-pressed={recordFilter === "income"} onClick={() => setRecordFilter("income")}>收入</button><button className={recordFilter === "refund" ? "active" : ""} aria-pressed={recordFilter === "refund"} onClick={() => setRecordFilter("refund")}>退款</button><label className="month-filter"><CalendarDays size={14} /><select aria-label="筛选流水月份" value={recordMonth} onChange={(event) => setRecordMonth(event.target.value)}><option value="all">全部月份</option>{recordMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}</select></label></div><label className="search-field"><Search size={16} /><input value={recordSearch} onChange={(event) => setRecordSearch(event.target.value)} placeholder="搜索商户、备注或分类" /></label><div className="result-summary">{hasFilter ? `已找到 ${filteredRecords.length} 笔流水` : `共 ${records.length} 笔流水`}</div><section className="record-list">{groupedRecords.length === 0 && <div className="empty-state">{hasFilter ? `没有匹配“${recordSearch || monthLabel(recordMonth)}”的流水，试试更换月份、类型或关键词。` : "当前行业还没有流水。"}</div>}{groupedRecords.map((group) => <div key={group.date} className="record-group"><h3>{book.dateLabel(group.date)}<span><Highlight value={group.date.replaceAll("-", " / ")} query={recordSearch} /></span></h3>{group.records.map((record) => { const category = categoryByKey.get(record.categoryKey); const isIncome = record.type === "income"; return <button className="record-row" key={record.id} onClick={() => openRecordDetail(record.id)}><span className="record-icon" style={{ color: category?.color, background: `${category?.color || "#1677FF"}18` }}><ReceiptText size={18} /></span><span><b><Highlight value={record.merchant} query={recordSearch} /></b><em><Highlight value={category?.label || "未分类"} query={recordSearch} /> · <Highlight value={record.note || "无备注"} query={recordSearch} />{record.hasAttachment ? " · 有凭证" : ""}</em></span><strong className={isIncome ? "income" : ""}>{isIncome ? "+" : "-"}{yuan(record.amount)}</strong><ChevronRight size={16} /></button>; })}</div>)}</section><button className="floating-add" onClick={openNewRecord}><Plus size={22} />记一笔</button></>;
   }
 
   function AnalysisPage() {
