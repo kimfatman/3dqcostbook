@@ -2,10 +2,11 @@
  * 订单与 SKU 账本模型。
  * 订单确认销售收入和已售成本；退款冲减净营收；仅“可售回收入库”冲回已售成本。
  */
-import { toFen, type LedgerEntry } from "./ledger-metrics";
+import { fromFen, toFen, type LedgerEntry } from "./ledger-metrics";
 
 export type OrderChannel = "platform" | "live" | "store" | "private" | "other";
 export type OrderStatus = "paid" | "partially_refunded" | "refunded";
+export type ChannelPricingSnapshot = { commissionRatePct: number; fulfillmentCost: number; targetContributionMarginPct: number; roundingStep: number };
 export type RefundReason = "quality_issue" | "wrong_item" | "customer_cancelled" | "logistics_delay" | "duplicate_order" | "other";
 export type ReturnRecoveryStatus = "not_returned" | "in_transit" | "sellable_restocked" | "damaged_disposed";
 
@@ -44,6 +45,7 @@ export type Order = {
   occurredAt: string;
   status: OrderStatus;
   lines: OrderLine[];
+  pricing: ChannelPricingSnapshot;
   saleEntryId: string;
   createdAt: string;
   updatedAt: string;
@@ -67,6 +69,8 @@ export type RefundCase = {
   createdAt: string;
 };
 
+export type OrderPricingAlert = { id: string; orderId: string; orderNo: string; channel: OrderChannel; type: "below_break_even" | "below_target_margin"; revenue: number; cogs: number; commission: number; fulfillment: number; contribution: number; contributionMarginRate: number; breakEvenRevenue: number; targetMarginRate: number };
+
 export const channelLabel: Record<OrderChannel, string> = { platform: "平台", live: "直播", store: "到店", private: "私域", other: "其他" };
 export const refundReasonLabel: Record<RefundReason, string> = { quality_issue: "质量问题", wrong_item: "错发漏发", customer_cancelled: "客户取消", logistics_delay: "物流延误", duplicate_order: "重复下单", other: "其他" };
 export const recoveryStatusLabel: Record<ReturnRecoveryStatus, string> = { not_returned: "无需退货", in_transit: "退货在途", sellable_restocked: "可售回收入库", damaged_disposed: "破损报废" };
@@ -76,6 +80,19 @@ export const lineCogsFen = (line: OrderLine) => line.quantity * line.unitCostFen
 export const orderGrossFen = (order: Order) => order.lines.reduce((sum, line) => sum + lineRevenueFen(line), 0);
 export const orderCogsFen = (order: Order) => order.lines.reduce((sum, line) => sum + lineCogsFen(line), 0);
 export const refundableQuantity = (line: OrderLine) => Math.max(0, line.quantity - line.refundedQuantity);
+
+export function getOrderPricingAlert(order: Order): OrderPricingAlert | null {
+  const revenue = fromFen(orderGrossFen(order));
+  const cogs = fromFen(orderCogsFen(order));
+  const quantity = order.lines.reduce((sum, line) => sum + line.quantity, 0);
+  const commission = revenue * order.pricing.commissionRatePct / 100;
+  const fulfillment = quantity * order.pricing.fulfillmentCost;
+  const contribution = Number((revenue - cogs - commission - fulfillment).toFixed(2));
+  const contributionMarginRate = revenue > 0 ? Number((contribution / revenue * 100).toFixed(1)) : 0;
+  const breakEvenRevenue = order.pricing.commissionRatePct < 100 ? Number(((cogs + fulfillment) / (1 - order.pricing.commissionRatePct / 100)).toFixed(2)) : Infinity;
+  const type = contribution < 0 ? "below_break_even" as const : contributionMarginRate < order.pricing.targetContributionMarginPct ? "below_target_margin" as const : null;
+  return type ? { id: `${order.id}-${type}`, orderId: order.id, orderNo: order.orderNo, channel: order.channel, type, revenue, cogs, commission: Number(commission.toFixed(2)), fulfillment: Number(fulfillment.toFixed(2)), contribution, contributionMarginRate, breakEvenRevenue, targetMarginRate: order.pricing.targetContributionMarginPct } : null;
+}
 
 export function buildOrderEntries(input: { order: Order; cogsCategoryKey: string; now: string }): LedgerEntry[] {
   const { order, cogsCategoryKey, now } = input;

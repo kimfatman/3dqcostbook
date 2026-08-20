@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildOrderEntries, buildRefundEntries, type Order, type OrderLine, type RefundCase } from "./order-ledger";
+import { buildOrderEntries, buildRefundEntries, getOrderPricingAlert, type Order, type OrderLine, type RefundCase } from "./order-ledger";
 import { buildMetrics, toFen } from "./ledger-metrics";
 
 const lines: OrderLine[] = [
   { id: "line-a", skuId: "sku-a", skuCode: "EC-001", skuName: "收纳盒", unit: "件", quantity: 2, refundedQuantity: 0, unitPriceFen: 6800, unitCostFen: 3980 },
   { id: "line-b", skuId: "sku-b", skuCode: "EC-002", skuName: "夏凉被", unit: "件", quantity: 1, refundedQuantity: 0, unitPriceFen: 13900, unitCostFen: 8350 },
 ];
-const order: Order = { id: "order-1", workspaceId: "w", industryId: "ecommerce", orderNo: "P-001", channel: "platform", buyer: "张女士", occurredAt: "2026-07-14", status: "paid", lines, saleEntryId: "sale-1", createdAt: "now", updatedAt: "now" };
+const order: Order = { id: "order-1", workspaceId: "w", industryId: "ecommerce", orderNo: "P-001", channel: "platform", buyer: "张女士", occurredAt: "2026-07-14", status: "paid", lines, pricing: { commissionRatePct: 5, fulfillmentCost: 3, targetContributionMarginPct: 40, roundingStep: 1 }, saleEntryId: "sale-1", createdAt: "now", updatedAt: "now" };
 
 describe("订单、SKU 与退款回收账本", () => {
   it("多 SKU 订单同时生成一笔销售收入和逐 SKU 已售成本", () => {
@@ -40,5 +40,15 @@ describe("订单、SKU 与退款回收账本", () => {
     expect(metrics.cogsFen).toBe(12330);
     expect(metrics.operatingExpenseFen).toBe(120);
     expect(metrics.grossProfitFen).toBe(8370);
+  });
+
+  it("佣金和单件履约费会按订单创建时的渠道快照识别低于目标毛利风险", () => {
+    const warning = getOrderPricingAlert(order);
+    expect(warning).toMatchObject({ type: "below_target_margin", commission: 13.75, fulfillment: 9, contributionMarginRate: 32.4, targetMarginRate: 40 });
+  });
+
+  it("当订单实收低于扣除渠道费后的保本线时优先标识亏损风险", () => {
+    const lossOrder: Order = { ...order, id: "loss", lines: [{ ...lines[0], unitPriceFen: 2000, quantity: 1, unitCostFen: 3980 }], pricing: { commissionRatePct: 5, fulfillmentCost: 3, targetContributionMarginPct: 40, roundingStep: 1 } };
+    expect(getOrderPricingAlert(lossOrder)).toMatchObject({ type: "below_break_even", breakEvenRevenue: 45.05, contribution: -23.8 });
   });
 });
