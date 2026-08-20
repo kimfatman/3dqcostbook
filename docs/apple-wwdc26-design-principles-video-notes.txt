@@ -1,0 +1,50 @@
+Starting video analysis...
+Submitting video analysis task...
+Task submitted (ID: video-analysis-c9ae3bed-c3bf-468d-bc56-ebdcf6d3eed0)
+[8s] Status: Analyzing video content with AI...
+[33s] Still processing, please wait...
+[35s] Status: Analysis completed
+[35s] Analysis completed!
+Full analysis result saved to: /home/ubuntu/video_Xa9L2yx_QH8_analysis_20260820_230222.md
+Note: This tool performs AI-based visual and audio analysis, not verbatim transcription. For detailed speech transcription, use `manus-speech-to-text` instead.
+Analysis result:
+
+以下是基于WWDC26《卓越设计原则》（Principles of Great Design）视频内容的详细分析与结构化输出：
+
+### (A) 演讲者与语境
+*   **演讲者**：Linda Dong 与 Doug LeMoine，均来自苹果设计布道部（Design Evangelism）。
+*   **语境**：WWDC26 开发者大会设计专题讲座。旨在重新定义“设计”——设计不仅是外观或行为，更是“带有意图的创造”（making something with intention），核心在于关注对用户最重要的价值，避免浪费用户的时间、注意力和信任。
+
+### (B) 核心引述（聚焦关键设计维度）
+1.  **清晰性与层级**：“清晰的界面能回答人们的问题：我该注意什么？我可以与什么交互？以及我该如何交互？”（Clear interfaces answer people's questions: What do I pay attention to? What can I interact with? And how do I interact?）
+2.  **内容优先与简洁**：“简洁的设计是无摩擦且直观的。人们无需费力就能找到所需。”（Simple designs are frictionless and intuitive. People can find what they need without effort.）
+3.  **材料与工艺**：“工艺是对细节的关注，它告诉人们你真正关心提供给他们的体验。”（Craft is the attention to detail that tells people you really care about the experience you're giving them.）
+4.  **导航与一致性**：“一致的位置布局能提高速度，用户无需思考即可操作。”（Consistent placement speeds them up. They don't have to think about it.）
+5.  **动效反馈**：“响应式动画应感觉流畅，并提供即时、自然的反馈。”（Responsive animations that feel fluid and provide immediate, natural feedback.）
+6.  **可访问性与灵活性**：“迎合人们广泛的能力差异……审视你的体验如何能更具包容性。”（Cater to the wide range of abilities people have... examining how your experience can be more inclusive.）
+7.  **品牌与愉悦感**：“愉悦感是你投入产品中的所有考量的总和。”（Delight is the sum of the consideration you put into your product.）
+8.  **能动性与控制**：“能动性（Agency）是让用户掌控。当你允许人们按自己的方式做事时，他们会感到尽在掌握。”（Agency is about putting people in control. People feel in control when you let them do things their way.）
+
+### (C) 明确的原则、组件与系统名称
+*   **八大设计原则**：
+    1.  **意图 (Purpose)**：明确产品存在的意义。
+    2.  **能动性 (Agency)**：提供选择，允许撤销（Offer forgiveness），仅在灾难性操作前拦截（Avoid disaster）。
+    3.  **责任 (Responsibility)**：保护隐私，确保安全（如AI生成内容的准确性与误用防范）。
+    4.  **熟悉感 (Familiarity)**：使用隐喻（Metaphor，如垃圾桶图标），保持行为与位置的一致性。
+    5.  **灵活性 (Flexibility)**：适应不同环境（家、跑步、驾驶）与设备（iPhone、Mac、Watch、Vision Pro），支持个性化（Personalize）。
+    6.  **简洁性 (Simplicity)**：用词精炼（Concise），通过层级（Hierarchy）引导焦点。
+    7.  **工艺 (Craft)**：高品质素材（字体、色彩、图标、SDK基础）。
+    8.  **愉悦感 (Delight)**：建立情感连接，使体验人性化（Make it human）。
+*   **关键组件/系统**：SDK（系统开发工具包）、Human Interface Guidelines（人机交互指南）、确认弹窗（Confirmation Dialogs）、撤销机制（Undo actions）。
+
+### (D) 对移动端经营数据应用的具体启示
+1.  **数据蒸馏（Simplicity）**：经营数据往往复杂，应将复杂数据转化为直观图形（Graphics），通过“摘要信息”让用户关注核心指标，而非罗列所有原始数据。
+2.  **情境化适配（Flexibility）**：管理人员在办公室（Mac）需要深度工作流与精确控制，但在移动中（iPhone）则需要快速、基于触摸的即时概览。
+3.  **责任与安全（Responsibility）**：在引入AI分析经营趋势时，必须预判模型可能生成的错误数据，并增加确认机制或免责声明，防止误导决策造成现实损害。
+4.  **容错机制（Agency）**：对于涉及资金、权限等敏感经营操作，应提供“撤销”功能，减少用户的心理压力。
+
+### (E) 限制、例外与不宜机械模仿之处
+1.  **非公式化**：Linda 强调“1+2≠3”，设计原则之间没有固定的组合公式，过度倾向某一原则可能会损害另一原则。
+2.  **隐喻的度**：隐喻不能过于字面化（Literal）导致陈旧，也不能过于抽象（Abstract）导致费解。例如，不要为了创新而改变公认的“垃圾桶”或“分享”图标的含义。
+3.  **简洁不等于极简**：不要为了视觉上的极简（Minimal）而隐藏所有功能，这会增加用户的认知负担。真正的简洁是“恰到好处”（Exactly enough），有时为了提供上下文（Context），增加信息反而更简洁。
+4.  **AI的局限**：不能盲目信任AI功能，必须针对AI的误用和潜在伤害建立防御性设计。

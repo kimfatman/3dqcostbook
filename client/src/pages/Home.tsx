@@ -53,6 +53,8 @@ import { channelLabel, type OrderChannel, type RefundReason, type ReturnRecovery
 import { breakEvenPrice, quotePrice } from "@/lib/pricing";
 import { availableMonths, matchesMonth, matchesQuery } from "@/lib/list-search";
 import { buildBudgetBurn, buildCategoryDeltas, buildRefundPareto } from "@/lib/chart-metrics";
+import { buildHomeDecision, type HomeDecision, type HomeDecisionNotification, type HomeDecisionTarget } from "@/lib/home-decision";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type TabId = "home" | "orders" | "cards" | "analysis" | "profile";
 type SubPage = "notifications" | "industry" | "records" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "pricing" | "budget" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | null;
@@ -60,8 +62,8 @@ type RecordFilter = "all" | RecordType;
 type DraftMaterial = { name: string; spec: string; quantity: string; amount: number };
 type QuickAction = "order" | "budget" | "cards" | "record" | "analysis";
 type PromotionTarget = "cards" | "orders" | "industry";
-type NotificationTarget = "budget" | "orders" | "cards" | "records";
-type NotificationItem = { id: string; tone: "notice" | "attention" | "risk"; title: string; copy: string; action: string; target: NotificationTarget };
+type NotificationTarget = HomeDecisionTarget;
+type NotificationItem = HomeDecisionNotification & { copy: string };
 type IndustryHomeProfile = {
   quick: { action: QuickAction; label: string; detail: string; icon: LucideIcon }[];
   insight: { eyebrow: string; title: string; copy: string; focusCategoryKey: string };
@@ -103,10 +105,17 @@ function Highlight({ value, query }: { value: string; query: string }) {
 function EquationResult({ firstLabel, firstValue, secondLabel, secondValue, resultLabel, resultValue, detail }: { firstLabel: string; firstValue: string; secondLabel: string; secondValue: string; resultLabel: string; resultValue: string; detail: string }) {
   return <section className="equation-result"><span>本期核算</span><div><label><em>{firstLabel}</em><b>{firstValue}</b></label><i>−</i><label><em>{secondLabel}</em><b>{secondValue}</b></label><i>＝</i><label className="equation-outcome"><em>{resultLabel}</em><b>{resultValue}</b></label></div><p>{detail}</p></section>;
 }
-function OperatingSnapshot({ revenue, cost, profit, budgetRemaining, budgetState }: { revenue: number; cost: number; profit: number; budgetRemaining: number; budgetState: ReturnType<typeof buildBudgetBurn>["state"] }) {
-  const label = profit >= 0 ? "经营利润" : "经营亏损";
-  const budgetLabel = budgetState === "over" ? "预算已超" : budgetState === "risk" ? "月末超支" : "预算剩余";
-  return <section className="operating-snapshot"><div><strong><span>{label}</span><b>{yuan(Math.abs(profit))}</b></strong></div><div><label><em>净营收</em><b>{yuan(revenue)}</b></label><label><em>本月成本</em><b>{yuan(cost)}</b></label><label><em>{budgetLabel}</em><b className={budgetState === "healthy" ? "budget-healthy" : "budget-warning"}>{yuan(Math.abs(budgetState === "healthy" ? budgetRemaining : Math.min(budgetRemaining, 0)))}</b></label></div></section>;
+function OperatingSnapshot({ decision, onOpenPriority }: { decision: HomeDecision; onOpenPriority: (priority: HomeDecisionNotification) => void }) {
+  const priority = decision.priority;
+  return <section className="operating-snapshot home-decision" aria-labelledby="home-decision-title"><div className="home-decision-result"><em>净营收 − 本月成本 ＝ 本期结果</em><strong><span id="home-decision-title">{decision.result.label}</span><b>{yuan(decision.result.amount)}</b></strong></div><dl className="home-decision-metrics">{decision.metrics.map((metric) => <div key={metric.key} data-tone={metric.tone}><dt>{metric.label}</dt><dd>{yuan(metric.amount)}</dd></div>)}</dl>{priority && <button className="home-decision-risk" data-tone={priority.tone} onClick={() => onOpenPriority(priority)}><CircleAlert size={16} aria-hidden="true" /><span><em>优先处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} aria-hidden="true" /></button>}</section>;
+}
+function notificationImpact(item: NotificationItem) {
+  const amount = item.title.match(/¥[\d,]+/)?.[0];
+  if (amount) return amount;
+  if (item.id === "order-warning") return "利润风险";
+  if (item.id === "refund-watch") return "退款影响";
+  if (item.id.startsWith("card-")) return "成本波动";
+  return "经营提醒";
 }
 function ProfitWaterfall({ revenue, cogs, expenses, profit, onSelect }: { revenue: number; cogs: number; expenses: number; profit: number; onSelect: (key: "revenue" | "cogs" | "expenses" | "profit") => void }) {
   const steps = [{ key: "revenue" as const, label: "净营收", from: 0, to: revenue, amount: revenue, kind: "revenue" }, { key: "cogs" as const, label: "销售成本", from: revenue, to: revenue - cogs, amount: -cogs, kind: "cost" }, { key: "expenses" as const, label: "经营费用", from: revenue - cogs, to: profit, amount: -expenses, kind: "expense" }, { key: "profit" as const, label: profit >= 0 ? "经营利润" : "经营亏损", from: 0, to: profit, amount: profit, kind: profit >= 0 ? "profit" : "loss" }];
@@ -170,6 +179,7 @@ export default function Home() {
   const [promotionPaused, setPromotionPaused] = useState(false);
   const [reminderIndex, setReminderIndex] = useState(0);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
+  const reducedMotion = useReducedMotion();
 
   const { template, categories, records, cards, skus, skuMetrics, orders, refunds, suppliers, reports, totals, trend, hiddenCosts, currentPeriod, channelTemplates, orderWarnings } = book;
   const IndustryIcon = iconByIndustry[book.activeIndustryId];
@@ -204,18 +214,19 @@ export default function Home() {
   }, [budgetBurn, cards, currentPeriod, orderWarnings.length, refunds, totals.budgetRemaining, totals.categoryTotals, totals.totalCost]);
   const activeReminder = notificationItems[reminderIndex % notificationItems.length] || notificationItems[0];
   const unreadNotificationCount = notificationItems.filter((item) => !readNotificationIds.includes(item.id)).length;
+  const homeDecision = useMemo(() => buildHomeDecision({ industryLabel: template.label, period: currentPeriod, revenue: totals.revenue, cost: totals.totalCost, operatingProfit: totals.operatingProfit, budgetRemaining: totals.budgetRemaining, budgetState: budgetBurn.state, budget: totals.budget, budgetForecast: budgetBurn.forecast, notifications: notificationItems }), [budgetBurn.forecast, budgetBurn.state, currentPeriod, notificationItems, template.label, totals.budget, totals.budgetRemaining, totals.operatingProfit, totals.revenue, totals.totalCost]);
 
   useEffect(() => {
-    if (promotionPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (promotionPaused || reducedMotion) return;
     const timer = window.setInterval(() => setPromotionIndex((index) => (index + 1) % promotionBanners.length), 4200);
     return () => window.clearInterval(timer);
-  }, [promotionPaused]);
+  }, [promotionPaused, reducedMotion]);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || notificationItems.length < 2) return;
+    if (reducedMotion || notificationItems.length < 2) return;
     const timer = window.setInterval(() => setReminderIndex((index) => (index + 1) % notificationItems.length), 5200);
     return () => window.clearInterval(timer);
-  }, [notificationItems.length]);
+  }, [notificationItems.length, reducedMotion]);
 
   const filteredRecords = records.filter((record) => {
     const search = recordSearch.trim().toLowerCase();
@@ -260,6 +271,16 @@ export default function Home() {
   function openNotificationTarget(item: NotificationItem) {
     setReadNotificationIds((current) => current.includes(item.id) ? current : [...current, item.id]);
     goSub(item.target);
+  }
+  function openHomeDecision(priority: HomeDecisionNotification) {
+    if (priority.target === "orders") {
+      setOrderStatusFilter(priority.id === "refund-watch" ? "refund" : "low_profit");
+      setOrderSearchOpen(false);
+      setTab("orders");
+      setSubPage(null);
+      return;
+    }
+    goSub(priority.target);
   }
   function runQuickAction(action: QuickAction) {
     if (action === "order") { openNewOrder(); return; }
@@ -435,14 +456,15 @@ export default function Home() {
     const latestTrend = trend.at(-1);
     const latestCost = latestTrend?.cost ?? 0;
     const maxTrendCost = Math.max(...trend.map((point) => point.cost), 1);
+    const trendAmount = (amount: number) => amount === 0 ? "—" : amount >= 10000 ? `¥${(amount / 10000).toFixed(1)}万` : yuan(amount);
     const homeProfile = industryHomeProfiles[book.activeIndustryId];
     const focusCategory = totals.categoryTotals.find((category) => category.key === homeProfile.insight.focusCategoryKey);
     const topCategory = totals.categoryTotals[0];
     return <div className="prototype-home">
-      <section className="dashboard-kicker"><span>{template.label} · {currentPeriod.replace("-", " 年 ")} 月</span></section>
-      <OperatingSnapshot revenue={totals.revenue} cost={totals.totalCost} profit={totals.operatingProfit} budgetRemaining={totals.budgetRemaining} budgetState={budgetBurn.state} />
+      <section className="dashboard-kicker"><span>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</span></section>
+      <OperatingSnapshot decision={homeDecision} onOpenPriority={openHomeDecision} />
       <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传" onMouseEnter={() => setPromotionPaused(true)} onMouseLeave={() => setPromotionPaused(false)} onFocusCapture={() => setPromotionPaused(true)} onBlurCapture={() => setPromotionPaused(false)}><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span><i aria-hidden="true">{banner.mark}</i></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}<button className="promotion-motion-control" onClick={() => setPromotionPaused((value) => !value)} aria-label={promotionPaused ? "播放宣传轮播" : "暂停宣传轮播"}>{promotionPaused ? <Play size={10} /> : <Pause size={10} />}</button></div></section>
-      <button className="home-cost-trend" onClick={() => setTab("analysis")}><div><b>成本趋势</b><em>单位：元</em></div><section>{trend.map((point, index) => <span key={point.month}><b>{(point.cost / 10000).toFixed(1)}</b><i style={{ height: `${Math.max(8, point.cost / maxTrendCost * 100)}%` }} className={index === trend.length - 1 ? "active" : ""} /><em>{point.month.slice(5)}月</em></span>)}</section></button>
+      <button className="home-cost-trend" onClick={() => setTab("analysis")}><div><b>成本趋势</b><span><strong>{trendAmount(latestCost)}</strong><em>本月成本</em></span></div><section>{trend.map((point, index) => <span key={point.month}><b>{trendAmount(point.cost)}</b><i style={{ height: `${Math.max(8, point.cost / maxTrendCost * 100)}%` }} className={index === trend.length - 1 ? "active" : ""} /><em>{point.month.slice(5)}月</em></span>)}</section></button>
       <button className="home-data-row" onClick={() => goSub("budget")}><span className="home-row-icon"><WalletCards size={19} /></span><b>预算剩余</b><strong>{yuan(totals.budgetRemaining)}</strong><ChevronRight size={18} /></button>
       <button className="home-data-row" onClick={() => { if (topCategory) { setRecordSearch(topCategory.label); setRecordMonth(currentPeriod); goSub("records"); } }}><span className="home-row-icon"><ShoppingBag size={19} /></span><span><em>第一成本</em><b>{topCategory?.label || homeProfile.insight.title}</b></span><strong>{topCategory ? `${Math.round(topCategory.amount / Math.max(totals.totalCost, 1) * 100)}%` : "—"}</strong><ChevronRight size={18} /></button>
     </div>;
@@ -611,7 +633,7 @@ export default function Home() {
   }
 
   function NotificationsPage() {
-    return <div className="notification-center"><section className="notification-summary"><span><Bell size={17} />经营提醒</span><b>{unreadNotificationCount ? `${unreadNotificationCount} 条待查看` : "已全部查看"}</b><button onClick={() => setReadNotificationIds(notificationItems.map((item) => item.id))}>{unreadNotificationCount ? "全部标为已读" : "全部已读"}</button></section><section className="notification-list">{notificationItems.map((item) => { const read = readNotificationIds.includes(item.id); return <button key={item.id} className={`${item.tone}${read ? " read" : ""}`} onClick={() => openNotificationTarget(item)}><span className="notification-symbol">{item.tone === "risk" ? "!" : item.tone === "attention" ? "·" : "＝"}</span><div><b>{item.title}</b><em>{item.copy}</em><small>{item.action}</small></div><ChevronRight size={18} /></button>; })}</section></div>;
+    return <div className="notification-center"><section className="notification-summary"><span><Bell size={17} />经营提醒</span><b>{unreadNotificationCount ? `${unreadNotificationCount} 条待查看` : "已全部查看"}</b><button onClick={() => setReadNotificationIds(notificationItems.map((item) => item.id))}>{unreadNotificationCount ? "全部标为已读" : "全部已读"}</button></section><section className="notification-list">{notificationItems.map((item) => { const read = readNotificationIds.includes(item.id); return <button key={item.id} className={`${item.tone}${read ? " read" : ""}`} onClick={() => openNotificationTarget(item)}><span className="notification-symbol">{item.tone === "risk" ? "!" : item.tone === "attention" ? "·" : "＝"}</span><div><span className="notification-impact">{notificationImpact(item)}</span><b>{item.title}</b><em>{item.copy}</em><small>＝ {item.action}</small></div><ChevronRight size={18} /></button>; })}</section></div>;
   }
 
   function renderContent() {

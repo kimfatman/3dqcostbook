@@ -1,0 +1,25 @@
+flowchart TD
+  subgraph Phone["390px 首页 · P0 经营判断主线"]
+    H["顶部功能层 · 64px<br/>Logo / 行业成本账本 · 经营提醒 ticker → 消息中心"]
+    C["经营上下文 · 20px<br/>电商 · 2026年07月"]
+    K["经营判断卡 · 236–252px<br/>经营亏损 ¥115,680<br/>净营收 ¥0 ｜ 本月成本 ¥115,680 ｜ 月末超支 ¥0<br/>! 优先处理：月末预计超预算 ¥106,149 · 查看预算预测 →"]
+    B["产品宣传 / 广告 · 96px<br/>成本卡，一键算出保本价 · 去测算 →<br/>圆点可选择 / 暂停按钮 44px 命中区"]
+    T["成本趋势 · 176px<br/>本月成本 / 6个月柱图 / 单位：元 → 分析页"]
+    R1["预算剩余 · ¥34,320 → 预算管理"]
+    R2["第一成本 · 商品采购 49% → 预筛选流水"]
+    N["底部导航功能层 · 74px<br/>经营 ｜ 订单 ｜ 商品 ｜ 分析 ｜ 我的"]
+  end
+
+  H --> C --> K --> B --> T --> R1 --> R2 --> N
+
+  classDef nav fill:#FFFFFF,stroke:#DCE5EF,color:#0B1836,stroke-width:1px;
+  classDef context fill:#F7FAFF,stroke:#E7EDF4,color:#60738B,stroke-width:1px;
+  classDef decision fill:#087FF5,stroke:#087FF5,color:#FFFFFF,stroke-width:2px;
+  classDef promotion fill:#0B1836,stroke:#0B1836,color:#FFFFFF,stroke-width:1px;
+  classDef content fill:#FFFFFF,stroke:#DCE5EF,color:#0B1836,stroke-width:1px;
+
+  class H,N nav;
+  class C context;
+  class K decision;
+  class B promotion;
+  class T,R1,R2 content;
