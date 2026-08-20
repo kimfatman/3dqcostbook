@@ -1,0 +1,98 @@
+/**
+ * 订单与 SKU 账本模型。
+ * 订单确认销售收入和已售成本；退款冲减净营收；仅“可售回收入库”冲回已售成本。
+ */
+import { toFen, type LedgerEntry } from "./ledger-metrics";
+
+export type OrderChannel = "platform" | "live" | "store" | "private" | "other";
+export type OrderStatus = "paid" | "partially_refunded" | "refunded";
+export type RefundReason = "quality_issue" | "wrong_item" | "customer_cancelled" | "logistics_delay" | "duplicate_order" | "other";
+export type ReturnRecoveryStatus = "not_returned" | "in_transit" | "sellable_restocked" | "damaged_disposed";
+
+export type Sku = {
+  id: string;
+  workspaceId: string;
+  industryId: string;
+  cardId?: string;
+  code: string;
+  name: string;
+  unit: string;
+  unitPriceFen: number;
+  unitCostFen: number;
+  active: boolean;
+};
+
+export type OrderLine = {
+  id: string;
+  skuId: string;
+  skuCode: string;
+  skuName: string;
+  unit: string;
+  quantity: number;
+  refundedQuantity: number;
+  unitPriceFen: number;
+  unitCostFen: number;
+};
+
+export type Order = {
+  id: string;
+  workspaceId: string;
+  industryId: string;
+  orderNo: string;
+  channel: OrderChannel;
+  buyer: string;
+  occurredAt: string;
+  status: OrderStatus;
+  lines: OrderLine[];
+  saleEntryId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RefundCase = {
+  id: string;
+  workspaceId: string;
+  industryId: string;
+  orderId: string;
+  orderLineId: string;
+  skuId: string;
+  quantity: number;
+  refundFen: number;
+  refundFeeFen: number;
+  reason: RefundReason;
+  recoveryStatus: ReturnRecoveryStatus;
+  recoveredCostFen: number;
+  occurredAt: string;
+  refundEntryId: string;
+  createdAt: string;
+};
+
+export const channelLabel: Record<OrderChannel, string> = { platform: "平台", live: "直播", store: "到店", private: "私域", other: "其他" };
+export const refundReasonLabel: Record<RefundReason, string> = { quality_issue: "质量问题", wrong_item: "错发漏发", customer_cancelled: "客户取消", logistics_delay: "物流延误", duplicate_order: "重复下单", other: "其他" };
+export const recoveryStatusLabel: Record<ReturnRecoveryStatus, string> = { not_returned: "无需退货", in_transit: "退货在途", sellable_restocked: "可售回收入库", damaged_disposed: "破损报废" };
+
+export const lineRevenueFen = (line: OrderLine) => line.quantity * line.unitPriceFen;
+export const lineCogsFen = (line: OrderLine) => line.quantity * line.unitCostFen;
+export const orderGrossFen = (order: Order) => order.lines.reduce((sum, line) => sum + lineRevenueFen(line), 0);
+export const orderCogsFen = (order: Order) => order.lines.reduce((sum, line) => sum + lineCogsFen(line), 0);
+export const refundableQuantity = (line: OrderLine) => Math.max(0, line.quantity - line.refundedQuantity);
+
+export function buildOrderEntries(input: { order: Order; cogsCategoryKey: string; now: string }): LedgerEntry[] {
+  const { order, cogsCategoryKey, now } = input;
+  const base = { workspaceId: order.workspaceId, industryId: order.industryId, templateVersion: 3, occurredAt: order.occurredAt, merchant: order.buyer || "订单客户", status: "posted" as const, hasAttachment: false, createdAt: now, updatedAt: now, orderId: order.id };
+  const sale: LedgerEntry = { ...base, id: order.saleEntryId, eventType: "sale", ledgerRole: "revenue", cashDirection: "inflow", amountFen: orderGrossFen(order), categoryKey: "sales", note: `${order.orderNo} · ${channelLabel[order.channel]}订单` };
+  const cogs = order.lines.map((line) => ({ ...base, id: `${order.id}-cogs-${line.id}`, eventType: "expense" as const, ledgerRole: "cogs" as const, cashDirection: "none" as const, amountFen: lineCogsFen(line), categoryKey: cogsCategoryKey, note: `${order.orderNo} · ${line.skuName} 已售成本`, skuId: line.skuId, relatedEntryId: sale.id }));
+  return [sale, ...cogs];
+}
+
+export function buildRefundEntries(input: { refund: RefundCase; order: Order; line: OrderLine; now: string }): LedgerEntry[] {
+  const { refund, order, line, now } = input;
+  const base = { workspaceId: refund.workspaceId, industryId: refund.industryId, templateVersion: 3, occurredAt: refund.occurredAt, merchant: order.buyer || "订单客户", status: "posted" as const, hasAttachment: false, createdAt: now, updatedAt: now, orderId: order.id, skuId: line.skuId, refundReason: refund.reason, returnRecoveryStatus: refund.recoveryStatus };
+  const customerRefund: LedgerEntry = { ...base, id: refund.refundEntryId, eventType: "customer_refund", ledgerRole: "revenue", cashDirection: "outflow", amountFen: refund.refundFen, categoryKey: "returns", note: `${order.orderNo} · ${line.skuName} · ${refundReasonLabel[refund.reason]}`, relatedEntryId: order.saleEntryId };
+  const result = [customerRefund];
+  if (refund.refundFeeFen > 0) result.push({ ...base, id: `${refund.id}-fee`, eventType: "expense", ledgerRole: "opex", cashDirection: "outflow", amountFen: refund.refundFeeFen, categoryKey: "returns", note: `${order.orderNo} · 退款手续费`, relatedEntryId: customerRefund.id });
+  if (refund.recoveryStatus === "sellable_restocked" && refund.recoveredCostFen > 0) result.push({ ...base, id: `${refund.id}-recovery`, eventType: "inventory_return", ledgerRole: "cogs", cashDirection: "none", amountFen: -refund.recoveredCostFen, categoryKey: "returns", note: `${order.orderNo} · ${line.skuName} 可售回收入库`, relatedEntryId: customerRefund.id });
+  return result;
+}
+
+export function makeRefundAmount(line: OrderLine, quantity: number) { return toFen((line.unitPriceFen / 100) * quantity); }

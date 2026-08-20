@@ -24,6 +24,10 @@ export type LedgerEntry = {
   status: EntryStatus;
   hasAttachment: boolean;
   relatedEntryId?: string;
+  orderId?: string;
+  skuId?: string;
+  refundReason?: string;
+  returnRecoveryStatus?: string;
   supplierId?: string;
   createdAt: string;
   updatedAt: string;
