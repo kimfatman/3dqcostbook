@@ -10,6 +10,7 @@ import {
   BarChart3,
   Bell,
   Boxes,
+  Calculator,
   CalendarDays,
   ChevronDown,
   ChevronRight,
@@ -45,9 +46,10 @@ import {
   useCostBook,
 } from "@/lib/cost-book";
 import type { OrderChannel, RefundReason, ReturnRecoveryStatus } from "@/lib/order-ledger";
+import { breakEvenPrice, quotePrice } from "@/lib/pricing";
 
 type TabId = "home" | "records" | "analysis" | "profile";
-type SubPage = "industry" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "budget" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | null;
+type SubPage = "industry" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "pricing" | "budget" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | null;
 type RecordFilter = "all" | RecordType;
 type DraftMaterial = { name: string; spec: string; quantity: string; amount: number };
 
@@ -81,6 +83,10 @@ export default function Home() {
   const [orderLineId, setOrderLineId] = useState<string | null>(null);
   const [draftOrderLines, setDraftOrderLines] = useState<{ skuId: string; quantity: number }[]>([]);
   const [draftMaterials, setDraftMaterials] = useState<DraftMaterial[]>([]);
+  const [pricingPlatformRate, setPricingPlatformRate] = useState(0);
+  const [pricingFulfillmentCost, setPricingFulfillmentCost] = useState(0);
+  const [pricingTargetMargin, setPricingTargetMargin] = useState(40);
+  const [pricingRoundingStep, setPricingRoundingStep] = useState(1);
 
   const { template, categories, records, cards, skus, skuMetrics, orders, refunds, suppliers, reports, totals, trend, hiddenCosts, currentPeriod } = book;
   const IndustryIcon = iconByIndustry[book.activeIndustryId];
@@ -121,6 +127,7 @@ export default function Home() {
   function goSub(page: SubPage) { setSubPage(page); }
   function goBack() {
     if (subPage === "bomForm") { setSubPage("cardDetail"); return; }
+    if (subPage === "pricing") { setSubPage("cardDetail"); return; }
     if (subPage === "cardForm") { setSubPage("cards"); return; }
     if (subPage === "recordDetail") { setSubPage(null); setTab("records"); return; }
     if (subPage === "cardDetail") { setSubPage("cards"); return; }
@@ -149,6 +156,7 @@ export default function Home() {
   function openCard(id: string) { setCardId(id); goSub("cardDetail"); }
   function openNewCard() { setCardId(null); setDraftMaterials([{ name: "直接材料", spec: "", quantity: `1 ${template.unitLabel}`, amount: 0 }]); goSub("cardForm"); }
   function editCard() { if (!activeCard) return; setDraftMaterials(activeCard.items.map((item) => ({ name: item.name, spec: item.spec, quantity: item.quantity, amount: item.amount }))); goSub("cardForm"); }
+  function openPricing() { if (!activeCard) return; setPricingPlatformRate(0); setPricingFulfillmentCost(0); setPricingTargetMargin(40); setPricingRoundingStep(1); goSub("pricing"); }
   function openReport(id: string) { setReportId(id); goSub("reportDetail"); }
   function openOrder(id: string) { setOrderId(id); setOrderLineId(null); goSub("orderDetail"); }
   function openNewOrder() { if (!skus.length) return notify("当前行业暂无可用 SKU"); setDraftOrderLines([{ skuId: skus[0].id, quantity: 1 }]); setOrderId(null); goSub("orderForm"); }
@@ -277,7 +285,7 @@ export default function Home() {
   }
 
   function renderHeader() {
-    const titles: Record<Exclude<SubPage, null>, string> = { industry: "切换行业", record: recordId ? "编辑记录" : "记一笔", recordDetail: "流水详情", cards: `${template.entityLabel}成本卡`, cardDetail: `${template.entityLabel}成本详情`, cardForm: activeCard ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`, bomForm: activeBomItem ? `编辑${template.formulaLabel}项` : `添加${template.formulaLabel}项`, budget: "预算管理", reports: "成本报表", reportDetail: "报表详情", suppliers: "供应商", supplierForm: "新增供应商", categories: "分类管理", categoryForm: "新增分类", orders: "订单账本", orderForm: "记录订单", orderDetail: "订单详情", refundForm: "登记退款", skus: "SKU 商品成本" };
+    const titles: Record<Exclude<SubPage, null>, string> = { industry: "切换行业", record: recordId ? "编辑记录" : "记一笔", recordDetail: "流水详情", cards: `${template.entityLabel}成本卡`, cardDetail: `${template.entityLabel}成本详情`, cardForm: activeCard ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`, bomForm: activeBomItem ? `编辑${template.formulaLabel}项` : `添加${template.formulaLabel}项`, pricing: "智能测算定价", budget: "预算管理", reports: "成本报表", reportDetail: "报表详情", suppliers: "供应商", supplierForm: "新增供应商", categories: "分类管理", categoryForm: "新增分类", orders: "订单账本", orderForm: "记录订单", orderDetail: "订单详情", refundForm: "登记退款", skus: "SKU 商品成本" };
     if (isSub) return <header className="page-header sub-header"><button className="back-button" onClick={goBack} aria-label="返回"><ArrowLeft size={21} /></button><strong>{titles[subPage]}</strong><span /></header>;
     return <header className="page-header"><div className="brand-mini"><img src="/manus-storage/suandeqing-brand-mark_4e1ee068.png" alt="算得清" /><span><strong>算得清</strong><em>{template.label}成本账本</em></span></div><button className="header-icon" onClick={() => notify("今日暂无新的提醒")} aria-label="经营提醒"><Bell size={20} /><i /></button></header>;
   }
@@ -370,7 +378,17 @@ export default function Home() {
     if (!activeCard || !cardCost) return <div className="empty-state">成本卡不存在或已归档。</div>;
     const max = Math.max(...activeCard.history, cardCost.cost, 1);
     const linkedSku = skuMetrics.find((sku) => sku.cardId === activeCard.id);
-    return <><section className="detail-hero"><span>{template.entityLabel}成本详情</span><h1>{activeCard.name}</h1><strong>{cardCost.cost.toFixed(1)} 元 / {activeCard.unit}</strong><p>售价 {yuan(activeCard.salePrice)} · 毛利率 {cardCost.marginRate}% · {activeCard.kind}</p></section><section className="detail-actions"><button onClick={editCard}><Pencil size={16} />编辑成本卡</button><button className="danger" onClick={deleteCard}><Trash2 size={16} />删除</button></section><section className="cost-kpi-grid"><div><span>{template.formulaLabel}</span><b>{cardCost.material.toFixed(1)}</b></div><div><span>人工分摊</span><b>{activeCard.labor.toFixed(1)}</b></div><div><span>固定分摊</span><b>{activeCard.overhead.toFixed(1)}</b></div></section>{linkedSku && <section className="detail-breakdown"><h2>订单 SKU 实绩</h2><div><span className="tip-icon"><ShoppingCart size={18} /></span><p>售出 {linkedSku.soldQuantity}{linkedSku.unit}，退款 {linkedSku.refundedQuantity}{linkedSku.unit}，净营收 {yuan(linkedSku.netRevenue)}，真实毛利率 {linkedSku.grossMarginRate}% 。</p></div><button onClick={() => goSub("skus")}>查看 SKU 经营 <ChevronRight size={16} /></button></section>}<section className="detail-breakdown"><h2>{template.formulaLabel}明细</h2><div className="bom-list">{activeCard.items.map((item) => <div key={item.id}><span><b>{item.name}</b><em>{item.spec || "规格待补充"} · {item.quantity}</em></span><strong>{yuan(item.amount)}</strong><span className="bom-row-actions"><button onClick={() => { setBomItemId(item.id); goSub("bomForm"); }} aria-label="编辑成本项"><Pencil size={14} /></button><button onClick={() => { book.removeBomItem(activeCard.id, item.id); notify("已删除成本项，单位成本和 SKU 已同步重算"); }} aria-label="删除成本项"><Trash2 size={15} /></button></span></div>)}</div><button onClick={() => { setBomItemId(null); goSub("bomForm"); }}>添加{template.formulaLabel}项 <Plus size={16} /></button></section><section className="detail-breakdown"><h2>近 6 月单位成本趋势</h2><div className="weekly-bars cost-history">{activeCard.history.map((amount, index) => <span key={`${amount}-${index}`}><i style={{ height: `${amount / max * 100}%`, background: index === activeCard.history.length - 1 ? "#1677FF" : "#cfe2ff" }} /><em>{index + 2} 月</em></span>)}</div></section></>;
+    return <><section className="detail-hero"><span>{template.entityLabel}成本详情</span><h1>{activeCard.name}</h1><strong>{cardCost.cost.toFixed(1)} 元 / {activeCard.unit}</strong><p>售价 {activeCard.salePrice > 0 ? yuan(activeCard.salePrice) : "待补录"} · 毛利率 {activeCard.salePrice > 0 ? `${cardCost.marginRate}%` : "待测算"} · {activeCard.kind}</p></section><section className="detail-actions"><button onClick={editCard}><Pencil size={16} />编辑成本卡</button><button onClick={openPricing}><Calculator size={16} />智能定价</button><button className="danger" onClick={deleteCard}><Trash2 size={16} />删除</button></section>{activeCard.salePrice <= 0 && <button className="pricing-empty-tip" onClick={openPricing}><Calculator size={18} /><span><b>尚未填写售价，毛利率无法计算</b><em>使用智能测算定价，先设定目标毛利再一键写入。</em></span><ChevronRight size={16} /></button>}<section className="cost-kpi-grid"><div><span>{template.formulaLabel}</span><b>{cardCost.material.toFixed(1)}</b></div><div><span>人工分摊</span><b>{activeCard.labor.toFixed(1)}</b></div><div><span>固定分摊</span><b>{activeCard.overhead.toFixed(1)}</b></div></section>{linkedSku && <section className="detail-breakdown"><h2>订单 SKU 实绩</h2><div><span className="tip-icon"><ShoppingCart size={18} /></span><p>售出 {linkedSku.soldQuantity}{linkedSku.unit}，退款 {linkedSku.refundedQuantity}{linkedSku.unit}，净营收 {yuan(linkedSku.netRevenue)}，真实毛利率 {linkedSku.grossMarginRate}% 。</p></div><button onClick={() => goSub("skus")}>查看 SKU 经营 <ChevronRight size={16} /></button></section>}<section className="detail-breakdown"><h2>{template.formulaLabel}明细</h2><div className="bom-list">{activeCard.items.map((item) => <div key={item.id}><span><b>{item.name}</b><em>{item.spec || "规格待补充"} · {item.quantity}</em></span><strong>{yuan(item.amount)}</strong><span className="bom-row-actions"><button onClick={() => { setBomItemId(item.id); goSub("bomForm"); }} aria-label="编辑成本项"><Pencil size={14} /></button><button onClick={() => { book.removeBomItem(activeCard.id, item.id); notify("已删除成本项，单位成本和 SKU 已同步重算"); }} aria-label="删除成本项"><Trash2 size={15} /></button></span></div>)}</div><button onClick={() => { setBomItemId(null); goSub("bomForm"); }}>添加{template.formulaLabel}项 <Plus size={16} /></button></section><section className="detail-breakdown"><h2>近 6 月单位成本趋势</h2><div className="weekly-bars cost-history">{activeCard.history.map((amount, index) => <span key={`${amount}-${index}`}><i style={{ height: `${amount / max * 100}%`, background: index === activeCard.history.length - 1 ? "#1677FF" : "#cfe2ff" }} /><em>{index + 2} 月</em></span>)}</div></section></>;
+  }
+
+  function PricingPage() {
+    if (!activeCard || !cardCost) return <div className="empty-state">请先选择一张成本卡。</div>;
+    const base = { unitCost: cardCost.cost, platformRatePct: pricingPlatformRate, fulfillmentCost: pricingFulfillmentCost, roundingStep: pricingRoundingStep };
+    const breakEven = breakEvenPrice(base.unitCost, base.platformRatePct, base.fulfillmentCost, base.roundingStep);
+    const suggested = quotePrice({ ...base, targetContributionMarginPct: pricingTargetMargin });
+    const plans = [30, 40, 50].map((target) => ({ target, quote: quotePrice({ ...base, targetContributionMarginPct: target }) }));
+    const writePrice = (price: number) => { if (!Number.isFinite(price) || price <= 0) return; book.updateCard(activeCard.id, { salePrice: price }); notify(`建议售价 ${yuan(price)} 已写入成本卡，并同步后续订单 SKU`); setSubPage("cardDetail"); };
+    return <><section className="sub-intro compact"><span>{activeCard.name} · 智能定价</span><h1>先算保本，再定售价</h1><p>以单位完全成本为基数，扣除平台费率与单件履约费用后，反推目标贡献毛利率所需售价。</p></section><section className="pricing-base"><span>当前单位完全成本</span><strong>{yuan(cardCost.cost)} / {activeCard.unit}</strong><em>{template.formulaLabel} {yuan(cardCost.material)} + 人工 {yuan(activeCard.labor)} + 分摊 {yuan(activeCard.overhead)}</em></section><section className="record-form compact-form pricing-inputs"><label>平台综合费率<input type="number" min="0" max="99" step="0.1" value={pricingPlatformRate} onChange={(event) => setPricingPlatformRate(Number(event.target.value) || 0)} /><small>按订单实收比例扣除；非平台渠道可填 0%</small></label><label>单件履约费用<div className="amount-input"><span>¥</span><input type="number" min="0" step="0.01" value={pricingFulfillmentCost} onChange={(event) => setPricingFulfillmentCost(Number(event.target.value) || 0)} /></div><small>例如额外运费、支付手续费或单件售后准备金</small></label><label>目标贡献毛利率<input type="number" min="0" max="99" step="1" value={pricingTargetMargin} onChange={(event) => setPricingTargetMargin(Number(event.target.value) || 0)} /></label><label>价格取整步长<select value={pricingRoundingStep} onChange={(event) => setPricingRoundingStep(Number(event.target.value))}><option value="0.1">按 ¥0.1 向上取整</option><option value="0.5">按 ¥0.5 向上取整</option><option value="1">按 ¥1 向上取整</option><option value="5">按 ¥5 向上取整</option></select></label></section><section className="pricing-quote"><span>保本售价</span><strong>{breakEven.available ? yuan(breakEven.price) : "无法计算"}</strong><em>{breakEven.available ? `扣除费用后贡献毛利 ${breakEven.contributionMarginPct}%` : breakEven.reason}</em></section>{suggested.available ? <section className="pricing-recommend"><span>建议售价 · 目标贡献毛利 {pricingTargetMargin}%</span><strong>{yuan(suggested.price)}</strong><p>原始测算 {yuan(suggested.rawPrice)}，按规则向上取整；每{activeCard.unit}贡献 {yuan(suggested.contributionPerUnit)}，实际贡献毛利 {suggested.contributionMarginPct}% 。</p><button onClick={() => writePrice(suggested.price)}><Calculator size={17} />一键写入售价</button></section> : <div className="pricing-error"><CircleAlert size={18} />{suggested.reason}</div>}<section className="detail-breakdown pricing-plans"><h2>不同目标毛利的售价档位</h2><div className="report-breakdown">{plans.map(({ target, quote }) => <button key={target} disabled={!quote.available} onClick={() => quote.available && writePrice(quote.price)}><span><b>{target}% 目标贡献毛利</b><em>{quote.available ? `预计单件贡献 ${yuan(quote.contributionPerUnit)}` : quote.reason}</em></span><strong>{quote.available ? yuan(quote.price) : "—"}</strong></button>)}</div></section><section className="pricing-note"><CircleAlert size={16} /><p>该测算是定价辅助工具，不替代市场需求、促销折扣、税费或实际平台结算核对；价格写入仅影响后续订单，历史订单售价和成本快照不会改写。</p></section></>;
   }
 
   function CardFormPage() {
@@ -440,6 +458,7 @@ export default function Home() {
     if (subPage === "cardDetail") return CardDetailPage();
     if (subPage === "cardForm") return CardFormPage();
     if (subPage === "bomForm") return BomFormPage();
+    if (subPage === "pricing") return PricingPage();
     if (subPage === "budget") return BudgetPage();
     if (subPage === "reports") return ReportsPage();
     if (subPage === "reportDetail") return ReportDetailPage();
