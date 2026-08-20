@@ -1,9 +1,10 @@
 /**
  * 移动账本 App：四个一级入口与可返回的业务页面栈。
  * 所有金额、分类、流水、成本卡与图表均通过统一行业化 Store 读取和更新。
- * 视觉规范：数字蓝 #1677FF、深海军蓝 #0b1836、冷白背景与紧凑圆角卡片，优先保证单手操作路径。
+ * 视觉规范：Digital Blue #087FF5、深海军蓝 #0B1836、冷白背景与紧凑圆角卡片。
+ * 首页中产品宣传 Banner 只服务产品/广告，经营提醒只在 Logo 旁以文字轮播呈现，避免挤占利润—趋势—预算主线。
  */
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
@@ -21,13 +22,16 @@ import {
   LineChart,
   PackageOpen,
   Pencil,
+  Pause,
   Plus,
+  Play,
   ReceiptText,
   Search,
   Settings2,
   ShoppingBag,
   ShoppingCart,
   Store,
+  Sparkles,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -51,17 +55,20 @@ import { availableMonths, matchesMonth, matchesQuery } from "@/lib/list-search";
 import { buildBudgetBurn, buildCategoryDeltas, buildRefundPareto } from "@/lib/chart-metrics";
 
 type TabId = "home" | "orders" | "cards" | "analysis" | "profile";
-type SubPage = "industry" | "records" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "pricing" | "budget" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | null;
+type SubPage = "notifications" | "industry" | "records" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "pricing" | "budget" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | null;
 type RecordFilter = "all" | RecordType;
 type DraftMaterial = { name: string; spec: string; quantity: string; amount: number };
 type QuickAction = "order" | "budget" | "cards" | "record" | "analysis";
+type PromotionTarget = "cards" | "orders" | "industry";
+type NotificationTarget = "budget" | "orders" | "cards" | "records";
+type NotificationItem = { id: string; tone: "notice" | "attention" | "risk"; title: string; copy: string; action: string; target: NotificationTarget };
 type IndustryHomeProfile = {
   quick: { action: QuickAction; label: string; detail: string; icon: LucideIcon }[];
   insight: { eyebrow: string; title: string; copy: string; focusCategoryKey: string };
 };
 
 const deepLinkTabs: TabId[] = ["home", "orders", "cards", "analysis", "profile"];
-const deepLinkSubPages: Exclude<SubPage, null>[] = ["industry", "records", "record", "recordDetail", "cardDetail", "cardForm", "pricing", "budget", "reports", "reportDetail", "suppliers", "supplierForm", "categories", "categoryForm", "orderForm", "orderDetail", "refundForm", "skus"];
+const deepLinkSubPages: Exclude<SubPage, null>[] = ["notifications", "industry", "records", "record", "recordDetail", "cardDetail", "cardForm", "pricing", "budget", "reports", "reportDetail", "suppliers", "supplierForm", "categories", "categoryForm", "orderForm", "orderDetail", "refundForm", "skus"];
 const requestedParams = new URLSearchParams(window.location.search);
 const requestedScreen = requestedParams.get("screen");
 const requestedQuery = requestedParams.get("q") || "";
@@ -81,6 +88,11 @@ const industryHomeProfiles: Record<IndustryId, IndustryHomeProfile> = {
 };
 const monthLabel = (month: string) => month === "all" ? "全部月份" : `${Number(month.slice(5))} 月`;
 const refundReasonLabel = (reason: RefundReason) => ({ quality_issue: "质量问题", wrong_item: "错发漏发", customer_cancelled: "客户取消", logistics_delay: "物流延误", duplicate_order: "重复下单", other: "其他" })[reason];
+const promotionBanners: { eyebrow: string; title: string; copy: string; action: string; target: PromotionTarget; mark: string }[] = [
+  { eyebrow: "产品功能", title: "成本卡，一键算出保本价", copy: "材料、人工、渠道费统一核算", action: "去测算", target: "cards", mark: "＝" },
+  { eyebrow: "产品功能", title: "订单、退款与商品成本，放进一张账", copy: "每一笔成交都能复核真实贡献利润", action: "查看订单", target: "orders", mark: "＋" },
+  { eyebrow: "行业模板", title: "按行业切换成本口径，历史账本不丢失", copy: "餐饮、零售、电商、美业、小商贩", action: "切换行业", target: "industry", mark: "◌" },
+];
 function Highlight({ value, query }: { value: string; query: string }) {
   const keyword = query.trim();
   const start = value.toLocaleLowerCase().indexOf(keyword.toLocaleLowerCase());
@@ -91,9 +103,10 @@ function Highlight({ value, query }: { value: string; query: string }) {
 function EquationResult({ firstLabel, firstValue, secondLabel, secondValue, resultLabel, resultValue, detail }: { firstLabel: string; firstValue: string; secondLabel: string; secondValue: string; resultLabel: string; resultValue: string; detail: string }) {
   return <section className="equation-result"><span>本期核算</span><div><label><em>{firstLabel}</em><b>{firstValue}</b></label><i>−</i><label><em>{secondLabel}</em><b>{secondValue}</b></label><i>＝</i><label className="equation-outcome"><em>{resultLabel}</em><b>{resultValue}</b></label></div><p>{detail}</p></section>;
 }
-function OperatingSnapshot({ revenue, cost, profit }: { revenue: number; cost: number; profit: number }) {
+function OperatingSnapshot({ revenue, cost, profit, budgetRemaining, budgetState }: { revenue: number; cost: number; profit: number; budgetRemaining: number; budgetState: ReturnType<typeof buildBudgetBurn>["state"] }) {
   const label = profit >= 0 ? "经营利润" : "经营亏损";
-  return <section className="operating-snapshot"><div><strong><span>{label}</span><b>{yuan(Math.abs(profit))}</b></strong></div><div><label><em>净营收</em><b>{yuan(revenue)}</b></label><label><em>经营成本</em><b>{yuan(cost)}</b></label><label><em>{profit >= 0 ? "利润率" : "亏损率"}</em><b>{revenue > 0 ? `${Math.abs(profit / revenue * 100).toFixed(1)}%` : "—"}</b></label></div></section>;
+  const budgetLabel = budgetState === "over" ? "预算已超" : budgetState === "risk" ? "月末超支" : "预算剩余";
+  return <section className="operating-snapshot"><div><strong><span>{label}</span><b>{yuan(Math.abs(profit))}</b></strong></div><div><label><em>净营收</em><b>{yuan(revenue)}</b></label><label><em>本月成本</em><b>{yuan(cost)}</b></label><label><em>{budgetLabel}</em><b className={budgetState === "healthy" ? "budget-healthy" : "budget-warning"}>{yuan(Math.abs(budgetState === "healthy" ? budgetRemaining : Math.min(budgetRemaining, 0)))}</b></label></div></section>;
 }
 function ProfitWaterfall({ revenue, cogs, expenses, profit, onSelect }: { revenue: number; cogs: number; expenses: number; profit: number; onSelect: (key: "revenue" | "cogs" | "expenses" | "profit") => void }) {
   const steps = [{ key: "revenue" as const, label: "净营收", from: 0, to: revenue, amount: revenue, kind: "revenue" }, { key: "cogs" as const, label: "销售成本", from: revenue, to: revenue - cogs, amount: -cogs, kind: "cost" }, { key: "expenses" as const, label: "经营费用", from: revenue - cogs, to: profit, amount: -expenses, kind: "expense" }, { key: "profit" as const, label: profit >= 0 ? "经营利润" : "经营亏损", from: 0, to: profit, amount: profit, kind: profit >= 0 ? "profit" : "loss" }];
@@ -153,6 +166,10 @@ export default function Home() {
   const [orderSearch, setOrderSearch] = useState(requestedScreen === "orders" ? requestedQuery : "");
   const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "low_profit" | "refund">("all");
   const [orderSearchOpen, setOrderSearchOpen] = useState(Boolean(requestedQuery));
+  const [promotionIndex, setPromotionIndex] = useState(0);
+  const [promotionPaused, setPromotionPaused] = useState(false);
+  const [reminderIndex, setReminderIndex] = useState(0);
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
 
   const { template, categories, records, cards, skus, skuMetrics, orders, refunds, suppliers, reports, totals, trend, hiddenCosts, currentPeriod, channelTemplates, orderWarnings } = book;
   const IndustryIcon = iconByIndustry[book.activeIndustryId];
@@ -170,6 +187,35 @@ export default function Home() {
   const orderMonths = useMemo(() => availableMonths(orders.map((order) => order.occurredAt)), [orders]);
   const [periodYear, periodMonth] = currentPeriod.split("-").map(Number);
   const currentDay = Math.min(Number(today.slice(-2)), new Date(periodYear, periodMonth, 0).getDate());
+  const budgetBurn = useMemo(() => buildBudgetBurn({ budget: totals.budget, used: totals.totalCost, dayOfMonth: currentDay, daysInMonth: new Date(periodYear, periodMonth, 0).getDate() }), [currentDay, periodMonth, periodYear, totals.budget, totals.totalCost]);
+  const notificationItems = useMemo<NotificationItem[]>(() => {
+    const items: NotificationItem[] = [];
+    const topCategory = totals.categoryTotals[0];
+    const risingCard = cards.find((card) => card.status === "risk" || card.status === "attention");
+    const periodRefunds = refunds.filter((refund) => refund.occurredAt.startsWith(currentPeriod));
+    if (budgetBurn.state === "over") items.push({ id: "budget-over", tone: "risk", title: `预算已超 ${yuan(Math.abs(totals.budgetRemaining))}`, copy: `本月成本已高于预算，${topCategory?.label || "经营成本"}需要优先复核。`, action: "查看预算结构", target: "budget" });
+    else if (budgetBurn.state === "risk") items.push({ id: "budget-risk", tone: "attention", title: `月末预计超预算 ${yuan(Math.max(0, budgetBurn.forecast - budgetBurn.budget))}`, copy: `按当前入账节奏推算，建议先控制 ${topCategory?.label || "本月成本"}。`, action: "查看预算预测", target: "budget" });
+    else items.push({ id: "budget-steady", tone: "notice", title: `月末预计结余 ${yuan(Math.max(0, budgetBurn.budget - budgetBurn.forecast))}`, copy: `本月预算仍可控，当前剩余 ${yuan(totals.budgetRemaining)}。`, action: "查看预算进度", target: "budget" });
+    if (risingCard) items.push({ id: `card-${risingCard.id}`, tone: risingCard.status === "risk" ? "risk" : "attention", title: `${risingCard.name}成本需要复核`, copy: risingCard.status === "risk" ? "单位成本或售价存在风险，先检查材料、人工与分摊。" : "近期单位成本上升，建议核对供应商与成本构成。", action: "查看成本卡", target: "cards" });
+    if (orderWarnings.length) items.push({ id: "order-warning", tone: "risk", title: `${orderWarnings.length} 笔订单低于利润目标`, copy: "渠道费用与商品成本已冻结，可优先复核低于保本价的成交。", action: "查看低利润订单", target: "orders" });
+    if (periodRefunds.length) { const refundAmount = periodRefunds.reduce((sum, refund) => sum + refund.refundFen / 100, 0); items.push({ id: "refund-watch", tone: "attention", title: `本期退款 ${yuan(refundAmount)}`, copy: `${periodRefunds.length} 笔退款已同步影响本期净营收与商品成本。`, action: "查看退款订单", target: "orders" }); }
+    if (topCategory && !risingCard) items.push({ id: `cost-${topCategory.key}`, tone: "notice", title: `${topCategory.label}占成本 ${Math.round(topCategory.amount / Math.max(totals.totalCost, 1) * 100)}%`, copy: "当前为第一成本，可在流水中核对相关支出明细。", action: "查看成本流水", target: "records" });
+    return items;
+  }, [budgetBurn, cards, currentPeriod, orderWarnings.length, refunds, totals.budgetRemaining, totals.categoryTotals, totals.totalCost]);
+  const activeReminder = notificationItems[reminderIndex % notificationItems.length] || notificationItems[0];
+  const unreadNotificationCount = notificationItems.filter((item) => !readNotificationIds.includes(item.id)).length;
+
+  useEffect(() => {
+    if (promotionPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => setPromotionIndex((index) => (index + 1) % promotionBanners.length), 4200);
+    return () => window.clearInterval(timer);
+  }, [promotionPaused]);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || notificationItems.length < 2) return;
+    const timer = window.setInterval(() => setReminderIndex((index) => (index + 1) % notificationItems.length), 5200);
+    return () => window.clearInterval(timer);
+  }, [notificationItems.length]);
 
   const filteredRecords = records.filter((record) => {
     const search = recordSearch.trim().toLowerCase();
@@ -207,6 +253,14 @@ export default function Home() {
   }
 
   function goSub(page: SubPage) { setSubPage(page); }
+  function openPromotion(target: PromotionTarget) {
+    if (target === "orders") { setTab("orders"); setSubPage(null); return; }
+    goSub(target);
+  }
+  function openNotificationTarget(item: NotificationItem) {
+    setReadNotificationIds((current) => current.includes(item.id) ? current : [...current, item.id]);
+    goSub(item.target);
+  }
   function runQuickAction(action: QuickAction) {
     if (action === "order") { openNewOrder(); return; }
     if (action === "record") { openNewRecord(); return; }
@@ -372,9 +426,9 @@ export default function Home() {
   }
 
   function renderHeader() {
-    const titles: Record<Exclude<SubPage, null>, string> = { industry: "切换行业", records: "经营流水", record: recordId ? "编辑记录" : "记一笔", recordDetail: "流水详情", cards: `${template.entityLabel}成本卡`, cardDetail: `${template.entityLabel}成本详情`, cardForm: activeCard ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`, bomForm: activeBomItem ? `编辑${template.formulaLabel}项` : `添加${template.formulaLabel}项`, pricing: "智能测算定价", budget: "预算管理", reports: "成本报表", reportDetail: "报表详情", suppliers: "供应商", supplierForm: "新增供应商", categories: "分类管理", categoryForm: "新增分类", orders: "订单账本", orderForm: "记录订单", orderDetail: "订单详情", refundForm: "登记退款", skus: "SKU 商品成本" };
+    const titles: Record<Exclude<SubPage, null>, string> = { notifications: "消息中心", industry: "切换行业", records: "经营流水", record: recordId ? "编辑记录" : "记一笔", recordDetail: "流水详情", cards: `${template.entityLabel}成本卡`, cardDetail: `${template.entityLabel}成本详情`, cardForm: activeCard ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`, bomForm: activeBomItem ? `编辑${template.formulaLabel}项` : `添加${template.formulaLabel}项`, pricing: "智能测算定价", budget: "预算管理", reports: "成本报表", reportDetail: "报表详情", suppliers: "供应商", supplierForm: "新增供应商", categories: "分类管理", categoryForm: "新增分类", orders: "订单账本", orderForm: "记录订单", orderDetail: "订单详情", refundForm: "登记退款", skus: "SKU 商品成本" };
     if (isSub) return <header className="page-header sub-header"><button className="back-button" onClick={goBack} aria-label="返回"><ArrowLeft size={21} /></button><strong>{titles[subPage]}</strong><span /></header>;
-    return <header className={`page-header ${tab === "orders" ? "orders-prototype-header" : ""}`}><div className="brand-mini"><img src="/manus-storage/suandeqing-brand-mark_4e1ee068.png" alt="算得清" /><span><strong>算得清</strong><em>{template.label}成本账本</em></span></div>{tab === "cards" ? <button className="header-primary-action" onClick={openNewCard}><Plus size={16} />新增成本卡</button> : tab === "orders" ? <span /> : <button className="header-icon" onClick={() => notify("今日暂无新的提醒")} aria-label="经营提醒"><Bell size={20} /><i /></button>}</header>;
+    return <header className={`page-header ${tab === "orders" ? "orders-prototype-header" : ""}`}><div className="brand-mini"><img src="/manus-storage/suandeqing-brand-mark_4e1ee068.png" alt="算得清" /><span><strong>算得清</strong><em>{template.label}成本账本</em></span></div>{tab === "home" && activeReminder ? <button className="header-reminder-ticker" onClick={() => goSub("notifications")} aria-label={`经营提醒：${activeReminder.title}，打开消息中心查看详情`}><Bell size={14} /><span key={activeReminder.id}>{activeReminder.title}</span><i>{unreadNotificationCount || ""}</i></button> : tab === "cards" ? <button className="header-primary-action" onClick={openNewCard}><Plus size={16} />新增成本卡</button> : tab === "orders" ? <span /> : <button className="header-icon" onClick={() => goSub("notifications")} aria-label="经营提醒"><Bell size={20} />{unreadNotificationCount > 0 && <i />}</button>}</header>;
   }
 
   function HomePage() {
@@ -385,8 +439,9 @@ export default function Home() {
     const focusCategory = totals.categoryTotals.find((category) => category.key === homeProfile.insight.focusCategoryKey);
     const topCategory = totals.categoryTotals[0];
     return <div className="prototype-home">
-      <section className="dashboard-kicker"><span>{currentPeriod.replace("-", " 年 ")} 月 · 经营</span></section>
-      <OperatingSnapshot revenue={totals.revenue} cost={totals.totalCost} profit={totals.operatingProfit} />
+      <section className="dashboard-kicker"><span>{template.label} · {currentPeriod.replace("-", " 年 ")} 月</span></section>
+      <OperatingSnapshot revenue={totals.revenue} cost={totals.totalCost} profit={totals.operatingProfit} budgetRemaining={totals.budgetRemaining} budgetState={budgetBurn.state} />
+      <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传" onMouseEnter={() => setPromotionPaused(true)} onMouseLeave={() => setPromotionPaused(false)} onFocusCapture={() => setPromotionPaused(true)} onBlurCapture={() => setPromotionPaused(false)}><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span><i aria-hidden="true">{banner.mark}</i></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}<button className="promotion-motion-control" onClick={() => setPromotionPaused((value) => !value)} aria-label={promotionPaused ? "播放宣传轮播" : "暂停宣传轮播"}>{promotionPaused ? <Play size={10} /> : <Pause size={10} />}</button></div></section>
       <button className="home-cost-trend" onClick={() => setTab("analysis")}><div><b>成本趋势</b><em>单位：元</em></div><section>{trend.map((point, index) => <span key={point.month}><b>{(point.cost / 10000).toFixed(1)}</b><i style={{ height: `${Math.max(8, point.cost / maxTrendCost * 100)}%` }} className={index === trend.length - 1 ? "active" : ""} /><em>{point.month.slice(5)}月</em></span>)}</section></button>
       <button className="home-data-row" onClick={() => goSub("budget")}><span className="home-row-icon"><WalletCards size={19} /></span><b>预算剩余</b><strong>{yuan(totals.budgetRemaining)}</strong><ChevronRight size={18} /></button>
       <button className="home-data-row" onClick={() => { if (topCategory) { setRecordSearch(topCategory.label); setRecordMonth(currentPeriod); goSub("records"); } }}><span className="home-row-icon"><ShoppingBag size={19} /></span><span><em>第一成本</em><b>{topCategory?.label || homeProfile.insight.title}</b></span><strong>{topCategory ? `${Math.round(topCategory.amount / Math.max(totals.totalCost, 1) * 100)}%` : "—"}</strong><ChevronRight size={18} /></button>
@@ -555,7 +610,12 @@ export default function Home() {
     return <><section className="sub-intro compact"><span>{template.label} · 分类口径</span><h1>新增分类</h1><p>新分类只作用于当前行业账本，历史行业分类不受影响。</p></section><form className="record-form" onSubmit={saveCategory}><label>分类名称<input name="label" placeholder="例如：内容制作" /></label><label>分类颜色<select name="color"><option value="#1677FF">品牌蓝</option><option value="#12B76A">绿色</option><option value="#F79009">橙色</option><option value="#7F56D9">紫色</option><option value="#F04438">红色</option></select></label><button type="submit" className="fixed-primary form-save"><Plus size={18} />保存分类</button></form></>;
   }
 
+  function NotificationsPage() {
+    return <div className="notification-center"><section className="notification-summary"><span><Bell size={17} />经营提醒</span><b>{unreadNotificationCount ? `${unreadNotificationCount} 条待查看` : "已全部查看"}</b><button onClick={() => setReadNotificationIds(notificationItems.map((item) => item.id))}>{unreadNotificationCount ? "全部标为已读" : "全部已读"}</button></section><section className="notification-list">{notificationItems.map((item) => { const read = readNotificationIds.includes(item.id); return <button key={item.id} className={`${item.tone}${read ? " read" : ""}`} onClick={() => openNotificationTarget(item)}><span className="notification-symbol">{item.tone === "risk" ? "!" : item.tone === "attention" ? "·" : "＝"}</span><div><b>{item.title}</b><em>{item.copy}</em><small>{item.action}</small></div><ChevronRight size={18} /></button>; })}</section></div>;
+  }
+
   function renderContent() {
+    if (subPage === "notifications") return NotificationsPage();
     if (subPage === "industry") return IndustryPage();
     if (subPage === "records") return RecordsPage();
     if (subPage === "record") return RecordPage();
