@@ -53,6 +53,12 @@ type SubPage = "industry" | "record" | "recordDetail" | "cards" | "cardDetail" |
 type RecordFilter = "all" | RecordType;
 type DraftMaterial = { name: string; spec: string; quantity: string; amount: number };
 
+const deepLinkTabs: TabId[] = ["home", "records", "analysis", "profile"];
+const deepLinkSubPages: Exclude<SubPage, null>[] = ["industry", "record", "cards", "cardForm", "budget", "reports", "suppliers", "supplierForm", "categories", "categoryForm", "orders", "orderForm", "skus"];
+const requestedScreen = new URLSearchParams(window.location.search).get("screen");
+const initialTab: TabId = deepLinkTabs.includes(requestedScreen as TabId) ? requestedScreen as TabId : "home";
+const initialSubPage: SubPage = deepLinkSubPages.includes(requestedScreen as Exclude<SubPage, null>) ? requestedScreen as Exclude<SubPage, null> : null;
+
 const format = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
 const yuan = (amount: number) => `¥${format.format(Math.round(amount))}`;
 const iconByIndustry: Record<IndustryId, LucideIcon> = { canteen: Utensils, retail: ShoppingBag, ecommerce: ShoppingCart, beauty: ClipboardList, stall: Store };
@@ -60,8 +66,8 @@ const today = "2026-07-14";
 
 export default function Home() {
   const book = useCostBook();
-  const [tab, setTab] = useState<TabId>("home");
-  const [subPage, setSubPage] = useState<SubPage>(null);
+  const [tab, setTab] = useState<TabId>(initialTab);
+  const [subPage, setSubPage] = useState<SubPage>(initialSubPage);
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryId>(book.activeIndustryId);
   const [recordFilter, setRecordFilter] = useState<RecordFilter>("all");
   const [recordSearch, setRecordSearch] = useState("");
