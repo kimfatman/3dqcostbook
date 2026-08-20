@@ -93,7 +93,7 @@ function EquationResult({ firstLabel, firstValue, secondLabel, secondValue, resu
 }
 function OperatingSnapshot({ revenue, cost, profit }: { revenue: number; cost: number; profit: number }) {
   const label = profit >= 0 ? "经营利润" : "经营亏损";
-  return <section className="operating-snapshot"><div><span>本期经营结果</span><strong>{label} {yuan(Math.abs(profit))}</strong></div><div><label><em>净营收</em><b>{yuan(revenue)}</b></label><label><em>经营成本</em><b>{yuan(cost)}</b></label><label><em>{profit >= 0 ? "利润率" : "亏损率"}</em><b>{revenue > 0 ? `${Math.abs(profit / revenue * 100).toFixed(1)}%` : "—"}</b></label></div></section>;
+  return <section className="operating-snapshot"><div><strong><span>{label}</span><b>{yuan(Math.abs(profit))}</b></strong></div><div><label><em>净营收</em><b>{yuan(revenue)}</b></label><label><em>经营成本</em><b>{yuan(cost)}</b></label><label><em>{profit >= 0 ? "利润率" : "亏损率"}</em><b>{revenue > 0 ? `${Math.abs(profit / revenue * 100).toFixed(1)}%` : "—"}</b></label></div></section>;
 }
 function ProfitWaterfall({ revenue, cogs, expenses, profit, onSelect }: { revenue: number; cogs: number; expenses: number; profit: number; onSelect: (key: "revenue" | "cogs" | "expenses" | "profit") => void }) {
   const steps = [{ key: "revenue" as const, label: "净营收", from: 0, to: revenue, amount: revenue, kind: "revenue" }, { key: "cogs" as const, label: "销售成本", from: revenue, to: revenue - cogs, amount: -cogs, kind: "cost" }, { key: "expenses" as const, label: "经营费用", from: revenue - cogs, to: profit, amount: -expenses, kind: "expense" }, { key: "profit" as const, label: profit >= 0 ? "经营利润" : "经营亏损", from: 0, to: profit, amount: profit, kind: profit >= 0 ? "profit" : "loss" }];
