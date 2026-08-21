@@ -21,3 +21,38 @@
 .health-settings-form { padding: 14px 13px 82px; border-right: 1px solid #dbe8f2; border-bottom: 1px solid #dbe8f2; border-left: 1px solid #dbe8f2; border-radius: 0 0 14px 14px; }
 .health-settings-form label { padding-bottom: 11px; border-bottom: 1px dashed #d5e2ed; }
 .health-settings-form label:last-of-type { padding-bottom: 0; border-bottom: 0; }
+
+/* 首页收口：销售基线用两行账本缺口替代两张空卡；总成本环与分类行保持同一财务列。 */
+.prototype-home .home-sales-baseline { margin-top: 10px; }
+.prototype-home .sales-baseline-rows { display: grid; border-top: 1px dashed #d5e2ed; }
+.prototype-home .sales-baseline-rows > div { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 8px; align-items: center; min-height: 40px; padding: 7px 0; border-bottom: 1px dashed #d5e2ed; }
+.prototype-home .sales-baseline-rows > div:last-child { grid-template-columns: 76px minmax(0, 1fr); border-bottom: 0; }
+.prototype-home .sales-baseline-rows em { color: #71859d; font-size: 10px; font-style: normal; }
+.prototype-home .sales-baseline-rows b { overflow: hidden; color: #0b1836; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-variant-numeric: tabular-nums; letter-spacing: -.05em; white-space: nowrap; text-overflow: ellipsis; }
+.prototype-home .sales-baseline-rows small { overflow: hidden; color: #71859d; font-size: 9px; line-height: 1.35; white-space: nowrap; text-overflow: ellipsis; }
+.prototype-home .sales-baseline-rows button { display: flex; gap: 1px; align-items: center; min-height: 32px; padding: 0; color: #087ff5; font-size: 10px; font-weight: 700; background: transparent; border: 0; }
+.prototype-home .sales-baseline-primary { display: flex; gap: 3px; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0 11px; margin-top: 8px; color: #fff; font-size: 11px; font-weight: 800; text-align: left; background: #087ff5; border: 0; border-radius: 9px; }
+.prototype-home .cost-ring > span { gap: 1px; }
+.prototype-home .cost-ring small { color: #71859d; font-family: "IBM Plex Mono", monospace; font-size: 7px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.prototype-home .home-cost-structure .cost-structure-body { grid-template-columns: 108px minmax(0, 1fr); gap: 12px; }
+.prototype-home .home-cost-structure .cost-structure-body > div > button { grid-template-columns: 8px minmax(0, 1fr) 40px 14px; gap: 6px; min-height: 32px; }
+.prototype-home .home-cost-structure .cost-structure-body > div > button > b { min-width: 40px; text-align: right; }
+.prototype-home .home-cost-structure .cost-adjustment-row { border-top: 1px dashed #dfe8f0; }
+.prototype-home .home-promotion { margin-top: 20px; }
+@media (min-width: 414px) {
+  .prototype-home .home-chart-card { margin-right: 20px; margin-left: 20px; }
+  .prototype-home .home-cost-structure .cost-structure-body { grid-template-columns: 116px minmax(0, 1fr); gap: 18px; }
+  .prototype-home .cost-ring { width: 110px; height: 110px; }
+  .prototype-home .cost-ring > span { width: 72px; height: 72px; }
+  .prototype-home .home-cost-structure .cost-structure-body > div > button { grid-template-columns: 8px minmax(0, 1fr) 46px 14px; }
+  .prototype-home .home-cost-structure .cost-structure-body > div > button > b { min-width: 46px; }
+}
+
+/* 顶栏与轮播：经营提醒保留 Logo 旁的签名线形式，但获得明确的 44px 风险入口。 */
+.page-header:has(.header-reminder-ticker) { gap: 8px; padding-right: 12px; padding-left: 12px; }
+.header-reminder-ticker { flex: 1 1 auto; max-width: none; min-height: 44px; padding: 7px 0 6px; border-bottom: 2px solid #087ff5; }
+.header-reminder-ticker > span { color: #294a6b; font-size: 11px; letter-spacing: -.02em; }
+.header-reminder-ticker > i { min-width: 16px; height: 16px; font-size: 8px; }
+.prototype-home .promotion-dots { right: 10px; bottom: 1px; min-height: 44px; }
+.prototype-home .promotion-dots .promotion-motion-control::before { width: 26px; height: 26px; bottom: 5px; }
+.prototype-home .promotion-dots .promotion-motion-control svg { margin-top: 16px; }
