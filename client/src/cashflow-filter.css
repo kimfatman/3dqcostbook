@@ -106,3 +106,26 @@
 .prototype-home .home-sales-target .sales-target-body { padding: 8px 0; }
 .prototype-home .home-sales-target .sales-target-ring { width: 88px; height: 88px; padding: 9px; }
 .prototype-home .home-sales-target .sales-target-body { grid-template-columns: 92px minmax(0, 1fr); gap: 12px; }
+
+/* 首页紧凑图表：取消统一短标记，以标题基线、账本分隔和等宽数字建立层级。 */
+.prototype-home .home-chart-card::before,
+.prototype-home .home-chart-head span::before { display: none; }
+.prototype-home .home-chart-head { min-height: 20px; margin-bottom: 8px; }
+.prototype-home .home-chart-head span { padding-top: 0; }
+
+/* 有订单卡的关键图表采用相同最小高度；销售图仍保留柱线双轴，目标卡仍保留完成环。 */
+.prototype-home .home-sales-orders,
+.prototype-home .home-sales-target:not(.target-unset):not(.target-editor) { min-height: 204px; }
+.prototype-home .home-sales-orders .sales-orders-plot { height: 92px; }
+.prototype-home .home-sales-orders .sales-bars span { height: 66px; }
+.prototype-home .home-sales-orders .sales-orders-plot svg { height: 66px; }
+.prototype-home .home-sales-orders .sales-bars i { width: min(12px, 42%); border-radius: 3px 3px 0 0; }
+
+/* 排行承担高频扫描，不再使用大行高或厚进度条。 */
+.prototype-home .home-sku-ranking > div > button { grid-template-columns: 18px minmax(0, 1fr) auto 12px; gap: 7px; min-height: 36px; padding: 3px 0; }
+.prototype-home .home-sku-ranking > div > button > em { width: 18px; height: 18px; font-size: 9px; border-radius: 4px; }
+.prototype-home .home-sku-ranking > div > button > span { gap: 3px; }
+.prototype-home .home-sku-ranking > div > button > span > b { font-size: 11px; }
+.prototype-home .home-sku-ranking > div > button > span > i { height: 3px; }
+.prototype-home .home-sku-ranking > div > button > label { min-width: 44px; font-size: 11px; }
+.prototype-home .home-sku-ranking > div > button > svg { width: 13px; height: 13px; }
