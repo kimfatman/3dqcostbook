@@ -56,3 +56,34 @@
 .prototype-home .promotion-dots { right: 10px; bottom: 1px; min-height: 44px; }
 .prototype-home .promotion-dots .promotion-motion-control::before { width: 26px; height: 26px; bottom: 5px; }
 .prototype-home .promotion-dots .promotion-motion-control svg { margin-top: 16px; }
+
+/* 首页间距系统：所有首页模块共享同一外缘、模块间距、标题间距和卡片内边距。 */
+.prototype-home {
+  --home-edge: 0px;
+  --home-module-gap: 12px;
+  --home-card-pad-y: 14px;
+  --home-card-pad-x: 16px;
+  --home-heading-gap: 10px;
+  --home-action-gap: 8px;
+  display: grid;
+  gap: var(--home-module-gap);
+}
+.prototype-home .dashboard-kicker {
+  padding: 4px 0 0;
+  margin: 0 var(--home-edge);
+}
+.prototype-home .home-decision,
+.prototype-home .home-chart-card,
+.prototype-home .home-promotion {
+  margin: 0 var(--home-edge);
+}
+.prototype-home .home-decision { padding: 18px var(--home-card-pad-x) 0; }
+.prototype-home .home-chart-card { padding: var(--home-card-pad-y) var(--home-card-pad-x); }
+.prototype-home .home-chart-head { margin-bottom: var(--home-heading-gap); }
+.prototype-home .home-sales-baseline { margin-top: 0; }
+.prototype-home .sales-baseline-primary { margin-top: var(--home-action-gap); }
+.prototype-home .home-promotion { margin-top: 0; }
+.prototype-home .home-cost-structure .cost-structure-body { margin-top: 0; }
+@media (min-width: 414px) {
+  .prototype-home { --home-edge: 0px; --home-module-gap: 14px; }
+}
