@@ -1,14 +1,14 @@
 /* 账本蓝图延展：现金流筛选与预置下钻状态，仅在存在真实渠道或供应商关联时由组件显示。 */
-.cashflow-filter-panel { display: grid; gap: 6px; padding: 8px 0 4px; }
-.cashflow-filter-panel > div { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 6px; align-items: start; }
-.cashflow-filter-panel em { padding-top: 6px; color: #71859d; font-size: 9px; font-style: normal; }
-.cashflow-filter-panel span { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: none; }
+.cashflow-filter-panel { display: grid; gap: 8px; padding: 10px 0 6px; }
+.cashflow-filter-panel > div { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px; align-items: start; }
+.cashflow-filter-panel em { padding-top: 9px; color: #526b86; font-size: 11px; font-style: normal; font-weight: 700; }
+.cashflow-filter-panel span { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
 .cashflow-filter-panel span::-webkit-scrollbar { display: none; }
-.cashflow-filter-panel button { flex: 0 0 auto; min-height: 27px; padding: 0 8px; color: #60758d; font-size: 9px; font-weight: 700; background: #f3f7fa; border: 1px solid #e0e8ef; border-radius: 99px; }
+.cashflow-filter-panel button { flex: 0 0 auto; min-height: 36px; padding: 0 10px; color: #526b86; font-size: 11px; font-weight: 700; background: #f3f7fa; border: 1px solid #e0e8ef; border-radius: 99px; }
 .cashflow-filter-panel button.active { color: #087ff5; background: #eaf5ff; border-color: #a8d7ff; }
-.cashflow-drill-context { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 0 9px; margin: 8px 0; color: #4b6883; font-size: 10px; background: #f2f9ff; border: 1px solid #d6eafb; border-radius: 8px; }
+.cashflow-drill-context { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 0 11px; margin: 8px 0; color: #405d79; font-size: 11px; background: #f2f9ff; border: 1px solid #d6eafb; border-radius: 10px; }
 .cashflow-drill-context span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.cashflow-drill-context button { flex: 0 0 auto; padding: 0; color: #087ff5; font-size: 10px; font-weight: 700; background: transparent; border: 0; }
+.cashflow-drill-context button { flex: 0 0 auto; min-height: 36px; padding: 0 5px; color: #087ff5; font-size: 11px; font-weight: 700; background: transparent; border: 0; }
 
 /* 二级账页：将店铺账本的签名线和行业页签延展到目标、阈值等配置场景。 */
 .sub-header { position: relative; overflow: hidden; background-color: #fff; background-image: linear-gradient(90deg, rgba(8,127,245,.028) 1px, transparent 1px); background-size: 24px 24px; }
@@ -27,13 +27,13 @@
 .prototype-home .sales-baseline-rows { display: grid; border-top: 1px dashed #d5e2ed; }
 .prototype-home .sales-baseline-rows > div { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 8px; align-items: center; min-height: 40px; padding: 7px 0; border-bottom: 1px dashed #d5e2ed; }
 .prototype-home .sales-baseline-rows > div:last-child { grid-template-columns: 76px minmax(0, 1fr); border-bottom: 0; }
-.prototype-home .sales-baseline-rows em { color: #71859d; font-size: 10px; font-style: normal; }
+.prototype-home .sales-baseline-rows em { color: #526b86; font-size: 11px; font-style: normal; }
 .prototype-home .sales-baseline-rows b { overflow: hidden; color: #0b1836; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-variant-numeric: tabular-nums; letter-spacing: -.05em; white-space: nowrap; text-overflow: ellipsis; }
-.prototype-home .sales-baseline-rows small { overflow: hidden; color: #71859d; font-size: 9px; line-height: 1.35; white-space: nowrap; text-overflow: ellipsis; }
-.prototype-home .sales-baseline-rows button { display: flex; gap: 1px; align-items: center; min-height: 32px; padding: 0; color: #087ff5; font-size: 10px; font-weight: 700; background: transparent; border: 0; }
+.prototype-home .sales-baseline-rows small { overflow: hidden; color: #526b86; font-size: 11px; line-height: 1.35; white-space: nowrap; text-overflow: ellipsis; }
+.prototype-home .sales-baseline-rows button { display: flex; gap: 1px; align-items: center; min-height: 36px; padding: 0 3px; color: #087ff5; font-size: 11px; font-weight: 700; background: transparent; border: 0; }
 .prototype-home .sales-baseline-primary { display: flex; gap: 3px; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0 11px; margin-top: 8px; color: #fff; font-size: 11px; font-weight: 800; text-align: left; background: #087ff5; border: 0; border-radius: 9px; }
 .prototype-home .cost-ring > span { gap: 1px; }
-.prototype-home .cost-ring small { color: #71859d; font-family: "IBM Plex Mono", monospace; font-size: 7px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.prototype-home .cost-ring small { color: #526b86; font-family: "IBM Plex Mono", monospace; font-size: 9px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .prototype-home .home-cost-structure .cost-structure-body { grid-template-columns: 108px minmax(0, 1fr); gap: 12px; }
 .prototype-home .home-cost-structure .cost-structure-body > div > button { grid-template-columns: 8px minmax(0, 1fr) 40px 14px; gap: 6px; min-height: 32px; }
 .prototype-home .home-cost-structure .cost-structure-body > div > button > b { min-width: 40px; text-align: right; }
@@ -53,9 +53,20 @@
 .header-reminder-ticker { flex: 1 1 auto; max-width: none; min-height: 44px; padding: 7px 0 6px; border-bottom: 2px solid #087ff5; }
 .header-reminder-ticker > span { color: #294a6b; font-size: 11px; letter-spacing: -.02em; }
 .header-reminder-ticker > i { min-width: 16px; height: 16px; font-size: 8px; }
-.prototype-home .promotion-dots { right: 10px; bottom: 1px; min-height: 44px; }
-.prototype-home .promotion-dots .promotion-motion-control::before { width: 26px; height: 26px; bottom: 5px; }
-.prototype-home .promotion-dots .promotion-motion-control svg { margin-top: 16px; }
+.prototype-home .promotion-dots { right: 7px; bottom: 0; min-height: 44px; }
+
+/* Apple HIG 首批：关键说明、无数据状态与可展开公式不再依赖极小的固定文字。 */
+.app-content { padding-bottom: calc(94px + env(safe-area-inset-bottom)); }
+.tabbar { height: auto; min-height: calc(72px + env(safe-area-inset-bottom)); }
+.prototype-home .sales-summary em { color: #526b86; font-size: 11px; }
+.prototype-home .sales-summary small { color: #526b86; font-size: 10px; line-height: 1.25; }
+.analysis-chart-context, .cashflow-summary small { color: #526b86; font-size: 11px; line-height: 1.55; }
+.analysis-stack-card .home-chart-empty, .analysis-cashflow-card .home-chart-empty { min-height: 112px; padding: 15px 12px; text-align: left; justify-items: start; background-image: repeating-linear-gradient(0deg, transparent 0 23px, #edf3f8 23px 24px); border: 1px dashed #c9d8e6; border-radius: 10px; }
+.analysis-stack-card .home-chart-empty b, .analysis-cashflow-card .home-chart-empty b { color: #526b86; font-size: 11px; line-height: 1.5; }
+.analysis-stack-card .home-chart-empty small, .analysis-cashflow-card .home-chart-empty small { min-height: 36px; font-size: 11px; }
+.analysis-health-card .health-dimension-list small { display: none; }
+.analysis-health-card .health-formula summary { display: flex; align-items: center; min-height: 44px; color: #087ff5; font-size: 11px; font-weight: 700; }
+.analysis-health-card .health-formula p { color: #526b86; font-size: 11px; line-height: 1.6; }
 
 /* 首页间距系统：所有首页模块共享同一外缘、模块间距、标题间距和卡片内边距。 */
 .prototype-home {

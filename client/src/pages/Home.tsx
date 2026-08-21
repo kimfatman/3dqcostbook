@@ -23,9 +23,7 @@ import {
   LineChart,
   PackageOpen,
   Pencil,
-  Pause,
   Plus,
-  Play,
   ReceiptText,
   Search,
   Settings2,
@@ -270,7 +268,6 @@ export default function Home() {
   const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "low_profit" | "refund">("all");
   const [orderSearchOpen, setOrderSearchOpen] = useState(Boolean(requestedQuery));
   const [promotionIndex, setPromotionIndex] = useState(0);
-  const [promotionPaused, setPromotionPaused] = useState(false);
   const [reminderIndex, setReminderIndex] = useState(0);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [targetEditOpen, setTargetEditOpen] = useState(false);
@@ -323,10 +320,10 @@ export default function Home() {
   const salesRunRateForecast = useMemo(() => Number((Math.max(0, totals.revenue) / Math.max(currentDay, 1) * daysInCurrentPeriod).toFixed(2)), [currentDay, daysInCurrentPeriod, totals.revenue]);
 
   useEffect(() => {
-    if (promotionPaused || reducedMotion) return;
+    if (reducedMotion) return;
     const timer = window.setInterval(() => setPromotionIndex((index) => (index + 1) % promotionBanners.length), 4200);
     return () => window.clearInterval(timer);
-  }, [promotionPaused, reducedMotion]);
+  }, [reducedMotion]);
 
   useEffect(() => {
     if (reducedMotion || notificationItems.length < 2) return;
@@ -612,7 +609,7 @@ export default function Home() {
       <OperatingSnapshot decision={homeDecision} industryRisk={homeProfile.insight.title} onOpenPriority={openHomeDecision} />
       {hasSalesData ? <><SalesOrdersTrend items={salesOrdersTrend} onOpen={() => openOrdersContext("all")} /><SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}销量`} type="sales" items={skuRankings.sales} onSelect={openCard} onEmpty={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}利润`} type="profit" items={skuRankings.profit} onSelect={openCard} onEmpty={() => setTab("cards")} /></> : <SalesBaselineGap progress={salesTargetProgress} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} hasSku={skus.length > 0} onPrimary={() => skus.length > 0 ? openOrdersContext("all") : setTab("cards")} onOpenOrders={() => openOrdersContext("all")} />}
       <CostStructureRing items={costStructure} totalCost={totals.totalCost} onSelect={(key, label) => { setRecordSearch(label); setRecordMonth(currentPeriod); goSub("records"); }} onOpenCostReview={() => { setRecordSearch(""); setRecordFilter("expense"); setRecordMonth(currentPeriod); goSub("records"); }} onEmpty={openNewRecord} />
-      <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传" onMouseEnter={() => setPromotionPaused(true)} onMouseLeave={() => setPromotionPaused(false)} onFocusCapture={() => setPromotionPaused(true)} onBlurCapture={() => setPromotionPaused(false)}><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span><img className="promotion-3d-asset" src={banner.asset} alt="" aria-hidden="true" /></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}<button className="promotion-motion-control" onClick={() => setPromotionPaused((value) => !value)} aria-label={promotionPaused ? "播放宣传轮播" : "暂停宣传轮播"}>{promotionPaused ? <Play size={10} /> : <Pause size={10} />}</button></div></section>
+      <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传"><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span><img className="promotion-3d-asset" src={banner.asset} alt="" aria-hidden="true" /></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}</div></section>
     </div>;
   }
 
