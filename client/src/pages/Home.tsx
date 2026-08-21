@@ -57,6 +57,7 @@ import { buildHomeDecision, type HomeDecision, type HomeDecisionNotification, ty
 import { buildBusinessHealth, buildSalesTargetHistory } from "@/lib/health-metrics";
 import { buildMetrics, entriesForPeriod } from "@/lib/ledger-metrics";
 import { isNonNegativeNumber, isPositiveInteger, isPositiveMoney, toEditableNumber, toNumber, type EditableNumber } from "@/lib/editable-number";
+import { businessDate } from "@/lib/business-date";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trpc } from "@/lib/trpc";
 import "../cashflow-filter.css";
@@ -236,7 +237,7 @@ function BusinessHealthRadar({ health, onSelect, onOpenSettings }: { health: Ret
   const points = dimensions.map((dimension, index) => { const point = polar(index, dimension.score ?? 0); return `${point.x},${point.y}`; }).join(" ");
   return <section className="analysis-health-card"><div className="analysis-card-head"><h2>经营健康度</h2><button onClick={onOpenSettings}>评分阈值 <Settings2 size={13} /></button></div><div className="health-radar-body"><div className="health-radar"><svg viewBox="0 0 100 100" role="img" aria-label={`经营健康度：已证据化 ${health.scoredCount} 个维度，共 ${health.totalDimensions} 个维度`}><g className="health-grid">{[20, 40, 60, 80, 100].map((level) => <polygon key={level} points={dimensions.map((_, index) => { const point = polar(index, level); return `${point.x},${point.y}`; }).join(" ")} />)}{axis.map((point, index) => <line key={dimensions[index].key} x1="50" y1="50" x2={point.x} y2={point.y} />)}</g>{allScored && <polygon className="health-shape" points={points} />}{dimensions.map((dimension, index) => { const point = polar(index, dimension.score ?? 0); const label = polar(index, 122); return <g key={dimension.key}><text x={label.x} y={label.y} textAnchor="middle">{dimension.label}</text>{dimension.score === null ? <circle className="health-missing" cx="50" cy="50" r="2.5" /> : <circle className="health-point" cx={point.x} cy={point.y} r="2.7" />}</g>; })}</svg><div className="health-score"><em>证据化评分</em><b>{health.score === null ? "待补数" : `${health.score}分`}</b><small>{health.scoredCount} / {health.totalDimensions} 维</small></div></div><div className="health-summary"><b>{health.score === null ? "当前未形成可评分维度" : `已汇总 ${health.scoredCount} 个有证据维度`}</b><span>{allScored ? "五维均已具备目标与账本证据。" : "待补数维度不计入总分，也不画为健康。"}</span></div></div><div className="health-dimension-list">{dimensions.map((dimension) => <button key={dimension.key} className={dimension.score === null ? "missing" : ""} onClick={() => onSelect(dimension.key)}><span><b>{dimension.label}</b><em>{dimension.score === null ? `待补数 · ${dimension.missing}` : `${dimension.score}分 · ${dimension.raw}`}</em><small>{dimension.formula}</small></span><ChevronRight size={16} /></button>)}</div><details className="health-formula"><summary>公开评分维度与计算规则</summary><p>销售进度、利润质量、成本控制、现金覆盖、售后质量均按上方公式从目标与已入账数据计算；目标、订单或现金方向缺失时，该维度显示待补数且不参与平均分。</p></details></section>;
 }
-const today = "2026-07-14";
+const today = businessDate();
 
 export default function Home() {
   const book = useCostBook();
@@ -552,7 +553,8 @@ export default function Home() {
   function saveHealthSettings(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    book.updateHealthSettings({ targetOperatingMarginPct: Number(data.get("targetOperatingMarginPct") || 0), refundTolerancePct: Number(data.get("refundTolerancePct") || 0) });
+    const result = book.updateHealthSettings({ targetOperatingMarginPct: Number(data.get("targetOperatingMarginPct") || 0), refundTolerancePct: Number(data.get("refundTolerancePct") || 0) });
+    if (!result.ok) return notify(result.reason);
     notify("健康度评分阈值已保存，缺口与评分已刷新");
     setSubPage("healthSettings");
   }
@@ -565,8 +567,9 @@ export default function Home() {
     const amount = Number(data.get("amount"));
     if (!name || !amount || amount <= 0) return notify("请补充成本项名称和金额");
     const input = { name, amount, spec: String(data.get("spec") || ""), quantity: String(data.get("quantity") || "1 份") };
-    if (activeBomItem) { book.updateBomItem(activeCard.id, activeBomItem.id, input); notify("成本项已更新，单位成本和 SKU 已同步重算"); }
-    else { book.addBomItem(activeCard.id, input); notify("成本项已加入，单位成本已重算"); }
+    const result = activeBomItem ? book.updateBomItem(activeCard.id, activeBomItem.id, input) : book.addBomItem(activeCard.id, input);
+    if (!result.ok) return notify(result.reason);
+    notify(activeBomItem ? "成本项已更新，单位成本和 SKU 已同步重算" : "成本项已加入，单位成本已重算");
     setBomItemId(null);
     setSubPage("cardDetail");
   }
@@ -582,8 +585,8 @@ export default function Home() {
     if (!name || salePrice <= 0 || labor < 0 || overhead < 0) return notify("请填写名称、售价和正确的成本金额");
     if (!items.length || draftMaterials.some((item) => !item.name.trim() || !item.quantity.trim() || !isPositiveMoney(item.amount))) return notify("请至少保留一项材料，并补齐名称、数量和金额");
     const input = { name, kind: String(data.get("kind") || "").trim(), unit: String(data.get("unit") || "").trim(), salePrice, labor, overhead, items };
-    if (activeCard) { book.updateCard(activeCard.id, input); notify("成本卡已更新，SKU 将同步用于后续订单"); setSubPage("cardDetail"); }
-    else { book.addCard(input); notify("成本卡已新增，并自动创建关联 SKU"); setSubPage("cards"); }
+    if (activeCard) { const result = book.updateCard(activeCard.id, input); if (!result.ok) return notify(result.reason); notify("成本卡已更新，SKU 将同步用于后续订单"); setSubPage("cardDetail"); }
+    else { const result = book.addCard(input); if (!result.ok) return notify(result.reason); notify("成本卡已新增，并自动创建关联 SKU"); setSubPage("cards"); }
   }
 
   function deleteCard() {
@@ -759,7 +762,7 @@ export default function Home() {
       <section className="pricing-base"><span>当前单位完全成本</span><strong>{yuan(cardCost.cost)} / {activeCard.unit}</strong><em>{template.formulaLabel} {yuan(cardCost.material)} + 人工 {yuan(activeCard.labor)} + 分摊 {yuan(activeCard.overhead)}</em></section>
       <section className="record-form compact-form pricing-inputs">
         <label>销售渠道<select value={pricingChannel} onChange={(event) => switchPricingChannel(event.target.value as OrderChannel)}>{(Object.keys(channelTemplates) as OrderChannel[]).map((channel) => <option key={channel} value={channel}>{channelLabel[channel]}</option>)}</select></label>
-        <div className="template-head"><span><Calculator size={15} />{channelLabel[pricingChannel]}费用模板</span><button type="button" onClick={() => { if (!pricingInputsReady) return notify("请补齐渠道费率、履约费用和目标毛利率"); book.updateChannelPricing(pricingChannel, { commissionRatePct: base.platformRatePct, fulfillmentCost: base.fulfillmentCost, targetContributionMarginPct: targetMargin, roundingStep: pricingRoundingStep }); notify(`${channelLabel[pricingChannel]}默认费用模板已保存，新订单将自动使用`); }}>保存模板</button></div>
+        <div className="template-head"><span><Calculator size={15} />{channelLabel[pricingChannel]}费用模板</span><button type="button" onClick={() => { if (!pricingInputsReady) return notify("请补齐渠道费率、履约费用和目标毛利率"); const result = book.updateChannelPricing(pricingChannel, { commissionRatePct: base.platformRatePct, fulfillmentCost: base.fulfillmentCost, targetContributionMarginPct: targetMargin, roundingStep: pricingRoundingStep }); notify(result.ok ? `${channelLabel[pricingChannel]}默认费用模板已保存，新订单将自动使用` : result.reason); }}>保存模板</button></div>
         <label>渠道综合费率<input type="number" min="0" max="99" step="0.1" value={pricingPlatformRate} onChange={(event) => setPricingPlatformRate(toEditableNumber(event.target.value))} placeholder="例如：5" /><small>按订单实收比例扣除；非平台渠道可填 0%</small></label>
         <label>单件履约费用<div className="amount-input"><span>¥</span><input type="number" min="0" step="0.01" value={pricingFulfillmentCost} onChange={(event) => setPricingFulfillmentCost(toEditableNumber(event.target.value))} placeholder="例如：3.50" /></div><small>例如额外运费、支付手续费或单件售后准备金</small></label>
         <label>目标贡献毛利率<input type="number" min="0" max="99" step="1" value={pricingTargetMargin} onChange={(event) => setPricingTargetMargin(toEditableNumber(event.target.value))} placeholder="例如：40" /></label>
