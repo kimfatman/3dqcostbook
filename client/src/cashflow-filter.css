@@ -147,3 +147,92 @@
 .prototype-home .home-cost-structure .cost-structure-body > div > button:first-child {
   border-top: 0 !important;
 }
+
+/* 经营图表动效：只在进入、数据切换和按压时反馈，动效服务于数值读取而非循环装饰。 */
+@media (prefers-reduced-motion: no-preference) {
+  .prototype-home .home-chart-card,
+  .analysis-waterfall-card,
+  .analysis-trend-card,
+  .analysis-ranking-card,
+  .analysis-stack-card,
+  .analysis-cashflow-card,
+  .analysis-health-card {
+    animation: ledger-chart-enter 260ms cubic-bezier(.23, 1, .32, 1) both;
+  }
+  .prototype-home .home-sales-orders .sales-bars i,
+  .analysis-waterfall-card .waterfall-plot button > i,
+  .analysis-trend-card .trend-columns i,
+  .analysis-cashflow-card .cashflow-bars i {
+    transform-origin: center bottom;
+    transition: height 240ms cubic-bezier(.23, 1, .32, 1), opacity 180ms ease-out;
+    animation: ledger-bar-rise 420ms cubic-bezier(.23, 1, .32, 1) both;
+  }
+  .prototype-home .home-sales-orders .sales-bars span:nth-child(2) i,
+  .analysis-waterfall-card .waterfall-plot button:nth-child(2) > i,
+  .analysis-trend-card .trend-chart > div:nth-child(2) i,
+  .analysis-cashflow-card .cashflow-bars > button:nth-child(2) i { animation-delay: 35ms; }
+  .prototype-home .home-sales-orders .sales-bars span:nth-child(3) i,
+  .analysis-waterfall-card .waterfall-plot button:nth-child(3) > i,
+  .analysis-trend-card .trend-chart > div:nth-child(3) i,
+  .analysis-cashflow-card .cashflow-bars > button:nth-child(3) i { animation-delay: 70ms; }
+  .prototype-home .home-sales-orders .sales-bars span:nth-child(4) i,
+  .analysis-waterfall-card .waterfall-plot button:nth-child(4) > i,
+  .analysis-trend-card .trend-chart > div:nth-child(4) i,
+  .analysis-cashflow-card .cashflow-bars > button:nth-child(4) i { animation-delay: 105ms; }
+  .prototype-home .home-sales-orders .sales-bars span:nth-child(5) i,
+  .analysis-waterfall-card .waterfall-plot button:nth-child(5) > i,
+  .analysis-trend-card .trend-chart > div:nth-child(5) i,
+  .analysis-cashflow-card .cashflow-bars > button:nth-child(5) i { animation-delay: 140ms; }
+  .prototype-home .home-sales-orders .sales-bars span:nth-child(6) i,
+  .analysis-trend-card .trend-chart > div:nth-child(6) i,
+  .analysis-cashflow-card .cashflow-bars > button:nth-child(6) i { animation-delay: 175ms; }
+  .prototype-home .home-sales-orders .sales-bars span:nth-child(7) i { animation-delay: 210ms; }
+  .prototype-home .home-sales-orders polyline {
+    stroke-dasharray: 180;
+    stroke-dashoffset: 180;
+    animation: ledger-line-draw 520ms cubic-bezier(.23, 1, .32, 1) 90ms forwards;
+  }
+  .prototype-home .sales-target-ring,
+  .prototype-home .cost-ring { animation: ledger-ring-in 360ms cubic-bezier(.23, 1, .32, 1) both; }
+  .prototype-home .home-sku-ranking > div > button { animation: ledger-row-enter 220ms cubic-bezier(.23, 1, .32, 1) both; }
+  .prototype-home .home-sku-ranking > div > button > span > i strong,
+  .analysis-ranking-card .rank-bar b { transition: width 240ms cubic-bezier(.23, 1, .32, 1); }
+  .prototype-home .home-sku-ranking > div > button:nth-child(2) { animation-delay: 35ms; }
+  .prototype-home .home-sku-ranking > div > button:nth-child(3) { animation-delay: 70ms; }
+  .prototype-home .home-sku-ranking > div > button:nth-child(4) { animation-delay: 105ms; }
+  .prototype-home .home-sku-ranking > div > button:nth-child(5) { animation-delay: 140ms; }
+  .analysis-stack-card .stacked-area-chart path { transform-box: fill-box; transform-origin: center bottom; animation: ledger-area-rise 440ms cubic-bezier(.23, 1, .32, 1) both; }
+  .analysis-stack-card .stacked-area-chart path:nth-of-type(2) { animation-delay: 45ms; }
+  .analysis-stack-card .stacked-area-chart path:nth-of-type(3) { animation-delay: 90ms; }
+  .analysis-health-card .health-shape { transform-origin: 50px 50px; animation: ledger-radar-in 420ms cubic-bezier(.23, 1, .32, 1) both; }
+  .analysis-health-card .health-point { transform-origin: 50px 50px; animation: ledger-point-in 240ms cubic-bezier(.23, 1, .32, 1) 240ms both; }
+  .prototype-home button.home-chart-card:active,
+  .prototype-home .home-sku-ranking button:active,
+  .prototype-home .home-cost-structure button:active,
+  .analysis-waterfall-card .waterfall-plot button:active,
+  .analysis-stack-card .stacked-area-chart:active,
+  .analysis-cashflow-card .cashflow-bars > button:active,
+  .analysis-health-card .health-dimension-list button:active { transform: scale(.985); }
+}
+@keyframes ledger-chart-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ledger-bar-rise { from { opacity: .18; transform: scaleY(.08); } to { opacity: 1; transform: scaleY(1); } }
+@keyframes ledger-line-draw { to { stroke-dashoffset: 0; } }
+@keyframes ledger-ring-in { from { opacity: .25; transform: scale(.86) rotate(-14deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes ledger-row-enter { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ledger-area-rise { from { opacity: .15; transform: scaleY(.08); } to { opacity: .92; transform: scaleY(1); } }
+@keyframes ledger-radar-in { from { opacity: .1; transform: scale(.45); } to { opacity: .75; transform: scale(1); } }
+@keyframes ledger-point-in { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .prototype-home .home-chart-card,
+  .prototype-home .sales-bars i,
+  .prototype-home .sales-orders-plot polyline,
+  .prototype-home .sales-target-ring,
+  .prototype-home .cost-ring,
+  .prototype-home .home-sku-ranking > div > button,
+  .analysis-waterfall-card .waterfall-plot button > i,
+  .analysis-trend-card .trend-columns i,
+  .analysis-stack-card .stacked-area-chart path,
+  .analysis-cashflow-card .cashflow-bars i,
+  .analysis-health-card .health-shape,
+  .analysis-health-card .health-point { animation: none !important; transition: none !important; }
+}
