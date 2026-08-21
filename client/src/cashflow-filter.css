@@ -129,3 +129,21 @@
 .prototype-home .home-sku-ranking > div > button > span > i { height: 3px; }
 .prototype-home .home-sku-ranking > div > button > label { min-width: 44px; font-size: 11px; }
 .prototype-home .home-sku-ranking > div > button > svg { width: 13px; height: 13px; }
+
+/* 首页数据行仅使用轻量横向账本分隔；不保留两侧、底部或直角硬框。 */
+.prototype-home .home-sku-ranking > div,
+.prototype-home .home-cost-structure .cost-structure-body > div {
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+.prototype-home .home-sku-ranking > div > button,
+.prototype-home .home-cost-structure .cost-structure-body > div > button {
+  border: 0 !important;
+  border-top: 1px solid #e4ebf1 !important;
+  border-radius: 0;
+}
+.prototype-home .home-sku-ranking > div > button:first-child,
+.prototype-home .home-cost-structure .cost-structure-body > div > button:first-child {
+  border-top: 0 !important;
+}
