@@ -31,12 +31,15 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  const isSelfHosted = process.env.VITE_SELF_HOSTED === "true";
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   app.get("/healthz", (_req, res) => res.status(200).json({ status: "ok" }));
-  registerStorageProxy(app);
-  registerOAuthRoutes(app);
+  if (!isSelfHosted) {
+    registerStorageProxy(app);
+    registerOAuthRoutes(app);
+  }
   // tRPC API
   app.use(
     "/api/trpc",

@@ -446,7 +446,7 @@
 - [ ] 确认可用的安全服务器访问路径；不得要求或在对话中接收 root 私钥、密码、数据库密码或 COS 密钥。
 - [ ] 准备 Node.js 全栈账本、Docker Compose、Caddy、MySQL 与环境变量模板，并在本地/预发布通过验证。
 - [ ] 经逐项确认后执行服务器用户、补丁、Docker、防火墙、容器、备份与健康检查变更。
-- [ ] 经确认后在 DNSPod 添加 `app.3dq.site`、`api.3dq.site` 解析并完成 HTTPS、预发布和正式切换。
+- [ ] 经确认后在 DNSPod 添加 `app.3dq.site`、`api.3dq.site` 解析并完成 HTTPS、预发布和正式切换。用户已确认 DNS 记录添加，待解析核验与容器发布。
 
 ## 自建管理员与部署公钥
 
