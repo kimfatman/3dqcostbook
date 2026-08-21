@@ -474,3 +474,32 @@
   .analysis-health-card .health-shape,
   .analysis-health-card .health-point { animation: none !important; transition: none !important; }
 }
+
+/* 订单售后口径：列表先给退款后净收入与经营贡献，详情展开实际售后与估算费用的边界。 */
+.order-list > button .order-after-sales-metric { display: grid; gap: 2px; min-width: 102px; text-align: right; }
+.order-list > button .order-after-sales-metric > b { color: #0b1836; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-variant-numeric: tabular-nums; letter-spacing: -.055em; }
+.order-list > button .order-after-sales-metric > em { color: #627892; font-size: 8px; font-style: normal; }
+.order-list > button .order-after-sales-metric > small { overflow: hidden; color: #516a84; font-family: "IBM Plex Mono", monospace; font-size: 8px; font-style: normal; font-variant-numeric: tabular-nums; white-space: nowrap; text-overflow: ellipsis; }
+.order-list > button .order-after-sales-metric > small.attention { color: #c16d00; font-family: inherit; font-weight: 800; }
+.order-after-sales-card { margin-top: 14px; padding: 14px; color: #0b1836; background-color: #fff; background-image: linear-gradient(rgba(8,127,245,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(8,127,245,.035) 1px, transparent 1px); background-size: 24px 24px; border: 1px solid #dce7f0; border-radius: 14px; }
+.order-after-sales-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-bottom: 8px; border-bottom: 1px dashed #d4e1eb; }
+.order-after-sales-head span { color: #0b1836; font-size: 13px; font-weight: 800; letter-spacing: -.03em; }
+.order-after-sales-head small { color: #617992; font-size: 9px; white-space: nowrap; }
+.order-after-sales-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 10px 0; border-bottom: 1px dashed #d4e1eb; }
+.order-after-sales-kpis > div { display: grid; gap: 4px; min-width: 0; padding: 0 7px; }
+.order-after-sales-kpis > div:first-child { padding-left: 0; }
+.order-after-sales-kpis > div + div { border-left: 1px solid #e0e9f0; }
+.order-after-sales-kpis span { overflow: hidden; color: #687f96; font-size: 9px; white-space: nowrap; text-overflow: ellipsis; }
+.order-after-sales-kpis b { overflow: hidden; color: #0b1836; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-variant-numeric: tabular-nums; letter-spacing: -.06em; white-space: nowrap; text-overflow: ellipsis; }
+.order-after-sales-kpis .negative b { color: #d92d20; }
+.order-after-sales-rows { display: grid; padding-top: 4px; }
+.order-after-sales-rows > span { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 29px; border-bottom: 1px solid #eef3f7; }
+.order-after-sales-rows > span:last-child { border-bottom: 0; }
+.order-after-sales-rows em { color: #526b86; font-size: 10px; font-style: normal; }
+.order-after-sales-rows b { color: #0b1836; font-family: "IBM Plex Mono", monospace; font-size: 10px; font-variant-numeric: tabular-nums; letter-spacing: -.04em; }
+.order-after-sales-card > p { margin: 10px 0 0; color: #667f98; font-size: 9px; line-height: 1.55; }
+.skin-deep .order-after-sales-card { color: #eaf5ff; background-color: rgba(11,35,61,.92); background-image: linear-gradient(rgba(144,209,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(144,209,255,.07) 1px, transparent 1px); border-color: rgba(162,216,255,.18); }
+.skin-deep .order-after-sales-head, .skin-deep .order-after-sales-kpis { border-color: rgba(162,216,255,.2); }
+.skin-deep .order-after-sales-head span, .skin-deep .order-after-sales-kpis b, .skin-deep .order-after-sales-rows b, .skin-deep .order-list > button .order-after-sales-metric > b { color: #eaf5ff; }
+.skin-deep .order-after-sales-head small, .skin-deep .order-after-sales-kpis span, .skin-deep .order-after-sales-rows em, .skin-deep .order-after-sales-card > p, .skin-deep .order-list > button .order-after-sales-metric > em, .skin-deep .order-list > button .order-after-sales-metric > small { color: #a4c0d8; }
+.skin-deep .order-after-sales-kpis > div + div, .skin-deep .order-after-sales-rows > span { border-color: rgba(162,216,255,.14); }

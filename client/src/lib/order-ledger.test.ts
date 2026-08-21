@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildOrderEntries, buildRefundEntries, getOrderPricingAlert, type Order, type OrderLine, type RefundCase } from "./order-ledger";
+import { buildOrderEntries, buildRefundEntries, getOrderAfterSalesMetrics, getOrderPricingAlert, type Order, type OrderLine, type RefundCase } from "./order-ledger";
 import { buildMetrics, toFen } from "./ledger-metrics";
 
 const lines: OrderLine[] = [
@@ -42,9 +42,30 @@ describe("订单、SKU 与退款回收账本", () => {
     expect(metrics.grossProfitFen).toBe(8370);
   });
 
+  it("售后后口径按实际退款、回收与手续费重算净收入、经营成本和经营贡献", () => {
+    const refund: RefundCase = { id: "refund-metric", workspaceId: "w", industryId: "ecommerce", orderId: order.id, orderLineId: "line-a", skuId: "sku-a", quantity: 1, refundFen: 6800, refundFeeFen: 120, reason: "quality_issue", recoveryStatus: "sellable_restocked", recoveredCostFen: 3980, occurredAt: "2026-07-15", refundEntryId: "refund-entry-metric", createdAt: "now" };
+    const metrics = getOrderAfterSalesMetrics(order, [refund]);
+    expect(metrics).toMatchObject({ grossSalesFen: 27500, refundFen: 6800, netRevenueFen: 20700, grossCogsFen: 16310, recoveredCostFen: 3980, netCogsFen: 12330, refundFeeFen: 120, estimatedCommissionFen: 1035, fulfillmentFen: 900, operatingCostFen: 14385, operatingContributionFen: 6315, refundedQuantity: 1, hasAfterSale: true });
+    expect(metrics.contributionMarginRate).toBe(30.5);
+  });
+
+  it("破损报废不会虚构成本回冲，售后后的经营贡献会保留实际退款手续费", () => {
+    const refund: RefundCase = { id: "refund-disposed", workspaceId: "w", industryId: "ecommerce", orderId: order.id, orderLineId: "line-b", skuId: "sku-b", quantity: 1, refundFen: 13900, refundFeeFen: 80, reason: "logistics_delay", recoveryStatus: "damaged_disposed", recoveredCostFen: 0, occurredAt: "2026-07-15", refundEntryId: "refund-entry-disposed", createdAt: "now" };
+    const metrics = getOrderAfterSalesMetrics(order, [refund]);
+    expect(metrics.netCogsFen).toBe(16310);
+    expect(metrics.recoveredCostFen).toBe(0);
+    expect(metrics.refundFeeFen).toBe(80);
+    expect(metrics.operatingContributionFen).toBeLessThan(0);
+  });
+
   it("佣金和单件履约费会按订单创建时的渠道快照识别低于目标毛利风险", () => {
     const warning = getOrderPricingAlert(order);
     expect(warning).toMatchObject({ type: "below_target_margin", commission: 13.75, fulfillment: 9, contributionMarginRate: 32.4, targetMarginRate: 40 });
+  });
+
+  it("退款后贡献低于渠道目标时，预警以退款后净收入而不是成交总额计算", () => {
+    const refund: RefundCase = { id: "refund-warning", workspaceId: "w", industryId: "ecommerce", orderId: order.id, orderLineId: "line-a", skuId: "sku-a", quantity: 1, refundFen: 6800, refundFeeFen: 120, reason: "quality_issue", recoveryStatus: "sellable_restocked", recoveredCostFen: 3980, occurredAt: "2026-07-15", refundEntryId: "refund-entry-warning", createdAt: "now" };
+    expect(getOrderPricingAlert(order, [refund])).toMatchObject({ type: "below_target_margin", revenue: 207, contribution: 63.15, contributionMarginRate: 30.5 });
   });
 
   it("当订单实收低于扣除渠道费后的保本线时优先标识亏损风险", () => {

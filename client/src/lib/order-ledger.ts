@@ -70,6 +70,7 @@ export type RefundCase = {
 };
 
 export type OrderPricingAlert = { id: string; orderId: string; orderNo: string; channel: OrderChannel; type: "below_break_even" | "below_target_margin"; revenue: number; cogs: number; commission: number; fulfillment: number; contribution: number; contributionMarginRate: number; breakEvenRevenue: number; targetMarginRate: number };
+export type OrderAfterSalesMetrics = { grossSalesFen: number; refundFen: number; netRevenueFen: number; grossCogsFen: number; recoveredCostFen: number; netCogsFen: number; refundFeeFen: number; estimatedCommissionFen: number; fulfillmentFen: number; productCostFen: number; operatingCostFen: number; operatingContributionFen: number; contributionMarginRate: number; refundedQuantity: number; hasAfterSale: boolean };
 
 export const channelLabel: Record<OrderChannel, string> = { platform: "平台", live: "直播", store: "到店", private: "私域", other: "其他" };
 export const refundReasonLabel: Record<RefundReason, string> = { quality_issue: "质量问题", wrong_item: "错发漏发", customer_cancelled: "客户取消", logistics_delay: "物流延误", duplicate_order: "重复下单", other: "其他" };
@@ -81,15 +82,38 @@ export const orderGrossFen = (order: Order) => order.lines.reduce((sum, line) =>
 export const orderCogsFen = (order: Order) => order.lines.reduce((sum, line) => sum + lineCogsFen(line), 0);
 export const refundableQuantity = (line: OrderLine) => Math.max(0, line.quantity - line.refundedQuantity);
 
-export function getOrderPricingAlert(order: Order): OrderPricingAlert | null {
-  const revenue = fromFen(orderGrossFen(order));
-  const cogs = fromFen(orderCogsFen(order));
+/**
+ * 单笔订单的售后后经营口径。
+ * 退款直接冲减收入；仅可售回收入库冲回已售成本；退款手续费按实际发生计入成本。
+ * 渠道扣点和履约费用仍是创建订单时渠道快照的估算值，因此与实际发生费用分开披露。
+ */
+export function getOrderAfterSalesMetrics(order: Order, refunds: RefundCase[] = []): OrderAfterSalesMetrics {
+  const orderRefunds = refunds.filter((refund) => refund.orderId === order.id);
+  const grossSalesFen = orderGrossFen(order);
+  const refundFen = orderRefunds.reduce((sum, refund) => sum + refund.refundFen, 0);
+  const netRevenueFen = grossSalesFen - refundFen;
+  const grossCogsFen = orderCogsFen(order);
+  const recoveredCostFen = orderRefunds.reduce((sum, refund) => sum + refund.recoveredCostFen, 0);
+  const netCogsFen = grossCogsFen - recoveredCostFen;
+  const refundFeeFen = orderRefunds.reduce((sum, refund) => sum + refund.refundFeeFen, 0);
+  const estimatedCommissionFen = toFen(fromFen(netRevenueFen) * order.pricing.commissionRatePct / 100);
+  const fulfillmentFen = toFen(order.lines.reduce((sum, line) => sum + line.quantity, 0) * order.pricing.fulfillmentCost);
+  const productCostFen = netCogsFen + refundFeeFen;
+  const operatingCostFen = productCostFen + estimatedCommissionFen + fulfillmentFen;
+  const operatingContributionFen = netRevenueFen - operatingCostFen;
+  return { grossSalesFen, refundFen, netRevenueFen, grossCogsFen, recoveredCostFen, netCogsFen, refundFeeFen, estimatedCommissionFen, fulfillmentFen, productCostFen, operatingCostFen, operatingContributionFen, contributionMarginRate: netRevenueFen > 0 ? Number((operatingContributionFen / netRevenueFen * 100).toFixed(1)) : 0, refundedQuantity: orderRefunds.reduce((sum, refund) => sum + refund.quantity, 0), hasAfterSale: orderRefunds.length > 0 };
+}
+
+export function getOrderPricingAlert(order: Order, refunds: RefundCase[] = []): OrderPricingAlert | null {
+  const afterSales = getOrderAfterSalesMetrics(order, refunds);
+  const revenue = fromFen(afterSales.netRevenueFen);
+  const cogs = fromFen(afterSales.netCogsFen);
   const quantity = order.lines.reduce((sum, line) => sum + line.quantity, 0);
-  const commission = revenue * order.pricing.commissionRatePct / 100;
-  const fulfillment = quantity * order.pricing.fulfillmentCost;
-  const contribution = Number((revenue - cogs - commission - fulfillment).toFixed(2));
-  const contributionMarginRate = revenue > 0 ? Number((contribution / revenue * 100).toFixed(1)) : 0;
-  const breakEvenRevenue = order.pricing.commissionRatePct < 100 ? Number(((cogs + fulfillment) / (1 - order.pricing.commissionRatePct / 100)).toFixed(2)) : Infinity;
+  const commission = fromFen(afterSales.estimatedCommissionFen);
+  const fulfillment = fromFen(afterSales.fulfillmentFen);
+  const contribution = fromFen(afterSales.operatingContributionFen);
+  const contributionMarginRate = afterSales.contributionMarginRate;
+  const breakEvenRevenue = order.pricing.commissionRatePct < 100 ? Number(((cogs + fromFen(afterSales.refundFeeFen) + fulfillment) / (1 - order.pricing.commissionRatePct / 100)).toFixed(2)) : Infinity;
   const type = contribution < 0 ? "below_break_even" as const : contributionMarginRate < order.pricing.targetContributionMarginPct ? "below_target_margin" as const : null;
   return type ? { id: `${order.id}-${type}`, orderId: order.id, orderNo: order.orderNo, channel: order.channel, type, revenue, cogs, commission: Number(commission.toFixed(2)), fulfillment: Number(fulfillment.toFixed(2)), contribution, contributionMarginRate, breakEvenRevenue, targetMarginRate: order.pricing.targetContributionMarginPct } : null;
 }
