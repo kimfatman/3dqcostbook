@@ -3,11 +3,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { SelfHostedAccessGate } from "./components/SelfHostedAccessGate";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
@@ -24,6 +25,7 @@ function Router() {
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
+  const isSelfHosted = import.meta.env.VITE_SELF_HOSTED === "true";
   return (
     <ErrorBoundary>
       <ThemeProvider
@@ -32,7 +34,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          <Router />
+          {isSelfHosted ? <SelfHostedAccessGate><Router /></SelfHostedAccessGate> : <Router />}
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

@@ -1,0 +1,9 @@
+# 在服务器上复制下列键值到 deploy/.env；不要把 .env 上传、提交或通过聊天发送。
+APP_DOMAIN=app.3dq.site
+API_DOMAIN=api.3dq.site
+MYSQL_DATABASE=costbook
+MYSQL_USER=costbook
+MYSQL_PASSWORD=<用 openssl rand -hex 32 生成>
+MYSQL_ROOT_PASSWORD=<用 openssl rand -hex 32 生成且与上一项不同>
+APP_SESSION_SECRET=<用 openssl rand -hex 32 生成且与上一项不同>
+BOOTSTRAP_ADMIN_TOKEN=<用 openssl rand -hex 32 生成且与上一项不同>

@@ -4,7 +4,7 @@
  * 视觉规范：Digital Blue #087FF5、深海军蓝 #0B1836、冷白背景与紧凑圆角卡片。
  * 首页中产品宣传 Banner 只服务产品/广告，经营提醒只在 Logo 旁以文字轮播呈现，避免挤占利润—趋势—预算主线。
  */
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
@@ -58,6 +58,7 @@ import { buildBusinessHealth, buildSalesTargetHistory } from "@/lib/health-metri
 import { buildMetrics, entriesForPeriod } from "@/lib/ledger-metrics";
 import { isNonNegativeNumber, isPositiveInteger, isPositiveMoney, toEditableNumber, toNumber, type EditableNumber } from "@/lib/editable-number";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { trpc } from "@/lib/trpc";
 import "../cashflow-filter.css";
 
 type TabId = "home" | "orders" | "cards" | "analysis" | "profile";
@@ -239,6 +240,7 @@ const today = "2026-07-14";
 
 export default function Home() {
   const book = useCostBook();
+  useCloudBookSync(book);
   const [tab, setTab] = useState<TabId>(initialTab);
   const [subPage, setSubPage] = useState<SubPage>(initialSubPage);
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryId>(book.activeIndustryId);
@@ -889,4 +891,42 @@ export default function Home() {
 
   const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [{ id: "home", label: "经营", icon: HomeIcon }, { id: "orders", label: "订单", icon: ReceiptText }, { id: "cards", label: "商品", icon: PackageOpen }, { id: "analysis", label: "分析", icon: BarChart3 }, { id: "profile", label: "我的", icon: WalletCards }];
   return <div className="mobile-shell"><div className="app-frame">{renderHeader()}<main className={isSub ? "app-content sub-content" : "app-content"}>{renderContent()}</main>{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { setTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}</div></div>;
+}
+
+function useCloudBookSync(book: ReturnType<typeof useCostBook>) {
+  const enabled = import.meta.env.VITE_SELF_HOSTED === "true";
+  const workspaces = trpc.workspace.list.useQuery(undefined, { enabled, retry: false, refetchOnWindowFocus: false });
+  const workspaceId = workspaces.data?.[0]?.id;
+  const remote = trpc.workspace.book.useQuery({ workspaceId: workspaceId || "00000000-0000-0000-0000-000000000000" }, { enabled: enabled && Boolean(workspaceId), retry: false, refetchOnWindowFocus: false });
+  const save = trpc.workspace.saveBook.useMutation();
+  const hydrated = useRef(false);
+  const revision = useRef(0);
+  const lastSnapshot = useRef("");
+
+  useEffect(() => {
+    if (!enabled || !remote.data || hydrated.current || !workspaceId) return;
+    const cloud = remote.data.book;
+    revision.current = cloud.revision;
+    if (Object.keys(cloud.state).length > 0) book.replaceState(cloud.state);
+    lastSnapshot.current = JSON.stringify(Object.keys(cloud.state).length > 0 ? cloud.state : book.snapshot);
+    hydrated.current = true;
+    if (Object.keys(cloud.state).length === 0) save.mutate({ workspaceId, expectedRevision: cloud.revision, schemaVersion: book.snapshot.schemaVersion, state: book.snapshot });
+  }, [book, enabled, remote.data, save, workspaceId]);
+
+  useEffect(() => {
+    if (!enabled || !workspaceId || !hydrated.current || save.isPending) return;
+    const next = JSON.stringify(book.snapshot);
+    if (next === lastSnapshot.current) return;
+    const timer = window.setTimeout(async () => {
+      const result = await save.mutateAsync({ workspaceId, expectedRevision: revision.current, schemaVersion: book.snapshot.schemaVersion, state: book.snapshot });
+      if (result.conflict) {
+        hydrated.current = false;
+        await remote.refetch();
+        return;
+      }
+      revision.current = result.revision;
+      lastSnapshot.current = next;
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [book.snapshot, enabled, remote, save, workspaceId]);
 }
