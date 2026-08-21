@@ -157,10 +157,10 @@ export function buildMonthlyCostStack(input: { entries: LedgerEntry[]; industryI
   return { categories, months, validMonths, canRender: validMonths >= 2 };
 }
 
-/** 现金流只认分录的现金方向，不借用利润表的收入、成本或费用分类。 */
-export function buildMonthlyCashFlow(input: { entries: LedgerEntry[]; industryId: string; periods: string[] }) {
+/** 现金流只认分录的现金方向，不借用利润表的收入、成本或费用分类。可选过滤仅作用于真实分录。 */
+export function buildMonthlyCashFlow(input: { entries: LedgerEntry[]; industryId: string; periods: string[]; entryFilter?: (entry: LedgerEntry) => boolean }) {
   const months = input.periods.map((period) => {
-    const values = input.entries.filter((entry) => entry.industryId === input.industryId && entry.status === "posted" && entry.occurredAt.slice(0, 7) === period);
+    const values = input.entries.filter((entry) => entry.industryId === input.industryId && entry.status === "posted" && entry.occurredAt.slice(0, 7) === period && (!input.entryFilter || input.entryFilter(entry)));
     const inflow = values.filter((entry) => entry.cashDirection === "inflow").reduce((sum, entry) => sum + entry.amountFen, 0) / 100;
     const outflow = values.filter((entry) => entry.cashDirection === "outflow").reduce((sum, entry) => sum + entry.amountFen, 0) / 100;
     return { period, inflow: Number(inflow.toFixed(2)), outflow: Number(outflow.toFixed(2)) };

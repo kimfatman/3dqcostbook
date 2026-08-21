@@ -1,0 +1,23 @@
+/* 账本蓝图延展：现金流筛选与预置下钻状态，仅在存在真实渠道或供应商关联时由组件显示。 */
+.cashflow-filter-panel { display: grid; gap: 6px; padding: 8px 0 4px; }
+.cashflow-filter-panel > div { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 6px; align-items: start; }
+.cashflow-filter-panel em { padding-top: 6px; color: #71859d; font-size: 9px; font-style: normal; }
+.cashflow-filter-panel span { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: none; }
+.cashflow-filter-panel span::-webkit-scrollbar { display: none; }
+.cashflow-filter-panel button { flex: 0 0 auto; min-height: 27px; padding: 0 8px; color: #60758d; font-size: 9px; font-weight: 700; background: #f3f7fa; border: 1px solid #e0e8ef; border-radius: 99px; }
+.cashflow-filter-panel button.active { color: #087ff5; background: #eaf5ff; border-color: #a8d7ff; }
+.cashflow-drill-context { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 0 9px; margin: 8px 0; color: #4b6883; font-size: 10px; background: #f2f9ff; border: 1px solid #d6eafb; border-radius: 8px; }
+.cashflow-drill-context span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cashflow-drill-context button { flex: 0 0 auto; padding: 0; color: #087ff5; font-size: 10px; font-weight: 700; background: transparent; border: 0; }
+
+/* 二级账页：将店铺账本的签名线和行业页签延展到目标、阈值等配置场景。 */
+.sub-header { position: relative; overflow: hidden; background-color: #fff; background-image: linear-gradient(90deg, rgba(8,127,245,.028) 1px, transparent 1px); background-size: 24px 24px; }
+.sub-header::after { position: absolute; right: 16px; bottom: 0; left: 68px; height: 2px; content: ""; background: linear-gradient(90deg, #087ff5 0 34px, rgba(8,127,245,.18) 34px 100%); }
+.sub-header strong { position: relative; color: #0b1836; font-family: "IBM Plex Mono", "MiSans", sans-serif; font-size: 13px; letter-spacing: -.04em; }
+.sales-target-history-page .sub-intro, .health-settings-form { position: relative; overflow: hidden; background-color: #fff; background-image: linear-gradient(90deg, rgba(8,127,245,.025) 1px, transparent 1px), linear-gradient(rgba(8,127,245,.025) 1px, transparent 1px); background-size: 24px 24px; border-top: 2px solid #087ff5; }
+.sales-target-history-page .sub-intro::before, .health-settings-form::before { display: block; margin-bottom: 7px; color: #087ff5; font-family: "IBM Plex Mono", monospace; font-size: 9px; font-weight: 700; letter-spacing: .08em; content: "＝ 当前行业账页"; }
+.sales-target-history-page .sub-intro h1, .health-settings-form label { position: relative; z-index: 1; }
+.health-settings-form input, .archive-target-form input, .archive-summary b, .archive-compare b, .archive-history-list em { font-family: "IBM Plex Mono", "MiSans", sans-serif; font-variant-numeric: tabular-nums; }
+.health-settings-form { padding: 14px 13px 82px; border-right: 1px solid #dbe8f2; border-bottom: 1px solid #dbe8f2; border-left: 1px solid #dbe8f2; border-radius: 0 0 14px 14px; }
+.health-settings-form label { padding-bottom: 11px; border-bottom: 1px dashed #d5e2ed; }
+.health-settings-form label:last-of-type { padding-bottom: 0; border-bottom: 0; }

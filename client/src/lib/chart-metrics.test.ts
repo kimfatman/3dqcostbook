@@ -94,6 +94,15 @@ describe("经营图表指标", () => {
     expect(cash.months).toEqual([{ period: "2026-06", inflow: 0, outflow: 0 }, { period: "2026-07", inflow: 1000, outflow: 150 }]);
   });
 
+  it("现金流筛选只聚合命中条件的真实现金方向分录", () => {
+    const entries = [
+      { industryId: "ecommerce", occurredAt: "2026-07-01", status: "posted", cashDirection: "inflow", amountFen: 20000, supplierId: "a" },
+      { industryId: "ecommerce", occurredAt: "2026-07-02", status: "posted", cashDirection: "outflow", amountFen: 5000, supplierId: "b" },
+    ] as never[];
+    const cash = buildMonthlyCashFlow({ entries, industryId: "ecommerce", periods: ["2026-07"], entryFilter: (entry) => entry.supplierId === "a" });
+    expect(cash.months).toEqual([{ period: "2026-07", inflow: 200, outflow: 0 }]);
+  });
+
   it("销售目标未设置时不生成完成率，设置后按实际日均预测月末销售", () => {
     expect(buildSalesTargetProgress({ revenue: 3000, targetFen: 0, dayOfMonth: 10, daysInMonth: 30 })).toBeNull();
     expect(buildSalesTargetProgress({ revenue: 3000, targetFen: 900000, dayOfMonth: 10, daysInMonth: 30 })).toMatchObject({ completionRate: 33.3, projectedRevenue: 9000, projectedRate: 100, state: "on_track" });
