@@ -13,6 +13,7 @@ import {
   Boxes,
   Calculator,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronRight,
   CircleAlert,
@@ -126,7 +127,7 @@ function ProfitWaterfall({ revenue, cogs, expenses, profit, onSelect }: { revenu
 }
 function BudgetRing({ burn, onClick }: { burn: ReturnType<typeof buildBudgetBurn>; onClick: () => void }) {
   const usedRate = Math.min(100, Math.max(0, burn.usedRate));
-  const tone = burn.state === "over" ? "#e02d23" : burn.state === "risk" ? "#f79009" : "#087ff5";
+  const tone = "#087ff5";
   return <button className={`budget-ring ${burn.state}`} onClick={onClick}><i style={{ background: `conic-gradient(${tone} 0 ${usedRate}%, #e9eef4 ${usedRate}% 100%)` }}><span><em>已用</em><b>{usedRate}%</b><strong>{yuan(burn.used)}</strong></span></i><div><label><em>本月预算</em><b>{yuan(burn.budget)}</b></label><label><em>剩余可用</em><b>{yuan(burn.remaining)}</b></label></div><small>{burn.state === "over" ? `已超预算 ${yuan(Math.abs(burn.remaining))}` : burn.state === "risk" ? `月末预计超预算 ${yuan(Math.max(0, burn.forecast - burn.budget))}` : `月末预计 ${yuan(burn.forecast)}`}</small></button>;
 }
 function RefundPareto({ items, onSelect }: { items: ReturnType<typeof buildRefundPareto>; onSelect: (reason: string) => void }) {
@@ -228,6 +229,11 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [notificationItems.length, reducedMotion]);
 
+  useEffect(() => {
+    if (subPage !== "orderForm" || draftOrderLines.length || !skus.length) return;
+    setDraftOrderLines([{ skuId: skus[0].id, quantity: 1 }]);
+  }, [draftOrderLines.length, skus, subPage]);
+
   const filteredRecords = records.filter((record) => {
     const search = recordSearch.trim().toLowerCase();
     const matchesType = recordFilter === "all" || record.type === recordFilter;
@@ -264,22 +270,23 @@ export default function Home() {
   }
 
   function goSub(page: SubPage) { setSubPage(page); }
+  function openOrdersContext(filter: "all" | "low_profit" | "refund" = "all") {
+    setOrderStatusFilter(filter);
+    setOrderSearchOpen(false);
+    setTab("orders");
+    setSubPage(null);
+  }
   function openPromotion(target: PromotionTarget) {
-    if (target === "orders") { setTab("orders"); setSubPage(null); return; }
+    if (target === "orders") { openOrdersContext(); return; }
     goSub(target);
   }
   function openNotificationTarget(item: NotificationItem) {
     setReadNotificationIds((current) => current.includes(item.id) ? current : [...current, item.id]);
+    if (item.target === "orders") { openOrdersContext(item.id === "refund-watch" ? "refund" : "low_profit"); return; }
     goSub(item.target);
   }
   function openHomeDecision(priority: HomeDecisionNotification) {
-    if (priority.target === "orders") {
-      setOrderStatusFilter(priority.id === "refund-watch" ? "refund" : "low_profit");
-      setOrderSearchOpen(false);
-      setTab("orders");
-      setSubPage(null);
-      return;
-    }
+    if (priority.target === "orders") { openOrdersContext(priority.id === "refund-watch" ? "refund" : "low_profit"); return; }
     goSub(priority.target);
   }
   function runQuickAction(action: QuickAction) {
@@ -323,7 +330,18 @@ export default function Home() {
   function openPricing() { if (!activeCard) return; const config = channelTemplates.platform; setPricingChannel("platform"); setPricingPlatformRate(config.commissionRatePct); setPricingFulfillmentCost(config.fulfillmentCost); setPricingTargetMargin(config.targetContributionMarginPct); setPricingRoundingStep(config.roundingStep); setCompetitorLow(0); setCompetitorHigh(0); setPromotionDiscount(0); goSub("pricing"); }
   function openReport(id: string) { setReportId(id); goSub("reportDetail"); }
   function openOrder(id: string) { setOrderId(id); setOrderLineId(null); goSub("orderDetail"); }
-  function openNewOrder() { if (!skus.length) return notify("当前行业暂无可用 SKU"); setDraftOrderLines([{ skuId: skus[0].id, quantity: 1 }]); setOrderId(null); setOrderChannel("platform"); goSub("orderForm"); }
+  function openNewOrder() {
+    if (!skus.length) {
+      setTab("cards");
+      setSubPage(null);
+      notify(`请先新增${template.entityLabel}成本卡，系统会自动创建可下单 SKU`);
+      return;
+    }
+    setDraftOrderLines([{ skuId: skus[0].id, quantity: 1 }]);
+    setOrderId(null);
+    setOrderChannel("platform");
+    goSub("orderForm");
+  }
   function saveOrder(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const data = new FormData(event.currentTarget); const lines = draftOrderLines.filter((line) => line.skuId && line.quantity > 0); if (!lines.length) return notify("请至少选择一个 SKU 并填写数量"); book.addOrder({ orderNo: String(data.get("orderNo") || ""), channel: orderChannel, buyer: String(data.get("buyer") || ""), date: String(data.get("date") || today), lines }); notify("订单已入账：销售收入、商品成本和渠道费用预警已同步生成"); setSubPage("orders"); }
   function saveRefund(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!activeOrder || !activeOrderLine) return notify("请先选择订单 SKU"); const data = new FormData(event.currentTarget); const result = book.createRefund({ orderId: activeOrder.id, lineId: activeOrderLine.id, quantity: Number(data.get("quantity")), refundAmount: Number(data.get("refundAmount")), refundFee: Number(data.get("refundFee") || 0), reason: String(data.get("reason")) as RefundReason, recoveryStatus: String(data.get("recoveryStatus")) as ReturnRecoveryStatus, date: String(data.get("date") || today) }); if (!result.ok) return notify(result.reason || "退款登记失败"); notify("退款已登记，净营收与商品成本已同步更新"); setSubPage("orderDetail"); }
   function saveSkuCost(event: FormEvent<HTMLFormElement>, skuId: string) { event.preventDefault(); const cost = Number(new FormData(event.currentTarget).get("unitCost")); const result = book.updateSkuCost(skuId, cost); notify(result.ok ? "SKU 单位成本已更新，仅作用于后续订单" : result.reason || "成本更新失败"); }
@@ -479,6 +497,7 @@ export default function Home() {
   }
 
   function OrderFormPage() {
+    if (!skus.length) return <><section className="sub-intro compact"><span>{template.label} · 订单入账</span><h1>先建立商品成本</h1><p>订单需要关联 SKU，SKU 会由成本卡自动创建，并冻结后续订单的单位成本。</p></section><section className="order-prerequisite"><span>SKU ＝ 成本卡 ＋ 售价</span><b>当前行业还没有可下单的商品成本</b><em>先建立一张成本卡，再回到订单页记录成交、佣金与履约费用。</em><button onClick={openNewCard}><Plus size={17} />建立首张成本卡</button></section></>;
     const channelPricing = channelTemplates[orderChannel];
     return <><section className="sub-intro compact"><span>{template.label} · 订单入账</span><h1>记录订单</h1><p>订单会冻结当前渠道佣金、履约费用和目标贡献毛利率，后续修改模板不会重写历史订单。</p></section><form className="record-form" onSubmit={saveOrder}><label>订单号（可选）<input name="orderNo" placeholder="例如：PDD-20260714-001" /></label><label>销售渠道<select value={orderChannel} onChange={(event) => setOrderChannel(event.target.value as OrderChannel)}><option value="platform">平台店</option><option value="live">直播</option><option value="store">到店</option><option value="private">私域</option><option value="other">其他</option></select></label><section className="channel-template-preview"><span><Calculator size={16} />{channelLabel[orderChannel]}默认费用模板</span><b>佣金 {channelPricing.commissionRatePct}% · 履约 ¥{channelPricing.fulfillmentCost} / 件 · 目标贡献毛利 {channelPricing.targetContributionMarginPct}%</b><em>可在成本卡的智能定价页修改并保存此渠道模板。</em></section><label>客户 / 收件人<input name="buyer" placeholder="例如：张女士 / 散客" /></label><label>成交日期<input name="date" type="date" defaultValue={today} /></label><section className="detail-breakdown"><h2>SKU 明细</h2><div className="bom-list">{draftOrderLines.map((line, index) => { const sku = skus.find((item) => item.id === line.skuId); return <div key={`${line.skuId}-${index}`}><span><select value={line.skuId} onChange={(event) => setDraftOrderLines((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, skuId: event.target.value } : item))}>{skus.map((item) => <option value={item.id} key={item.id}>{item.code} · {item.name}</option>)}</select><em>{sku ? `${yuan(sku.unitPriceFen / 100)} / ${sku.unit} · 成本 ${yuan(sku.unitCostFen / 100)}` : "请选择 SKU"}</em></span><input aria-label="数量" type="number" min="1" step="1" value={line.quantity} onChange={(event) => setDraftOrderLines((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: Math.max(1, Number(event.target.value) || 1) } : item))} /><button type="button" onClick={() => setDraftOrderLines((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label="删除 SKU 明细"><Trash2 size={15} /></button></div>; })}</div><button type="button" onClick={() => setDraftOrderLines((current) => [...current, { skuId: skus[0]?.id || "", quantity: 1 }])}><Plus size={16} />添加 SKU</button></section><button type="submit" className="fixed-primary form-save"><Plus size={18} />确认订单并入账</button></form></>;
   }
@@ -521,12 +540,14 @@ export default function Home() {
     const categoryDeltas = buildCategoryDeltas(periodCategories, previousView.totals.categoryTotals);
     const categoryDeltaByKey = new Map(categoryDeltas.map((item) => [item.key, item]));
     const refundPareto = buildRefundPareto(refunds.filter((refund) => refund.occurredAt.slice(0, 7) === period));
-    const maxTrend = Math.max(...trend.map((item) => Math.max(item.cost, item.revenue)));
-    return <div className="prototype-analysis"><section className="prototype-analysis-title"><h1>经营分析 · {period.replace("-", " 年 ")} 月</h1></section><section className="analysis-waterfall-card"><div className="analysis-card-head"><h2>利润与成本</h2><div className="segment-control"><button className={analysisPeriod === "current" ? "active" : ""} onClick={() => setAnalysisPeriod("current")}>本月</button><button className={analysisPeriod === "last" ? "active" : ""} onClick={() => setAnalysisPeriod("last")}>上月</button></div></div>{hasRevenue ? <ProfitWaterfall revenue={analysisRevenue} cogs={analysisCogs} expenses={analysisExpenses} profit={periodView.totals.operatingProfit} onSelect={(key) => { if (key === "cogs" || key === "expenses") { setRecordFilter("expense"); setRecordMonth(period); goSub("records"); } else if (key === "revenue") { setRecordFilter("income"); setRecordMonth(period); goSub("records"); } else goSub("reports"); }} /> : <button className="analysis-no-revenue" onClick={openNewRecord}><span>本期尚未录入销售收入</span><b>补录收入后生成利润瀑布图</b><ChevronRight size={16} /></button>}</section><section className="analysis-trend-card"><div className="analysis-card-head"><h2>近 6 月收入与成本</h2><div className="chart-legend"><span><i className="revenue" />收入（¥）</span><span><i className="cost" />成本（¥）</span></div></div><div className="trend-chart">{trend.map((point) => <div key={point.month}><span className="trend-columns"><i style={{ height: `${point.revenue / maxTrend * 100}%` }} /><i style={{ height: `${point.cost / maxTrend * 100}%` }} /></span><em>{point.month.replace("-", "-")}</em></div>)}</div></section><section className="analysis-ranking-card"><div className="analysis-card-head"><h2>成本变化 Top 5</h2><span>较上月</span></div><div className="ranking-card">{periodCategories.slice(0, 5).map((item, index) => { const delta = categoryDeltaByKey.get(item.key); return <button key={item.key} onClick={() => { setRecordSearch(item.label); setRecordMonth(period); goSub("records"); }}><span className="rank">{index + 1}</span><span className="rank-name">{item.label}</span><span className="rank-bar"><b style={{ width: `${item.amount / Math.max(periodCategories[0]?.amount || 1, 1) * 100}%` }} /></span><strong>{yuan(item.amount)}<small className={(delta?.delta || 0) > 0 ? "up" : "down"}>{delta?.deltaRate === null ? "新发生" : `${(delta?.delta || 0) >= 0 ? "↑" : "↓"}${Math.abs(delta?.deltaRate || 0)}%`}</small></strong></button>; })}</div></section></div>;
+    const maxTrend = Math.max(...trend.map((item) => Math.max(item.cost, item.revenue)), 1);
+    const sparseTrend = trend.filter((item) => item.cost > 0 || item.revenue > 0).length < 3;
+    return <div className="prototype-analysis"><section className="prototype-analysis-title"><h1>经营分析 · {period.replace("-", " 年 ")} 月</h1></section><section className="analysis-waterfall-card"><div className="analysis-card-head"><h2>利润与成本</h2><div className="segment-control"><button className={analysisPeriod === "current" ? "active" : ""} onClick={() => setAnalysisPeriod("current")}>本月</button><button className={analysisPeriod === "last" ? "active" : ""} onClick={() => setAnalysisPeriod("last")}>上月</button></div></div>{hasRevenue ? <ProfitWaterfall revenue={analysisRevenue} cogs={analysisCogs} expenses={analysisExpenses} profit={periodView.totals.operatingProfit} onSelect={(key) => { if (key === "cogs" || key === "expenses") { setRecordFilter("expense"); setRecordMonth(period); goSub("records"); } else if (key === "revenue") { setRecordFilter("income"); setRecordMonth(period); goSub("records"); } else goSub("reports"); }} /> : <button className="analysis-no-revenue" onClick={openNewRecord}><span>本期尚未录入销售收入</span><b>补录收入后生成利润瀑布图</b><ChevronRight size={16} /></button>}</section><section className={`analysis-trend-card ${sparseTrend ? "sparse" : ""}`}><div className="analysis-card-head"><h2>近 6 月收入与成本</h2><div className="chart-legend"><span><i className="revenue" />收入（¥）</span><span><i className="cost" />成本（¥）</span></div></div><p className="analysis-chart-context">{sparseTrend ? "可用月份较少，先补齐收入与订单以形成连续趋势。" : "收入与成本按自然月归集，可继续下钻核对流水。"}</p><div className="trend-chart">{trend.map((point) => <div key={point.month}><span className="trend-columns"><i style={{ height: `${point.revenue / maxTrend * 100}%` }} /><i style={{ height: `${point.cost / maxTrend * 100}%` }} /></span><em>{point.month.replace("-", "-")}</em></div>)}</div></section><section className="analysis-ranking-card"><div className="analysis-card-head"><h2>成本变化 Top 5</h2><span>较上月</span></div><div className="ranking-card">{periodCategories.slice(0, 5).map((item, index) => { const delta = categoryDeltaByKey.get(item.key); return <button key={item.key} onClick={() => { setRecordSearch(item.label); setRecordMonth(period); goSub("records"); }}><span className="rank">{index + 1}</span><span className="rank-name">{item.label}</span><span className="rank-bar"><b style={{ width: `${item.amount / Math.max(periodCategories[0]?.amount || 1, 1) * 100}%` }} /></span><strong>{yuan(item.amount)}<small className={(delta?.delta || 0) > 0 ? "up" : "down"}>{delta?.deltaRate === null ? "新发生" : `${(delta?.delta || 0) >= 0 ? "↑" : "↓"}${Math.abs(delta?.deltaRate || 0)}%`}</small></strong></button>; })}</div></section></div>;
   }
 
   function ProfilePage() {
-    return <><section className="store-profile"><span className="store-avatar"><IndustryIcon size={24} /></span><div><h1>{template.storeName}</h1><p>{template.descriptor}</p></div><button onClick={() => goSub("industry")}><Settings2 size={18} /></button></section><section className="profile-ledger"><span>本期经营余额</span><b>{yuan(totals.budget)} − {yuan(totals.totalCost)} ＝ <strong>{yuan(totals.budgetRemaining)}</strong></b><em>{totals.budgetRemaining >= 0 ? "预算仍可用，继续按行业成本模型核对。" : "本期预算已超支，建议优先复核高成本分类。"}</em></section><section className="profile-card"><button onClick={() => goSub("industry")}><span><Store size={19} />经营行业</span><strong>{template.label}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("budget")}><span><WalletCards size={19} />预算设置</span><strong>{yuan(totals.budget)}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("reports")}><span><FileText size={19} />成本报表</span><strong>{reports.length} 期<ChevronRight size={16} /></strong></button><button onClick={() => goSub("suppliers")}><span><UsersRound size={19} />供应商</span><strong>{suppliers.length} 家<ChevronRight size={16} /></strong></button><button onClick={() => goSub("categories")}><span><Boxes size={19} />分类管理</span><strong>{categories.length} 类<ChevronRight size={16} /></strong></button></section><section className="profile-tip"><LineChart size={20} /><div><span>模板切换记录</span><p>{book.state.switchLog.length ? `最近一次切换为 ${template.label}，历史账本已归档保留。` : "当前使用行业模板，分类、图表与成本卡均按本行业口径计算。"}</p></div></section></>;
+    const priority = homeDecision.priority;
+    return <><section className="store-profile"><span className="store-avatar"><IndustryIcon size={24} /></span><div><h1>{template.storeName}</h1><p>{template.descriptor}</p></div><button onClick={() => goSub("industry")}><Settings2 size={18} /></button></section><section className="profile-ledger"><span>本期经营余额</span><b>{yuan(totals.budget)} − {yuan(totals.totalCost)} ＝ <strong>{yuan(totals.budgetRemaining)}</strong></b><em>{totals.budgetRemaining >= 0 ? "预算仍可用，继续按行业成本模型核对。" : "本期预算已超支，建议优先复核高成本分类。"}</em></section>{priority ? <button className="profile-pending" onClick={() => openHomeDecision(priority)}><span><em>本期待处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} /></button> : <section className="profile-pending settled"><span><em>本期待处理</em><b>预算与订单已核对</b></span><small>继续维护行业账本</small><Check size={17} /></section>}<section className="profile-card"><button onClick={() => goSub("industry")}><span><Store size={19} />经营行业</span><strong>{template.label}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("budget")}><span><WalletCards size={19} />预算设置</span><strong>{yuan(totals.budget)}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("reports")}><span><FileText size={19} />成本报表</span><strong>{reports.length} 期<ChevronRight size={16} /></strong></button><button onClick={() => goSub("suppliers")}><span><UsersRound size={19} />供应商</span><strong>{suppliers.length} 家<ChevronRight size={16} /></strong></button><button onClick={() => goSub("categories")}><span><Boxes size={19} />分类管理</span><strong>{categories.length} 类<ChevronRight size={16} /></strong></button></section><section className="profile-tip"><LineChart size={20} /><div><span>模板切换记录</span><p>{book.state.switchLog.length ? `最近一次切换为 ${template.label}，历史账本已归档保留。` : "当前使用行业模板，分类、图表与成本卡均按本行业口径计算。"}</p></div></section></>;
   }
 
   function IndustryPage() {
@@ -600,9 +621,14 @@ export default function Home() {
   }
 
   function deleteSupplier(id: string, name: string) {
-    if (!window.confirm(`确认删除供应商“${name}”吗？`)) return;
+    if (!window.confirm(`确认删除供应商“${name}”吗？历史流水不会删除。`)) return;
     book.removeSupplier(id);
-    notify("供应商已删除");
+    notify("供应商已删除，历史流水已保留");
+  }
+  function deleteCategory(id: string, label: string) {
+    if (!window.confirm(`确认删除分类“${label}”吗？已关联的账本记录会保留原口径。`)) return;
+    const result = book.removeCategory(id);
+    notify(result.ok ? "分类已删除，历史记录已保留" : result.reason || "无法删除分类");
   }
 
   function SuppliersPage() {
@@ -626,7 +652,7 @@ export default function Home() {
   }
 
   function CategoriesPage() {
-    return <><section className="sub-intro compact"><span>{template.label} · 账本口径</span><h1>分类管理</h1><p>分类会同步影响记账归集、成本构成、报表和隐性成本模型。</p></section><div className="category-manage-list">{categories.map((category) => <div key={category.id}><i style={{ background: category.color }} /><span><b>{category.label}</b><em>{category.hint}</em></span><button onClick={() => { const result = book.removeCategory(category.id); notify(result.ok ? "分类已删除" : result.reason || "无法删除分类"); }}><Trash2 size={16} /></button></div>)}</div><button className="fixed-primary" onClick={() => goSub("categoryForm")}><Plus size={18} />新增分类</button></>;
+    return <><section className="sub-intro compact"><span>{template.label} · 账本口径</span><h1>分类管理</h1><p>分类会同步影响记账归集、成本构成、报表和隐性成本模型。</p></section><div className="category-manage-list">{categories.map((category) => <div key={category.id}><i style={{ background: category.color }} /><span><b>{category.label}</b><em>{category.hint}</em></span><button onClick={() => deleteCategory(category.id, category.label)} aria-label={`删除分类 ${category.label}`}><Trash2 size={16} /></button></div>)}</div><button className="fixed-primary" onClick={() => goSub("categoryForm")}><Plus size={18} />新增分类</button></>;
   }
 
   function CategoryFormPage() {
