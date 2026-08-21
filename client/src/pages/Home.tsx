@@ -60,6 +60,7 @@ import { buildMetrics, entriesForPeriod, fromFen } from "@/lib/ledger-metrics";
 import { isNonNegativeNumber, isPositiveInteger, isPositiveMoney, toEditableNumber, toNumber, type EditableNumber } from "@/lib/editable-number";
 import { businessDate } from "@/lib/business-date";
 import { buildReportCsv } from "@/lib/report-export";
+import { groupSuppliers } from "@/lib/supplier-management";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trpc } from "@/lib/trpc";
 import "../cashflow-filter.css";
@@ -260,6 +261,8 @@ export default function Home() {
   const [formMerchant, setFormMerchant] = useState("");
   const [formNote, setFormNote] = useState("");
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const [supplierEditId, setSupplierEditId] = useState<string | null>(null);
   const [cardId, setCardId] = useState<string | null>(() => ["cardDetail", "pricing"].includes(requestedScreen || "") ? book.cards[0]?.id ?? null : null);
   const [bomItemId, setBomItemId] = useState<string | null>(null);
   const [cardSearch, setCardSearch] = useState("");
@@ -603,8 +606,10 @@ export default function Home() {
     const data = new FormData(event.currentTarget);
     const name = String(data.get("name") || "").trim();
     if (!name) return notify("请输入供应商名称");
-    book.addSupplier({ name, contact: String(data.get("contact") || ""), categoryKey: String(data.get("categoryKey") || categories[0]?.key || "") });
-    notify("供应商已新增");
+    const input = { name, contact: String(data.get("contact") || ""), categoryKey: String(data.get("categoryKey") || categories[0]?.key || ""), shared: data.get("shared") === "on" };
+    if (supplierEditId) { book.updateSupplier(supplierEditId, input); notify("供应商信息已更新"); }
+    else { book.addSupplier(input); notify("供应商已新增"); }
+    setSupplierEditId(null);
     setSubPage("suppliers");
   }
 
@@ -842,23 +847,20 @@ export default function Home() {
   }
 
   function SuppliersPage() {
+    const { own: ownSuppliers, shared: sharedSuppliers } = groupSuppliers({ suppliers, query: supplierSearch, categoryLabels: new Map(Array.from(categoryByKey.entries()).map(([key, category]) => [key, category.label])) });
+    const hasVisibleSuppliers = ownSuppliers.length + sharedSuppliers.length > 0;
+    const supplierRow = (supplier: typeof suppliers[number]) => { const category = categoryByKey.get(supplier.categoryKey); return <div key={supplier.id}><span>{supplier.name.slice(0, 1)}</span><section><b>{supplier.name}</b><em>{category?.label || "未分类"} · {supplier.contact || "未设置联系人"}</em></section><strong>{yuan(supplier.spend)}<small>{supplier.orders} 笔</small></strong><button onClick={() => { setSupplierEditId(supplier.id); goSub("supplierForm"); }} aria-label={`编辑供应商 ${supplier.name}`}><Pencil size={15} /></button><button onClick={() => deleteSupplier(supplier.id, supplier.name)} aria-label={`删除供应商 ${supplier.name}`}><Trash2 size={16} /></button></div>; };
     return <>
       <section className="sub-intro compact"><span>{template.label} · 采购协同</span><h1>供应商</h1><p>供应商按行业范围关联；共享供应商可在多个行业账本中复用。</p></section>
-      <div className="supplier-list">{suppliers.map((supplier) => {
-        const category = categoryByKey.get(supplier.categoryKey);
-        return <div key={supplier.id}>
-          <span>{supplier.name.slice(0, 1)}</span>
-          <section><b>{supplier.name}</b><em>{category?.label || "未分类"} · {supplier.contact || "未设置联系人"}</em></section>
-          <strong>{yuan(supplier.spend)}<small>{supplier.orders} 笔</small></strong>
-          <button onClick={() => deleteSupplier(supplier.id, supplier.name)} aria-label="删除供应商"><Trash2 size={16} /></button>
-        </div>;
-      })}</div>
-      <button className="fixed-primary" onClick={() => goSub("supplierForm")}><Plus size={18} />新增供应商</button>
+      <label className="search-field supplier-search"><Search size={16} /><input value={supplierSearch} onChange={(event) => setSupplierSearch(event.target.value)} placeholder="搜索供应商、联系人或分类" /></label>
+      <div className="supplier-list">{ownSuppliers.length > 0 && <><h2>当前行业</h2>{ownSuppliers.map(supplierRow)}</>}{sharedSuppliers.length > 0 && <><h2>共享供应商</h2>{sharedSuppliers.map(supplierRow)}</>}{!hasVisibleSuppliers && <div className="empty-state">没有匹配的供应商。</div>}</div>
+      <button className="fixed-primary" onClick={() => { setSupplierEditId(null); goSub("supplierForm"); }}><Plus size={18} />新增供应商</button>
     </>;
   }
 
   function SupplierFormPage() {
-    return <><section className="sub-intro compact"><span>{template.label} · 供应商信息</span><h1>新增供应商</h1><p>供应商会关联到当前行业；后续可在管理页设置为共享供应商。</p></section><form className="record-form" onSubmit={saveSupplier}><label>供应商名称<input name="name" placeholder="例如：优选食材供应" /></label><label>联系人<input name="contact" placeholder="例如：李经理" /></label><label>默认分类<select name="categoryKey">{categories.map((category) => <option value={category.key} key={category.key}>{category.label}</option>)}</select></label><button type="submit" className="fixed-primary form-save"><Plus size={18} />保存供应商</button></form></>;
+    const editing = suppliers.find((supplier) => supplier.id === supplierEditId);
+    return <><section className="sub-intro compact"><span>{template.label} · 供应商信息</span><h1>{editing ? "编辑供应商" : "新增供应商"}</h1><p>共享供应商可在其他行业账本中选用；已有历史流水不会被改写。</p></section><form className="record-form" onSubmit={saveSupplier}><label>供应商名称<input name="name" defaultValue={editing?.name} placeholder="例如：优选食材供应" /></label><label>联系人<input name="contact" defaultValue={editing?.contact} placeholder="例如：李经理" /></label><label>默认分类<select name="categoryKey" defaultValue={editing?.categoryKey || categories[0]?.key}>{categories.map((category) => <option value={category.key} key={category.key}>{category.label}</option>)}</select></label><label className="attachment-row"><span>跨行业可用</span><input name="shared" type="checkbox" defaultChecked={editing?.industryIds.includes("shared")} /></label><button type="submit" className="fixed-primary form-save"><Plus size={18} />{editing ? "保存供应商" : "新增供应商"}</button></form></>;
   }
 
   function CategoriesPage() {
