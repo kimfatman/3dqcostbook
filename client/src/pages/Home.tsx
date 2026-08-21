@@ -263,6 +263,7 @@ export default function Home() {
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
   const [supplierSearch, setSupplierSearch] = useState("");
   const [supplierEditId, setSupplierEditId] = useState<string | null>(null);
+  const [categoryEditId, setCategoryEditId] = useState<string | null>(null);
   const [cardId, setCardId] = useState<string | null>(() => ["cardDetail", "pricing"].includes(requestedScreen || "") ? book.cards[0]?.id ?? null : null);
   const [bomItemId, setBomItemId] = useState<string | null>(null);
   const [cardSearch, setCardSearch] = useState("");
@@ -618,8 +619,10 @@ export default function Home() {
     const data = new FormData(event.currentTarget);
     const label = String(data.get("label") || "").trim();
     if (!label) return notify("请输入分类名称");
-    book.addCategory({ key: `custom_${Date.now()}`, label, color: String(data.get("color") || "#1677FF"), hint: "自定义分类" });
-    notify("分类已新增");
+    const input = { label, color: String(data.get("color") || "#1677FF"), hint: String(data.get("hint") || "自定义分类").trim() || "自定义分类" };
+    if (categoryEditId) { book.updateCategory(categoryEditId, input); notify("分类已更新，历史流水口径保持不变"); }
+    else { book.addCategory({ key: `custom_${Date.now()}`, ...input }); notify("分类已新增"); }
+    setCategoryEditId(null);
     setSubPage("categories");
   }
 
@@ -864,11 +867,12 @@ export default function Home() {
   }
 
   function CategoriesPage() {
-    return <><section className="sub-intro compact"><span>{template.label} · 账本口径</span><h1>分类管理</h1><p>分类会同步影响记账归集、成本构成、报表和隐性成本模型。</p></section><div className="category-manage-list">{categories.map((category) => <div key={category.id}><i style={{ background: category.color }} /><span><b>{category.label}</b><em>{category.hint}</em></span><button onClick={() => deleteCategory(category.id, category.label)} aria-label={`删除分类 ${category.label}`}><Trash2 size={16} /></button></div>)}</div><button className="fixed-primary" onClick={() => goSub("categoryForm")}><Plus size={18} />新增分类</button></>;
+    return <><section className="sub-intro compact"><span>{template.label} · 账本口径</span><h1>分类管理</h1><p>分类会同步影响记账归集、成本构成、报表和隐性成本模型。</p></section><div className="category-manage-list">{categories.map((category) => <div key={category.id}><i style={{ background: category.color }} /><span><b>{category.label}</b><em>{category.hint}</em></span><button onClick={() => { setCategoryEditId(category.id); goSub("categoryForm"); }} aria-label={`编辑分类 ${category.label}`}><Pencil size={15} /></button><button onClick={() => deleteCategory(category.id, category.label)} aria-label={`删除分类 ${category.label}`}><Trash2 size={16} /></button></div>)}</div><button className="fixed-primary" onClick={() => { setCategoryEditId(null); goSub("categoryForm"); }}><Plus size={18} />新增分类</button></>;
   }
 
   function CategoryFormPage() {
-    return <><section className="sub-intro compact"><span>{template.label} · 分类口径</span><h1>新增分类</h1><p>新分类只作用于当前行业账本，历史行业分类不受影响。</p></section><form className="record-form" onSubmit={saveCategory}><label>分类名称<input name="label" placeholder="例如：内容制作" /></label><label>分类颜色<select name="color"><option value="#1677FF">品牌蓝</option><option value="#12B76A">绿色</option><option value="#F79009">橙色</option><option value="#7F56D9">紫色</option><option value="#F04438">红色</option></select></label><button type="submit" className="fixed-primary form-save"><Plus size={18} />保存分类</button></form></>;
+    const editing = categories.find((category) => category.id === categoryEditId);
+    return <><section className="sub-intro compact"><span>{template.label} · 分类口径</span><h1>{editing ? "编辑分类" : "新增分类"}</h1><p>已占用分类不可删除；编辑显示名称、提示和颜色不会改写历史流水的分类键。</p></section><form className="record-form" onSubmit={saveCategory}><label>分类名称<input name="label" defaultValue={editing?.label} placeholder="例如：内容制作" /></label><label>分类提示<input name="hint" defaultValue={editing?.hint} placeholder="例如：活动素材、脚本与剪辑" /></label><label>分类颜色<select name="color" defaultValue={editing?.color || "#1677FF"}><option value="#1677FF">品牌蓝</option><option value="#12B76A">绿色</option><option value="#F79009">橙色</option><option value="#7F56D9">紫色</option><option value="#F04438">红色</option></select></label><button type="submit" className="fixed-primary form-save"><Plus size={18} />{editing ? "保存分类" : "新增分类"}</button></form></>;
   }
 
   function NotificationsPage() {
