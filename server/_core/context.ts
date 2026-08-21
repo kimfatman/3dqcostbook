@@ -9,9 +9,14 @@ export type TrpcContext = {
   user: LocalUser | null;
 };
 
-export async function createContext(opts: CreateExpressContextOptions): Promise<TrpcContext> {
-  const token = parse(opts.req.headers.cookie || "")[LOCAL_SESSION_COOKIE];
+export async function getLocalUserFromRequest(req: Pick<CreateExpressContextOptions["req"], "headers">) {
+  const token = parse(req.headers.cookie || "")[LOCAL_SESSION_COOKIE];
   const payload = verifySession(token);
   const user = payload ? await getAppUserById(payload.sub) : undefined;
-  return { req: opts.req, res: opts.res, user: user || null };
+  return user || null;
+}
+
+export async function createContext(opts: CreateExpressContextOptions): Promise<TrpcContext> {
+  const user = await getLocalUserFromRequest(opts.req);
+  return { req: opts.req, res: opts.res, user };
 }

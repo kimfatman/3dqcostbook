@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { randomUUID } from "node:crypto";
-import { appUsers, auditEvents, type AppUser, type InsertUser, users, workspaceBooks, workspaceMembers, workspaces } from "../drizzle/schema";
+import { appUsers, auditEvents, mediaAssets, type AppUser, type InsertUser, users, workspaceBooks, workspaceMembers, workspaces } from "../drizzle/schema";
 
 let database: ReturnType<typeof drizzle> | null = null;
 
@@ -69,6 +69,21 @@ export async function createInitialAdmin(input: { email: string; name: string; p
   return { userId, workspaceId };
 }
 
+export async function registerAndCreateWorkspace(input: { email: string; name: string; passwordHash: string; workspaceName: string; industryId: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const userId = randomUUID();
+  const workspaceId = randomUUID();
+  await db.transaction(async tx => {
+    await tx.insert(appUsers).values({ id: userId, email: input.email.toLowerCase(), name: input.name, passwordHash: input.passwordHash, role: "member" });
+    await tx.insert(workspaces).values({ id: workspaceId, name: input.workspaceName, ownerId: userId, industryId: input.industryId, contactName: input.name });
+    await tx.insert(workspaceMembers).values({ workspaceId, userId, role: "owner" });
+    await tx.insert(workspaceBooks).values({ workspaceId, state: {}, updatedByUserId: userId });
+    await tx.insert(auditEvents).values({ id: randomUUID(), workspaceId, actorUserId: userId, action: "workspace.register", targetType: "workspace", targetId: workspaceId, details: { source: "public_registration", industryId: input.industryId } });
+  });
+  return { userId, workspaceId };
+}
+
 export async function markSignedIn(userId: string) {
   const db = await getDb();
   if (!db) return;
@@ -78,10 +93,53 @@ export async function markSignedIn(userId: string) {
 export async function listWorkspacesForUser(userId: string) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
-  return db.select({ id: workspaces.id, name: workspaces.name, role: workspaceMembers.role, updatedAt: workspaces.updatedAt })
+  return db.select({ id: workspaces.id, name: workspaces.name, industryId: workspaces.industryId, contactName: workspaces.contactName, logoAssetId: workspaces.logoAssetId, role: workspaceMembers.role, updatedAt: workspaces.updatedAt })
     .from(workspaceMembers)
     .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
     .where(eq(workspaceMembers.userId, userId));
+}
+
+export async function getWorkspaceAccess(workspaceId: string, userId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const rows = await db.select({ workspace: workspaces, role: workspaceMembers.role })
+    .from(workspaceMembers)
+    .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
+    .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, userId))).limit(1);
+  return rows[0];
+}
+
+export async function updateAppUserProfile(userId: string, input: { name: string; avatarAssetId?: string | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await db.update(appUsers).set({ name: input.name, avatarAssetId: input.avatarAssetId ?? null }).where(eq(appUsers.id, userId));
+  return getAppUserById(userId);
+}
+
+export async function updateWorkspaceProfile(input: { workspaceId: string; userId: string; name: string; industryId: string; contactName: string; logoAssetId?: string | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const access = await getWorkspaceAccess(input.workspaceId, input.userId);
+  if (!access || access.role !== "owner") throw new Error("仅店铺 owner 可编辑店铺资料");
+  await db.update(workspaces).set({ name: input.name, industryId: input.industryId, contactName: input.contactName, logoAssetId: input.logoAssetId ?? null, updatedAt: new Date() }).where(eq(workspaces.id, input.workspaceId));
+  return getWorkspaceAccess(input.workspaceId, input.userId);
+}
+
+export async function createMediaAsset(input: { id: string; workspaceId: string; ownerUserId: string; kind: "user_avatar" | "workspace_logo" | "cost_card_image"; storageKey: string; mimeType: string; sizeBytes: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await db.insert(mediaAssets).values(input);
+  return input;
+}
+
+export async function getMediaAssetForUser(assetId: string, userId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const rows = await db.select({ asset: mediaAssets })
+    .from(mediaAssets)
+    .innerJoin(workspaceMembers, and(eq(workspaceMembers.workspaceId, mediaAssets.workspaceId), eq(workspaceMembers.userId, userId)))
+    .where(eq(mediaAssets.id, assetId)).limit(1);
+  return rows[0]?.asset;
 }
 
 export async function getWorkspaceBook(workspaceId: string, userId: string) {
@@ -118,4 +176,4 @@ export async function recentAuditEvents(workspaceId: string, userId: string) {
   return db.select().from(auditEvents).where(eq(auditEvents.workspaceId, workspaceId)).orderBy(desc(auditEvents.createdAt)).limit(30);
 }
 
-export type LocalUser = Pick<AppUser, "id" | "email" | "name" | "role" | "createdAt" | "updatedAt" | "lastSignedInAt">;
+export type LocalUser = Pick<AppUser, "id" | "email" | "name" | "avatarAssetId" | "role" | "createdAt" | "updatedAt" | "lastSignedInAt">;

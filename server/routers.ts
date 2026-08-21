@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { getAppUserByEmail, getWorkspaceBook, hasAnyAppUsers, listWorkspacesForUser, markSignedIn, createInitialAdmin, recentAuditEvents, saveWorkspaceBook } from "./db";
+import { getAppUserByEmail, getWorkspaceBook, hasAnyAppUsers, listWorkspacesForUser, markSignedIn, createInitialAdmin, recentAuditEvents, registerAndCreateWorkspace, saveWorkspaceBook, updateAppUserProfile, updateWorkspaceProfile } from "./db";
 import { localSessionCookieOptions, LOCAL_SESSION_COOKIE, hashPassword, signSession, verifyPassword } from "./local-auth";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 
 const email = z.string().trim().toLowerCase().email().max(320);
 const password = z.string().min(12, "密码至少需要 12 个字符").max(128);
 const state = z.record(z.string(), z.unknown());
+const industryId = z.enum(["canteen", "retail", "ecommerce", "beauty", "stall"]);
 
 export const appRouter = router({
   auth: router({
@@ -15,6 +16,12 @@ export const appRouter = router({
       if (!expected || input.token !== expected) throw new Error("首次初始化令牌无效");
       if (await hasAnyAppUsers()) throw new Error("管理员已经初始化");
       const result = await createInitialAdmin({ email: input.email, name: input.name, passwordHash: await hashPassword(input.password), workspaceName: input.workspaceName });
+      ctx.res.cookie(LOCAL_SESSION_COOKIE, signSession(result.userId), localSessionCookieOptions());
+      return { workspaceId: result.workspaceId };
+    }),
+    registerAndCreateWorkspace: publicProcedure.input(z.object({ email, name: z.string().trim().min(1).max(120), password, workspaceName: z.string().trim().min(1).max(120), industryId })).mutation(async ({ input, ctx }) => {
+      if (await getAppUserByEmail(input.email)) throw new Error("该邮箱已注册，请直接登录");
+      const result = await registerAndCreateWorkspace({ ...input, passwordHash: await hashPassword(input.password) });
       ctx.res.cookie(LOCAL_SESSION_COOKIE, signSession(result.userId), localSessionCookieOptions());
       return { workspaceId: result.workspaceId };
     }),
@@ -31,11 +38,15 @@ export const appRouter = router({
       return { success: true } as const;
     }),
   }),
+  profile: router({
+    updateMe: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(120), avatarAssetId: z.string().uuid().nullable().optional() })).mutation(({ input, ctx }) => updateAppUserProfile(ctx.user.id, input)),
+  }),
   workspace: router({
     list: protectedProcedure.query(({ ctx }) => listWorkspacesForUser(ctx.user.id)),
     book: protectedProcedure.input(z.object({ workspaceId: z.string().uuid() })).query(({ input, ctx }) => getWorkspaceBook(input.workspaceId, ctx.user.id)),
     saveBook: protectedProcedure.input(z.object({ workspaceId: z.string().uuid(), expectedRevision: z.number().int().nonnegative(), schemaVersion: z.number().int().positive().max(100), state })).mutation(({ input, ctx }) => saveWorkspaceBook({ ...input, userId: ctx.user.id })),
     audit: protectedProcedure.input(z.object({ workspaceId: z.string().uuid() })).query(({ input, ctx }) => recentAuditEvents(input.workspaceId, ctx.user.id)),
+    updateProfile: protectedProcedure.input(z.object({ workspaceId: z.string().uuid(), name: z.string().trim().min(1).max(120), industryId, contactName: z.string().trim().min(1).max(120), logoAssetId: z.string().uuid().nullable().optional() })).mutation(({ input, ctx }) => updateWorkspaceProfile({ ...input, userId: ctx.user.id })),
   }),
 });
 

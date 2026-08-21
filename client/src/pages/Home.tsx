@@ -66,7 +66,7 @@ import { trpc } from "@/lib/trpc";
 import "../cashflow-filter.css";
 
 type TabId = "home" | "orders" | "cards" | "analysis" | "profile";
-type SubPage = "notifications" | "industry" | "records" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "pricing" | "budget" | "healthSettings" | "salesTargets" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | null;
+type SubPage = "notifications" | "industry" | "records" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "pricing" | "budget" | "healthSettings" | "salesTargets" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | "profileSettings" | null;
 type RecordFilter = "all" | RecordType;
 type DraftMaterial = { name: string; spec: string; quantity: string; amount: EditableNumber };
 type QuickAction = "order" | "budget" | "cards" | "record" | "analysis";
@@ -245,6 +245,11 @@ const today = businessDate();
 export default function Home() {
   const book = useCostBook();
   useCloudBookSync(book);
+  const meQuery = trpc.auth.me.useQuery(undefined, { retry: false });
+  const workspaceQuery = trpc.workspace.list.useQuery(undefined, { retry: false, enabled: Boolean(meQuery.data) });
+  const utils = trpc.useUtils();
+  const updateMe = trpc.profile.updateMe.useMutation({ onSuccess: () => utils.auth.me.invalidate() });
+  const updateWorkspace = trpc.workspace.updateProfile.useMutation({ onSuccess: () => utils.workspace.list.invalidate() });
   const [tab, setTab] = useState<TabId>(initialTab);
   const [subPage, setSubPage] = useState<SubPage>(initialSubPage);
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryId>(book.activeIndustryId);
@@ -297,6 +302,15 @@ export default function Home() {
   const [cashChannelFilter, setCashChannelFilter] = useState<OrderChannel | "all">("all");
   const [cashSupplierFilter, setCashSupplierFilter] = useState("");
   const reducedMotion = useReducedMotion();
+  const currentWorkspace = workspaceQuery.data?.[0];
+
+  async function uploadMedia(file: File, kind: "user_avatar" | "workspace_logo" | "cost_card_image", subjectId: string) {
+    if (!currentWorkspace) throw new Error("正在读取店铺资料，请稍后再试");
+    const response = await fetch("/api/media/upload", { method: "POST", credentials: "include", headers: { "Content-Type": file.type, "x-workspace-id": currentWorkspace.id, "x-subject-id": subjectId, "x-media-kind": kind }, body: file });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "图片上传失败");
+    return data as { id: string; url: string };
+  }
 
   useEffect(() => {
     const shell = document.querySelector(".mobile-shell");
@@ -627,7 +641,7 @@ export default function Home() {
   }
 
   function renderHeader() {
-    const titles: Record<Exclude<SubPage, null>, string> = { notifications: "消息中心", industry: "切换行业", records: "经营流水", record: recordId ? "编辑记录" : "记一笔", recordDetail: "流水详情", cards: `${template.entityLabel}成本卡`, cardDetail: `${template.entityLabel}成本详情`, cardForm: activeCard ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`, bomForm: activeBomItem ? `编辑${template.formulaLabel}项` : `添加${template.formulaLabel}项`, pricing: "智能测算定价", budget: "预算管理", healthSettings: "健康度评分阈值", salesTargets: "销售目标历史", reports: "成本报表", reportDetail: "报表详情", suppliers: "供应商", supplierForm: "新增供应商", categories: "分类管理", categoryForm: "新增分类", orders: "订单账本", orderForm: "记录订单", orderDetail: "订单详情", refundForm: "登记退款", skus: "SKU 商品成本" };
+    const titles: Record<Exclude<SubPage, null>, string> = { notifications: "消息中心", industry: "切换行业", records: "经营流水", record: recordId ? "编辑记录" : "记一笔", recordDetail: "流水详情", cards: `${template.entityLabel}成本卡`, cardDetail: `${template.entityLabel}成本详情`, cardForm: activeCard ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`, bomForm: activeBomItem ? `编辑${template.formulaLabel}项` : `添加${template.formulaLabel}项`, pricing: "智能测算定价", budget: "预算管理", healthSettings: "健康度评分阈值", salesTargets: "销售目标历史", reports: "成本报表", reportDetail: "报表详情", suppliers: "供应商", supplierForm: "新增供应商", categories: "分类管理", categoryForm: "新增分类", orders: "订单账本", orderForm: "记录订单", orderDetail: "订单详情", refundForm: "登记退款", skus: "SKU 商品成本", profileSettings: "个人与店铺资料" };
     if (isSub) return <header className="page-header sub-header"><button className="back-button" onClick={goBack} aria-label="返回"><ArrowLeft size={21} /></button><strong>{titles[subPage]}</strong><span /></header>;
     return <header className={`page-header ${tab === "orders" ? "orders-prototype-header" : ""}`}><div className="brand-mini"><img src="/manus-storage/suandeqing-logo-3d_b82ea984.png" alt="算得清" /><span><strong>算得清</strong><em>{template.label}成本账本</em></span></div>{tab === "home" && activeReminder ? <button className="header-reminder-ticker" onClick={() => goSub("notifications")} aria-label={`经营提醒：${activeReminder.title}，打开消息中心查看详情`}><Bell size={14} /><span key={activeReminder.id}>{activeReminder.title}</span><i>{unreadNotificationCount || ""}</i></button> : tab === "cards" ? <button className="header-primary-action" onClick={openNewCard}><Plus size={16} />新增成本卡</button> : tab === "orders" ? <span /> : <button className="header-icon" onClick={() => goSub("notifications")} aria-label="经营提醒"><Bell size={20} />{unreadNotificationCount > 0 && <i />}</button>}</header>;
   }
