@@ -68,6 +68,20 @@ describe("订单、SKU 与退款回收账本", () => {
     expect(getOrderPricingAlert(order, [refund])).toMatchObject({ type: "below_target_margin", revenue: 207, contribution: 63.15, contributionMarginRate: 30.5 });
   });
 
+  it("多 SKU 订单可累计部分退款，并只冲回可售回收入库的对应成本", () => {
+    const sellablePartial: RefundCase = { id: "refund-partial-a", workspaceId: "w", industryId: "ecommerce", orderId: order.id, orderLineId: "line-a", skuId: "sku-a", quantity: 1, refundFen: 5000, refundFeeFen: 60, reason: "quality_issue", recoveryStatus: "sellable_restocked", recoveredCostFen: 3980, occurredAt: "2026-07-15", refundEntryId: "refund-entry-partial-a", createdAt: "now" };
+    const disposedPartial: RefundCase = { id: "refund-partial-b", workspaceId: "w", industryId: "ecommerce", orderId: order.id, orderLineId: "line-b", skuId: "sku-b", quantity: 1, refundFen: 6000, refundFeeFen: 40, reason: "logistics_delay", recoveryStatus: "damaged_disposed", recoveredCostFen: 0, occurredAt: "2026-07-16", refundEntryId: "refund-entry-partial-b", createdAt: "now" };
+    const metrics = getOrderAfterSalesMetrics(order, [sellablePartial, disposedPartial]);
+    expect(metrics).toMatchObject({ refundFen: 11000, netRevenueFen: 16500, recoveredCostFen: 3980, netCogsFen: 12330, refundFeeFen: 100, refundedQuantity: 2 });
+    expect(metrics.operatingContributionFen).toBe(2345);
+  });
+
+  it("不会把同 ID 的其他行业退款混入当前行业订单的售后口径", () => {
+    const foreignRefund: RefundCase = { id: "refund-foreign", workspaceId: "w", industryId: "retail", orderId: order.id, orderLineId: "line-a", skuId: "sku-a", quantity: 1, refundFen: 6800, refundFeeFen: 120, reason: "other", recoveryStatus: "sellable_restocked", recoveredCostFen: 3980, occurredAt: "2026-07-15", refundEntryId: "refund-entry-foreign", createdAt: "now" };
+    const metrics = getOrderAfterSalesMetrics(order, [foreignRefund]);
+    expect(metrics).toMatchObject({ refundFen: 0, netRevenueFen: 27500, recoveredCostFen: 0, hasAfterSale: false });
+  });
+
   it("当订单实收低于扣除渠道费后的保本线时优先标识亏损风险", () => {
     const lossOrder: Order = { ...order, id: "loss", lines: [{ ...lines[0], unitPriceFen: 2000, quantity: 1, unitCostFen: 3980 }], pricing: { commissionRatePct: 5, fulfillmentCost: 3, targetContributionMarginPct: 40, roundingStep: 1 } };
     expect(getOrderPricingAlert(lossOrder)).toMatchObject({ type: "below_break_even", breakEvenRevenue: 45.05, contribution: -23.8 });

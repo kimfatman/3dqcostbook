@@ -88,7 +88,7 @@ export const refundableQuantity = (line: OrderLine) => Math.max(0, line.quantity
  * 渠道扣点和履约费用仍是创建订单时渠道快照的估算值，因此与实际发生费用分开披露。
  */
 export function getOrderAfterSalesMetrics(order: Order, refunds: RefundCase[] = []): OrderAfterSalesMetrics {
-  const orderRefunds = refunds.filter((refund) => refund.orderId === order.id);
+  const orderRefunds = refunds.filter((refund) => refund.orderId === order.id && refund.workspaceId === order.workspaceId && refund.industryId === order.industryId);
   const grossSalesFen = orderGrossFen(order);
   const refundFen = orderRefunds.reduce((sum, refund) => sum + refund.refundFen, 0);
   const netRevenueFen = grossSalesFen - refundFen;
