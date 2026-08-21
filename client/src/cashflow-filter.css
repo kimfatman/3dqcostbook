@@ -68,6 +68,86 @@
 .analysis-health-card .health-formula summary { display: flex; align-items: center; min-height: 44px; color: #087ff5; font-size: 11px; font-weight: 700; }
 .analysis-health-card .health-formula p { color: #526b86; font-size: 11px; line-height: 1.6; }
 
+/* 可切换材质皮肤：共享内容结构，只变更环境光、承载面和前中后景。 */
+.visual-skin-picker { display: grid; gap: 10px; margin: 14px 0; padding: 15px 14px; background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(238,244,249,.86)); border: 1px solid rgba(220,230,239,.95); border-radius: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.98), 0 10px 20px rgba(20,49,83,.06); }
+.visual-skin-heading { display: flex; align-items: end; justify-content: space-between; gap: 10px; }
+.visual-skin-heading span { display: grid; gap: 2px; }
+.visual-skin-heading em { color: #087ff5; font-size: 10px; font-style: normal; font-weight: 800; letter-spacing: .05em; }
+.visual-skin-heading b { color: #0b1836; font-size: 15px; }
+.visual-skin-heading small { color: #667d96; font-size: 10px; white-space: nowrap; }
+.visual-skin-options { display: grid; gap: 8px; }
+.skin-option { display: grid; grid-template-columns: 56px minmax(0, 1fr) 18px; gap: 10px; align-items: center; width: 100%; min-height: 68px; padding: 8px; color: #0b1836; text-align: left; background: rgba(255,255,255,.76); border: 1px solid #dbe5ee; border-radius: 12px; transition: transform 160ms cubic-bezier(.23, 1, .32, 1), border-color 160ms ease-out, box-shadow 160ms ease-out; }
+.skin-option:active { transform: scale(.985); }
+.skin-option.active { border-color: #087ff5; box-shadow: 0 0 0 3px rgba(8,127,245,.11); }
+.skin-option > i { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; width: 56px; height: 48px; padding: 7px; overflow: hidden; border-radius: 9px; }
+.skin-option > i span { border-radius: 4px; }
+.skin-option.mineral > i { background: radial-gradient(circle at 18% 12%, #fff 0 13%, transparent 14%), linear-gradient(145deg, #f7fafc, #dce8f2); box-shadow: inset 0 1px 0 #fff, inset 0 -1px 2px rgba(43,73,102,.16); }
+.skin-option.mineral > i span { background: linear-gradient(145deg, #fff, #e9f0f5); box-shadow: 0 3px 4px rgba(32,66,100,.12); }
+.skin-option.aurora > i { background: radial-gradient(circle at 12% 0%, rgba(255,255,255,.94), transparent 34%), linear-gradient(135deg, #b9f0ff, #d4d4ff 47%, #86bfff); }
+.skin-option.aurora > i span { background: rgba(255,255,255,.48); border: 1px solid rgba(255,255,255,.58); box-shadow: 0 4px 8px rgba(47,93,168,.2); backdrop-filter: blur(4px); }
+.skin-option.deep > i { background: radial-gradient(circle at 78% 12%, rgba(71,175,255,.55), transparent 26%), linear-gradient(145deg, #0b1836, #102d56); }
+.skin-option.deep > i span { background: linear-gradient(145deg, rgba(255,255,255,.2), rgba(129,205,255,.08)); border: 1px solid rgba(172,222,255,.18); box-shadow: 0 5px 9px rgba(0,0,0,.25); }
+.skin-option > span { display: grid; gap: 3px; min-width: 0; }
+.skin-option > span b { overflow: hidden; color: inherit; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.skin-option > span em { overflow: hidden; color: #637b94; font-size: 10px; font-style: normal; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.skin-option > svg { color: #8ca0b4; }
+.skin-option.active > svg { color: #087ff5; }
+
+.skin-soft { --skin-text: #0b1836; --skin-subtle: #5f7892; }
+.skin-soft .app-frame { background: radial-gradient(110% 58% at 100% -8%, rgba(183,218,246,.4), transparent 48%), radial-gradient(94% 45% at -6% 26%, rgba(235,244,250,.9), transparent 55%), #edf3f7; }
+.skin-soft .app-content { background: linear-gradient(180deg, rgba(249,252,253,.52), rgba(236,243,247,.58)); }
+.skin-soft .home-chart-card, .skin-soft .analysis-waterfall-card, .skin-soft .analysis-stack-card, .skin-soft .analysis-cashflow-card, .skin-soft .analysis-health-card, .skin-soft .analysis-trend-card, .skin-soft .analysis-ranking-card, .skin-soft .profile-card, .skin-soft .record-form { background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(244,248,250,.98)); border-color: rgba(216,228,237,.96); box-shadow: inset 0 1px 0 rgba(255,255,255,.98), 0 10px 22px rgba(27,55,83,.07); }
+.skin-soft .home-decision { box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 16px 28px rgba(8,104,208,.2); }
+.skin-soft .tabbar { background: rgba(251,253,254,.86); border-top-color: rgba(213,227,237,.78); box-shadow: 0 -8px 24px rgba(21,50,79,.07); backdrop-filter: blur(18px) saturate(145%); }
+
+.skin-aurora { --skin-text: #10264d; --skin-subtle: #536e95; }
+.skin-aurora .app-frame { background: radial-gradient(86% 48% at 8% 0%, rgba(226,255,255,.94), transparent 60%), radial-gradient(78% 38% at 100% 16%, rgba(217,215,255,.7), transparent 58%), linear-gradient(150deg, #e8f7ff, #eff0ff 52%, #dcecff); }
+.skin-aurora .app-content { background: linear-gradient(180deg, rgba(243,251,255,.32), rgba(230,235,255,.38)); }
+.skin-aurora .page-header, .skin-aurora .sub-header { background: rgba(250,255,255,.64); border-color: rgba(255,255,255,.72); box-shadow: 0 10px 24px rgba(77,112,176,.08); backdrop-filter: blur(18px) saturate(155%); }
+.skin-aurora .home-chart-card, .skin-aurora .analysis-waterfall-card, .skin-aurora .analysis-stack-card, .skin-aurora .analysis-cashflow-card, .skin-aurora .analysis-health-card, .skin-aurora .analysis-trend-card, .skin-aurora .analysis-ranking-card, .skin-aurora .profile-card, .skin-aurora .record-form { background: linear-gradient(135deg, rgba(255,255,255,.74), rgba(243,250,255,.54)); border-color: rgba(255,255,255,.78); box-shadow: inset 0 1px 0 rgba(255,255,255,.92), 0 14px 30px rgba(73,107,170,.13); backdrop-filter: blur(15px) saturate(150%); }
+.skin-aurora .home-decision { background-image: linear-gradient(125deg, rgba(255,255,255,.15), transparent 30%), linear-gradient(rgba(255,255,255,.11) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.11) 1px, transparent 1px); box-shadow: inset 0 1px 0 rgba(255,255,255,.48), 0 18px 35px rgba(39,108,224,.26); }
+.skin-aurora .home-promotion { box-shadow: inset 0 1px 0 rgba(196,231,255,.3), 0 15px 28px rgba(29,59,135,.23); }
+.skin-aurora .tabbar { background: rgba(251,255,255,.66); border-top-color: rgba(255,255,255,.78); box-shadow: 0 -8px 26px rgba(72,109,174,.14); backdrop-filter: blur(18px) saturate(160%); }
+
+.skin-deep { --skin-text: #ecf6ff; --skin-subtle: #a4c0d8; }
+.skin-deep .app-frame { background: radial-gradient(90% 46% at 92% 0%, rgba(16,103,182,.5), transparent 57%), radial-gradient(84% 40% at 0 34%, rgba(11,57,110,.44), transparent 58%), #071322; }
+.skin-deep .app-content { color: var(--skin-text); background: linear-gradient(180deg, rgba(7,19,34,.34), rgba(5,14,26,.78)); }
+.skin-deep .page-header, .skin-deep .sub-header { color: var(--skin-text); background: rgba(8,24,45,.72); border-color: rgba(154,208,255,.12); box-shadow: 0 10px 25px rgba(0,0,0,.22); backdrop-filter: blur(18px) saturate(135%); }
+.skin-deep .brand-mini strong, .skin-deep .dashboard-kicker > span > b, .skin-deep .dashboard-kicker > span, .skin-deep .prototype-analysis-title h1, .skin-deep .store-profile h1, .skin-deep .sub-header strong, .skin-deep .profile-ledger b { color: var(--skin-text); }
+.skin-deep .brand-mini em, .skin-deep .dashboard-kicker > span > em, .skin-deep .store-profile p, .skin-deep .profile-ledger span, .skin-deep .profile-ledger em { color: var(--skin-subtle); }
+.skin-deep .header-icon, .skin-deep .back-button { color: #d8edff; background: rgba(151,207,255,.08); border-color: rgba(172,221,255,.16); }
+.skin-deep .home-chart-card, .skin-deep .analysis-waterfall-card, .skin-deep .analysis-stack-card, .skin-deep .analysis-cashflow-card, .skin-deep .analysis-health-card, .skin-deep .analysis-trend-card, .skin-deep .analysis-ranking-card, .skin-deep .profile-card, .skin-deep .record-form, .skin-deep .profile-tip { background: linear-gradient(145deg, rgba(20,49,83,.9), rgba(8,27,49,.94)); border-color: rgba(152,213,255,.15); box-shadow: inset 0 1px 0 rgba(206,239,255,.1), 0 14px 26px rgba(0,0,0,.25); }
+.skin-deep .home-chart-head span, .skin-deep .home-chart-head b, .skin-deep .analysis-card-head h2, .skin-deep .analysis-card-head span, .skin-deep .analysis-card-head button, .skin-deep .sales-summary strong, .skin-deep .sales-summary em, .skin-deep .cost-ring b, .skin-deep .cost-ring em, .skin-deep .cost-structure-body > div > button span, .skin-deep .cost-structure-body > div > button b, .skin-deep .health-summary b, .skin-deep .health-summary span, .skin-deep .health-dimension-list b, .skin-deep .health-dimension-list em, .skin-deep .analysis-chart-context { color: var(--skin-text); }
+.skin-deep .home-chart-head b, .skin-deep .sales-summary em, .skin-deep .cost-ring em, .skin-deep .analysis-chart-context, .skin-deep .health-summary span, .skin-deep .health-dimension-list em { color: var(--skin-subtle); }
+.skin-deep .sales-summary, .skin-deep .home-sku-ranking > div > button, .skin-deep .cost-structure-body > div > button, .skin-deep .health-dimension-list > button { border-color: rgba(177,219,255,.16) !important; }
+.skin-deep .home-sku-ranking > div > button > span > b, .skin-deep .home-sku-ranking > div > button > label { color: var(--skin-text); }
+.skin-deep .home-sku-ranking > div > button > span > i { background: rgba(188,220,255,.13); }
+.skin-deep .home-sku-ranking > div > button > em { color: #6ec5ff; background: rgba(110,197,255,.14); }
+.skin-deep .sales-baseline-rows em, .skin-deep .sales-baseline-rows b, .skin-deep .sales-baseline-rows small, .skin-deep .profile-card > button span, .skin-deep .profile-card > button strong, .skin-deep .profile-tip span, .skin-deep .profile-tip p, .skin-deep .analysis-ranking-card .rank-name, .skin-deep .analysis-ranking-card strong, .skin-deep .cashflow-legend span, .skin-deep .cashflow-summary p, .skin-deep .cashflow-summary small, .skin-deep .stack-legend span { color: var(--skin-text); }
+.skin-deep .sales-baseline-rows em, .skin-deep .sales-baseline-rows small, .skin-deep .profile-tip span, .skin-deep .profile-tip p, .skin-deep .cashflow-summary small { color: var(--skin-subtle); }
+.skin-deep .sales-baseline-rows > div, .skin-deep .profile-card > button, .skin-deep .analysis-ranking-card .ranking-card > button, .skin-deep .cashflow-filter-panel button { border-color: rgba(177,219,255,.16); }
+.skin-deep .cashflow-filter-panel button { color: #b9ddf7; background: rgba(142,205,255,.09); }
+.skin-deep .cashflow-filter-panel button.active { color: #fff; background: #1689dc; border-color: #55baff; }
+.skin-deep .segment-control { background: rgba(146,208,255,.08); border-color: rgba(177,219,255,.14); }
+.skin-deep .segment-control button { color: #a8c6dd; }
+.skin-deep .segment-control button.active { color: #fff; background: #1689dc; }
+.skin-deep .analysis-trend-card .trend-chart, .skin-deep .analysis-cashflow-card .cashflow-bars { background-image: repeating-linear-gradient(0deg, transparent 0 27px, rgba(160,213,255,.12) 27px 28px); }
+.skin-deep .record-form input, .skin-deep .record-form select, .skin-deep .amount-input { color: var(--skin-text); background: rgba(169,216,255,.08); border-color: rgba(170,218,255,.18); }
+.skin-deep .cost-ring > span { background: #102944; }
+.skin-deep .home-chart-empty, .skin-deep .analysis-stack-card .home-chart-empty, .skin-deep .analysis-cashflow-card .home-chart-empty { color: var(--skin-text); background-color: rgba(122,184,244,.04); background-image: repeating-linear-gradient(0deg, transparent 0 23px, rgba(162,213,255,.09) 23px 24px); border-color: rgba(168,215,255,.2); }
+.skin-deep .home-chart-empty b, .skin-deep .analysis-stack-card .home-chart-empty b, .skin-deep .analysis-cashflow-card .home-chart-empty b { color: var(--skin-subtle); }
+.skin-deep .home-promotion { box-shadow: inset 0 1px 0 rgba(150,216,255,.12), 0 17px 31px rgba(0,0,0,.31); }
+.skin-deep .tabbar { background: rgba(7,20,37,.8); border-top-color: rgba(165,216,255,.12); box-shadow: 0 -8px 26px rgba(0,0,0,.3); backdrop-filter: blur(18px) saturate(135%); }
+.skin-deep .tabbar button { color: #a9c2d8; }
+.skin-deep .tabbar button.active { color: #67c2ff; background: rgba(73,172,255,.12); }
+.skin-deep .visual-skin-picker { background: linear-gradient(145deg, rgba(25,57,93,.92), rgba(8,28,50,.96)); border-color: rgba(157,214,255,.16); box-shadow: inset 0 1px 0 rgba(210,240,255,.1), 0 12px 26px rgba(0,0,0,.24); }
+.skin-deep .visual-skin-heading b, .skin-deep .skin-option > span b { color: var(--skin-text); }
+.skin-deep .visual-skin-heading small, .skin-deep .skin-option > span em { color: var(--skin-subtle); }
+.skin-deep .skin-option { color: var(--skin-text); background: rgba(148,208,255,.055); border-color: rgba(168,219,255,.13); }
+.skin-deep .skin-option.active { border-color: #57b9ff; box-shadow: 0 0 0 3px rgba(87,185,255,.14); }
+
+@media (prefers-reduced-motion: reduce) { .skin-option { transition: none; } }
+
 /* 首页间距系统：所有首页模块共享同一外缘、模块间距、标题间距和卡片内边距。 */
 .prototype-home {
   --home-edge: 0px;

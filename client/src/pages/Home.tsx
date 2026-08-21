@@ -46,6 +46,7 @@ import {
   type CostRecord,
   type IndustryId,
   type RecordType,
+  type VisualSkin,
   useCostBook,
 } from "@/lib/cost-book";
 import { channelLabel, type OrderChannel, type RefundReason, type ReturnRecoveryStatus } from "@/lib/order-ledger";
@@ -66,6 +67,7 @@ type QuickAction = "order" | "budget" | "cards" | "record" | "analysis";
 type PromotionTarget = "cards" | "orders" | "industry";
 type NotificationTarget = HomeDecisionTarget;
 type NotificationItem = HomeDecisionNotification & { copy: string };
+type VisualSkinOption = { id: VisualSkin; label: string; detail: string; material: string };
 type IndustryHomeProfile = {
   quick: { action: QuickAction; label: string; detail: string; icon: LucideIcon }[];
   insight: { eyebrow: string; title: string; copy: string; focusCategoryKey: string };
@@ -96,6 +98,11 @@ const promotionBanners: { eyebrow: string; title: string; copy: string; action: 
   { eyebrow: "产品功能", title: "成本卡，一键算出保本价", copy: "材料、人工、渠道费统一核算", action: "去测算", target: "cards", asset: "/manus-storage/banner-3d-cost-card_583c5d5c.png" },
   { eyebrow: "产品功能", title: "订单、退款与商品成本，放进一张账", copy: "每一笔成交都能复核真实贡献利润", action: "查看订单", target: "orders", asset: "/manus-storage/banner-3d-pricing-tag_9e81aaad.png" },
   { eyebrow: "行业模板", title: "按行业切换成本口径，历史账本不丢失", copy: "餐饮、零售、电商、美业、小商贩", action: "切换行业", target: "industry", asset: "/manus-storage/banner-3d-ledger-stack_c219d6f4.png" },
+];
+const visualSkinOptions: VisualSkinOption[] = [
+  { id: "soft", label: "柔光材质工作台", detail: "冷白矿物底板 · 陶瓷数据面 · 冰蓝焦点层", material: "mineral" },
+  { id: "aurora", label: "极光玻璃工作台", detail: "冰雾玻璃 · 蓝紫折射 · 轻盈浮层", material: "aurora" },
+  { id: "deep", label: "深海展示舱", detail: "深海环境 · 悬浮信息舱 · 冷光图表", material: "deep" },
 ];
 function Highlight({ value, query }: { value: string; query: string }) {
   const keyword = query.trim();
@@ -139,6 +146,10 @@ function RefundPareto({ items, onSelect }: { items: ReturnType<typeof buildRefun
 
 function HomeChartEmpty({ title, copy, action, onClick }: { title: string; copy: string; action: string; onClick: () => void }) {
   return <button className="home-chart-empty" onClick={onClick}><span>{title}</span><b>{copy}</b><small>{action}<ChevronRight size={15} /></small></button>;
+}
+
+function VisualSkinPicker({ skin, onChange }: { skin: VisualSkin; onChange: (skin: VisualSkin) => void }) {
+  return <section className="visual-skin-picker" aria-labelledby="visual-skin-title"><div className="visual-skin-heading"><span><em>视觉皮肤</em><b id="visual-skin-title">选择你的经营工作台</b></span><small>切换不影响账本数据</small></div><div className="visual-skin-options">{visualSkinOptions.map((option) => <button key={option.id} className={`skin-option ${option.material} ${skin === option.id ? "active" : ""}`} aria-pressed={skin === option.id} onClick={() => onChange(option.id)}><i aria-hidden="true"><span /><span /><span /></i><span><b>{option.label}</b><em>{option.detail}</em></span>{skin === option.id ? <Check size={17} /> : <ChevronRight size={16} />}</button>)}</div></section>;
 }
 
 function SalesOrdersTrend({ items, onOpen }: { items: ReturnType<typeof buildDailySalesOrders>; onOpen: () => void }) {
@@ -276,6 +287,12 @@ export default function Home() {
   const [cashChannelFilter, setCashChannelFilter] = useState<OrderChannel | "all">("all");
   const [cashSupplierFilter, setCashSupplierFilter] = useState("");
   const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    const shell = document.querySelector(".mobile-shell");
+    shell?.classList.remove("skin-aurora", "skin-soft", "skin-deep");
+    shell?.classList.add(`skin-${book.visualSkin}`);
+  }, [book.visualSkin]);
 
   const { template, categories, records, cards, skus, skuMetrics, orders, refunds, suppliers, reports, totals, trend, hiddenCosts, currentPeriod, channelTemplates, orderWarnings, salesTarget, healthSettings } = book;
   const IndustryIcon = iconByIndustry[book.activeIndustryId];
@@ -847,7 +864,7 @@ export default function Home() {
     if (tab === "orders") return OrdersPage();
     if (tab === "cards") return CardsPage();
     if (tab === "analysis") return AnalysisPage();
-    if (tab === "profile") return ProfilePage();
+    if (tab === "profile") return <>{ProfilePage()}<VisualSkinPicker skin={book.visualSkin} onChange={(skin) => { book.updateVisualSkin(skin); setToast(`已切换为${visualSkinOptions.find((option) => option.id === skin)?.label || "新皮肤"}`); }} /></>;
     return HomePage();
   }
 
