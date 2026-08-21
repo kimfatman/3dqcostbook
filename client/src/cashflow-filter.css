@@ -179,6 +179,153 @@
   .prototype-home { --home-edge: 0px; --home-module-gap: 14px; }
 }
 
+/* 首页共享模块骨架：经营结果、图表账本和宣传位都使用同一套蓝图边线、账本刻度和对齐基线。 */
+.prototype-home {
+  --ledger-line: rgba(17, 56, 94, .11);
+  --ledger-grid: rgba(8, 127, 245, .055);
+}
+.prototype-home > .home-chart-card,
+.prototype-home > .home-promotion,
+.prototype-home > .home-decision {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--ledger-line);
+  border-radius: 16px;
+}
+.prototype-home > .home-chart-card {
+  background-color: rgba(255, 255, 255, .94);
+  background-image: linear-gradient(var(--ledger-grid) 1px, transparent 1px), linear-gradient(90deg, var(--ledger-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  box-shadow: 0 5px 13px rgba(22, 48, 74, .045);
+}
+.prototype-home .home-chart-head {
+  display: flex;
+  align-items: baseline;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(29, 70, 104, .2);
+}
+.prototype-home .home-chart-head span {
+  color: #0b1836;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -.045em;
+}
+.prototype-home .home-chart-head b {
+  color: #5c738b;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.prototype-home .dashboard-kicker > span {
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 31px;
+}
+.prototype-home .dashboard-kicker > span > i {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  color: #087ff5;
+  background: #eaf5ff;
+  border: 1px solid #d6eafa;
+  border-radius: 8px;
+}
+.prototype-home .dashboard-kicker > span > b { font-size: 14px; letter-spacing: -.045em; }
+.prototype-home .dashboard-kicker > span > em {
+  max-width: 112px;
+  overflow: hidden;
+  color: #46657f;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 主核算单保留 Digital Blue，但去除泛金融发光，以网格、算式和等宽数字表达经营结果。 */
+.prototype-home .operating-snapshot.home-decision {
+  min-height: 0;
+  padding: 16px var(--home-card-pad-x) 0;
+  color: #fff;
+  background-color: #087ff5;
+  background-image: linear-gradient(rgba(255, 255, 255, .135) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .135) 1px, transparent 1px);
+  background-size: 24px 24px;
+  border-color: rgba(255, 255, 255, .28);
+  box-shadow: 0 8px 18px rgba(8, 84, 166, .13);
+}
+.prototype-home .home-decision-result { padding-bottom: 12px; border-bottom: 1px dashed rgba(255, 255, 255, .42); }
+.prototype-home .home-decision-result > em {
+  display: block;
+  color: rgba(255, 255, 255, .78);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: -.02em;
+}
+.prototype-home .home-decision-result > strong { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-top: 5px; }
+.prototype-home .home-decision-result > strong > span { color: #fff; font-size: 23px; font-weight: 800; letter-spacing: -.07em; }
+.prototype-home .home-decision-result > strong > b {
+  color: #fff;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: clamp(25px, 8vw, 34px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.095em;
+  line-height: .98;
+  text-align: right;
+}
+.prototype-home .home-decision-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 10px 0; margin: 0; }
+.prototype-home .home-decision-metrics > div { display: grid; gap: 4px; min-width: 0; padding: 0 8px; }
+.prototype-home .home-decision-metrics > div:first-child { padding-left: 0; }
+.prototype-home .home-decision-metrics > div + div { border-left: 1px solid rgba(255, 255, 255, .25); }
+.prototype-home .home-decision-metrics dt { overflow: hidden; color: rgba(255, 255, 255, .75); font-size: 10px; white-space: nowrap; text-overflow: ellipsis; }
+.prototype-home .home-decision-metrics dd { overflow: hidden; margin: 0; color: #fff; font-family: "IBM Plex Mono", monospace; font-size: 13px; font-variant-numeric: tabular-nums; letter-spacing: -.06em; white-space: nowrap; text-overflow: ellipsis; }
+.prototype-home .home-decision-industry-note { display: flex; gap: 6px; align-items: center; min-height: 28px; padding: 7px 0; margin: 0; color: rgba(255, 255, 255, .87); font-size: 10px; border-top: 1px dashed rgba(255, 255, 255, .26); }
+.prototype-home .home-decision-industry-note svg { flex: 0 0 auto; }
+.prototype-home .home-decision-risk { margin: 0 calc(var(--home-card-pad-x) * -1); border-radius: 0; border-width: 1px 0 0; }
+
+/* 所有首页账本模块沿用同一数字列和轻量操作带，避免主卡之外退化为普通 SaaS 卡片。 */
+.prototype-home .sales-baseline-rows > div,
+.prototype-home .home-cost-structure .cost-structure-body > div > button,
+.prototype-home .home-sku-ranking > div > button { font-variant-numeric: tabular-nums; }
+.prototype-home .sales-baseline-rows > div { border-bottom-color: rgba(29, 70, 104, .18); }
+.prototype-home .sales-baseline-primary {
+  min-height: 38px;
+  color: #fff;
+  font-size: 12px;
+  background: #087ff5;
+  border-radius: 9px;
+  box-shadow: none;
+}
+.prototype-home .home-cost-structure .cost-structure-body > div > button > b,
+.prototype-home .home-sku-ranking > div > button > label { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.prototype-home .home-promotion {
+  min-height: 94px;
+  color: #eaf5ff;
+  background-color: #0b1836;
+  background-image: linear-gradient(rgba(105, 177, 255, .12) 1px, transparent 1px), linear-gradient(90deg, rgba(105, 177, 255, .12) 1px, transparent 1px);
+  background-size: 24px 24px;
+  box-shadow: 0 7px 16px rgba(10, 32, 63, .11);
+}
+.prototype-home .promotion-slide { min-height: 94px; }
+.prototype-home .promotion-copy { gap: 3px; }
+.prototype-home .promotion-copy em { color: #91cfff; font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: .03em; }
+.prototype-home .promotion-copy b { font-size: 16px; letter-spacing: -.05em; }
+.prototype-home .promotion-copy small { color: #b3cbe5; font-size: 10px; }
+.prototype-home .promotion-copy strong { color: #79c3ff; font-size: 10px; }
+.prototype-home .promotion-3d-asset { max-height: 86px; opacity: .78; }
+
+.skin-soft .prototype-home > .home-chart-card { background-color: rgba(255, 255, 255, .94); background-image: linear-gradient(var(--ledger-grid) 1px, transparent 1px), linear-gradient(90deg, var(--ledger-grid) 1px, transparent 1px); box-shadow: 0 5px 13px rgba(22, 48, 74, .045); }
+.skin-soft .prototype-home .home-decision { box-shadow: 0 8px 18px rgba(8, 84, 166, .13); }
+.skin-deep .prototype-home > .home-chart-card { background-color: rgba(12, 35, 62, .92); background-image: linear-gradient(rgba(144, 209, 255, .07) 1px, transparent 1px), linear-gradient(90deg, rgba(144, 209, 255, .07) 1px, transparent 1px); border-color: rgba(152, 213, 255, .17); }
+.skin-deep .prototype-home .home-chart-head { border-bottom-color: rgba(169, 214, 255, .19); }
+.skin-deep .prototype-home .dashboard-kicker > span > em { color: #a4c0d8; }
+
 /* 有订单首页：卡片必须与主结果同宽；销售动能保持“指标一行＋紧凑图表”的标准高度。 */
 .prototype-home > .home-chart-card,
 .prototype-home > .home-promotion {
