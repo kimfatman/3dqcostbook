@@ -18,6 +18,7 @@ export function registerMediaRoutes(app: Express) {
       const workspaceId = header(req, "x-workspace-id");
       const subjectId = header(req, "x-subject-id");
       const kind = header(req, "x-media-kind") as MediaKind;
+      if (!workspaceId || !subjectId) return res.status(400).json({ error: "缺少工作区或资源主体" });
       const access = workspaceId ? await getWorkspaceAccess(workspaceId, user.id) : undefined;
       if (!access) return res.status(403).json({ error: "工作区不存在或无访问权限" });
       const validation = validateMediaUpload({ kind, mimeType: header(req, "content-type").split(";")[0] || "", sizeBytes: Buffer.isBuffer(req.body) ? req.body.length : 0, subjectId, workspaceId, userId: user.id, role: access.role });

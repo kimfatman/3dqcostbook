@@ -12,6 +12,7 @@ export function mediaExtension(mimeType: string) {
 }
 
 export function validateMediaUpload(input: { kind: string; mimeType: string; sizeBytes: number; subjectId: string; workspaceId: string; userId: string; role: "owner" | "editor" | "viewer" }) {
+  if (!input.workspaceId.trim() || !input.subjectId.trim()) return { ok: false as const, reason: "缺少工作区或资源主体" };
   if (!MEDIA_KINDS.includes(input.kind as MediaKind)) return { ok: false as const, reason: "不支持的图片类型" };
   if (!mediaExtension(input.mimeType)) return { ok: false as const, reason: "仅支持 JPG、PNG 或 WebP 图片" };
   const maxBytes = input.kind === "cost_card_image" ? 5 * 1024 * 1024 : 2 * 1024 * 1024;
