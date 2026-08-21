@@ -46,6 +46,7 @@ import {
   type CostRecord,
   type IndustryId,
   type RecordType,
+  type Report,
   type VisualSkin,
   useCostBook,
 } from "@/lib/cost-book";
@@ -58,6 +59,7 @@ import { buildBusinessHealth, buildSalesTargetHistory } from "@/lib/health-metri
 import { buildMetrics, entriesForPeriod, fromFen } from "@/lib/ledger-metrics";
 import { isNonNegativeNumber, isPositiveInteger, isPositiveMoney, toEditableNumber, toNumber, type EditableNumber } from "@/lib/editable-number";
 import { businessDate } from "@/lib/business-date";
+import { buildReportCsv } from "@/lib/report-export";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trpc } from "@/lib/trpc";
 import "../cashflow-filter.css";
@@ -809,11 +811,23 @@ export default function Home() {
     return <><section className="sub-intro compact"><span>{template.label} · 月度经营</span><h1>成本报表</h1><p>草稿报表实时聚合交易；封存报表保留当期行业与分类快照。</p></section><div className="report-list">{reports.map((report) => <button key={report.id} onClick={() => openReport(report.id)}><span><FileText size={20} /></span><div><b>{report.month.replace("-", " 年 ")} 月经营报表</b><em>{report.status === "closed" ? "已封存" : "实时草稿"} · 支出 {yuan(report.cost)} · 净营收 {yuan(report.revenue)}</em></div><strong>{report.grossMarginRate}%<small>毛利率</small></strong><ChevronRight size={16} /></button>)}</div></>;
   }
 
+  function exportReportCsv(report: Report) {
+    const csv = buildReportCsv({ report, industryLabel: template.label, storeName: template.storeName });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    link.download = `${template.storeName}-${report.month}-经营报表.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+    notify("已导出月度经营报表 CSV");
+  }
+
   function ReportDetailPage() {
     if (!activeReport) return <div className="empty-state">报表不存在。</div>;
     const reportOrders = orders.filter((order) => order.occurredAt.slice(0, 7) === activeReport.month);
     const reportRefunds = refunds.filter((refund) => refund.occurredAt.slice(0, 7) === activeReport.month);
-    return <><section className="detail-hero"><span>{template.label} · {activeReport.status === "closed" ? "已封存快照" : "实时草稿"}</span><h1>{activeReport.month.replace("-", " 年 ")} 月报</h1><strong>{yuan(activeReport.cost)}</strong><p>净营收 {yuan(activeReport.revenue)} · 毛利 {yuan(activeReport.margin)} · 毛利率 {activeReport.grossMarginRate}% · 经营利润率 {activeReport.operatingMarginRate}%</p></section><section className="detail-breakdown"><h2>订单与退款</h2><div><span className="tip-icon"><ShoppingCart size={18} /></span><p>本期已纳入 {reportOrders.length} 笔订单、{reportRefunds.length} 笔 SKU 退款；订单销售和已售成本已并入收入与成本口径。</p></div><button onClick={() => goSub("orders")}>查看订单账本 <ChevronRight size={16} /></button></section><section className="detail-breakdown"><h2>分类明细</h2><div className="report-breakdown">{activeReport.snapshot.map((item) => <span key={item.key}><b>{item.label}</b><em>{yuan(item.amount)} · {item.pct}%</em></span>)}</div>{activeReport.status === "draft" ? <button onClick={() => { book.closeReport(activeReport.month); notify("月报已封存；之后的流水不会改写该快照"); }}>封存本月口径 <FileText size={16} /></button> : <button onClick={() => notify("报表导出将在云端版本生成")}>导出报表 <FileText size={16} /></button>}</section></>;
+    return <><section className="detail-hero"><span>{template.label} · {activeReport.status === "closed" ? "已封存快照" : "实时草稿"}</span><h1>{activeReport.month.replace("-", " 年 ")} 月报</h1><strong>{yuan(activeReport.cost)}</strong><p>净营收 {yuan(activeReport.revenue)} · 毛利 {yuan(activeReport.margin)} · 毛利率 {activeReport.grossMarginRate}% · 经营利润率 {activeReport.operatingMarginRate}%</p></section><section className="detail-breakdown"><h2>订单与退款</h2><div><span className="tip-icon"><ShoppingCart size={18} /></span><p>本期已纳入 {reportOrders.length} 笔订单、{reportRefunds.length} 笔 SKU 退款；订单销售和已售成本已并入收入与成本口径。</p></div><button onClick={() => goSub("orders")}>查看订单账本 <ChevronRight size={16} /></button></section><section className="detail-breakdown"><h2>分类明细</h2><div className="report-breakdown">{activeReport.snapshot.map((item) => <span key={item.key}><b>{item.label}</b><em>{yuan(item.amount)} · {item.pct}%</em></span>)}</div>{activeReport.status === "draft" ? <button onClick={() => { book.closeReport(activeReport.month); notify("月报已封存；之后的流水不会改写该快照"); }}>封存本月口径 <FileText size={16} /></button> : <button onClick={() => exportReportCsv(activeReport)}>导出 CSV <FileText size={16} /></button>}</section></>;
   }
 
   function deleteSupplier(id: string, name: string) {
