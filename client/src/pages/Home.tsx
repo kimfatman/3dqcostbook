@@ -53,7 +53,7 @@ import {
 import { channelLabel, type OrderChannel, type RefundReason, type ReturnRecoveryStatus } from "@/lib/order-ledger";
 import { breakEvenPrice, quotePrice } from "@/lib/pricing";
 import { availableMonths, matchesMonth, matchesQuery } from "@/lib/list-search";
-import { buildBudgetBurn, buildCategoryDeltas, buildRefundPareto } from "@/lib/chart-metrics";
+import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildDailySalesOrders, buildPeriodSkuMetrics, buildRefundPareto, buildSkuRankings } from "@/lib/chart-metrics";
 import { buildHomeDecision, type HomeDecision, type HomeDecisionNotification, type HomeDecisionTarget } from "@/lib/home-decision";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
@@ -134,6 +134,36 @@ function RefundPareto({ items, onSelect }: { items: ReturnType<typeof buildRefun
   if (!items.length) return <div className="chart-empty">本期无退款</div>;
   const max = Math.max(...items.map((item) => item.amount), 1);
   return <section className="refund-pareto"><div className="chart-heading"><span>退款原因</span><b>{yuan(items.reduce((sum, item) => sum + item.amount, 0))}</b></div>{items.slice(0, 6).map((item) => <button key={item.reason} onClick={() => onSelect(item.label)}><span>{item.label}<small>{item.quantity} 件 · 累计 {item.cumulativeShare}%</small></span><i><em style={{ width: `${Math.max(8, item.amount / max * 100)}%` }} /></i><strong>{yuan(item.amount)}</strong></button>)}</section>;
+}
+
+function HomeChartEmpty({ title, copy, action, onClick }: { title: string; copy: string; action: string; onClick: () => void }) {
+  return <button className="home-chart-empty" onClick={onClick}><span>{title}</span><b>{copy}</b><small>{action}<ChevronRight size={15} /></small></button>;
+}
+
+function SalesOrdersTrend({ items, onOpen }: { items: ReturnType<typeof buildDailySalesOrders>; onOpen: () => void }) {
+  const salesTotal = items.reduce((sum, item) => sum + item.sales, 0);
+  const orderTotal = items.reduce((sum, item) => sum + item.orders, 0);
+  if (!orderTotal) return <section className="home-chart-card"><div className="home-chart-head"><span>销售动能</span><b>近 7 日</b></div><HomeChartEmpty title="销售额 / 订单数" copy="本期还没有订单数据" action="记录订单" onClick={onOpen} /></section>;
+  const maxSales = Math.max(...items.map((item) => item.sales), 1);
+  const maxOrders = Math.max(...items.map((item) => item.orders), 1);
+  const linePoints = items.map((item, index) => `${8 + index / Math.max(items.length - 1, 1) * 84},${88 - item.orders / maxOrders * 68}`).join(" ");
+  return <button className="home-chart-card home-sales-orders" onClick={onOpen}><div className="home-chart-head"><span>销售动能</span><b>近 7 日</b></div><div className="sales-summary"><label><em>销售额</em><strong>{yuan(salesTotal)}</strong></label><label><em>订单数</em><strong>{orderTotal} 笔</strong></label><small><i className="sales" />销售额　<i className="orders" />订单数</small></div><div className="sales-orders-plot"><div className="sales-bars">{items.map((item) => <span key={item.date}><i style={{ height: `${Math.max(item.sales > 0 ? 8 : 2, item.sales / maxSales * 100)}%` }} /><em>{Number(item.date.slice(-2))}日</em></span>)}</div><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points={linePoints} /></svg></div></button>;
+}
+
+function SkuTopBars({ title, type, items, onSelect, onEmpty }: { title: string; type: "sales" | "profit"; items: ReturnType<typeof buildSkuRankings>["sales"]; onSelect: (id: string) => void; onEmpty: () => void }) {
+  const value = (item: typeof items[number]) => type === "sales" ? item.netQuantity : item.grossProfit;
+  const positiveItems = type === "profit" ? items.filter((item) => item.grossProfit > 0) : items;
+  if (!positiveItems.length) return <section className="home-chart-card"><div className="home-chart-head"><span>{title}</span><b>Top 5</b></div><HomeChartEmpty title={type === "sales" ? "暂无商品销量" : "暂无正利润商品"} copy={type === "sales" ? "先记录带 SKU 的订单" : "先补齐商品售价、成本与订单"} action={type === "sales" ? "记录订单" : "查看商品"} onClick={onEmpty} /></section>;
+  const max = Math.max(...positiveItems.map(value), 1);
+  return <section className="home-chart-card home-sku-ranking"><div className="home-chart-head"><span>{title}</span><b>Top {positiveItems.length}</b></div><div>{positiveItems.map((item, index) => <button key={item.id} onClick={() => onSelect(item.id)}><em>{index + 1}</em><span><b>{item.name}</b><i><strong style={{ width: `${Math.max(7, value(item) / max * 100)}%` }} /></i></span><label>{type === "sales" ? `${item.netQuantity}${item.unit}` : yuan(item.grossProfit)}</label><ChevronRight size={15} /></button>)}</div></section>;
+}
+
+const costRingColors = ["#087ff5", "#0b1836", "#62c5ff", "#4c6f9e", "#b9d7ee"];
+function CostStructureRing({ items, onSelect, onEmpty }: { items: ReturnType<typeof buildCostStructure>; onSelect: (key: string, label: string) => void; onEmpty: () => void }) {
+  if (!items.length) return <section className="home-chart-card"><div className="home-chart-head"><span>成本结构</span><b>本月</b></div><HomeChartEmpty title="暂无成本结构" copy="先记录进货、人工或经营费用" action="记录成本" onClick={onEmpty} /></section>;
+  let cursor = 0;
+  const segments = items.map((item, index) => { const start = cursor; cursor += item.share; return `${costRingColors[index % costRingColors.length]} ${start}% ${cursor}%`; }).join(", ");
+  return <section className="home-chart-card home-cost-structure"><div className="home-chart-head"><span>成本结构</span><b>本月</b></div><div className="cost-structure-body"><i className="cost-ring" style={{ background: `conic-gradient(${segments})` }}><span><em>成本</em><b>{items.reduce((sum, item) => sum + item.amount, 0) >= 10000 ? `${(items.reduce((sum, item) => sum + item.amount, 0) / 10000).toFixed(1)}万` : yuan(items.reduce((sum, item) => sum + item.amount, 0))}</b></span></i><div>{items.slice(0, 3).map((item, index) => <button key={item.key} onClick={() => onSelect(item.key, item.label)}><i style={{ background: costRingColors[index] }} /><span>{item.label}</span><b>{item.share}%</b><ChevronRight size={14} /></button>)}</div></div></section>;
 }
 const today = "2026-07-14";
 
@@ -216,6 +246,10 @@ export default function Home() {
   const activeReminder = notificationItems[reminderIndex % notificationItems.length] || notificationItems[0];
   const unreadNotificationCount = notificationItems.filter((item) => !readNotificationIds.includes(item.id)).length;
   const homeDecision = useMemo(() => buildHomeDecision({ industryLabel: template.label, period: currentPeriod, revenue: totals.revenue, cost: totals.totalCost, operatingProfit: totals.operatingProfit, budgetRemaining: totals.budgetRemaining, budgetState: budgetBurn.state, budget: totals.budget, budgetForecast: budgetBurn.forecast, notifications: notificationItems }), [budgetBurn.forecast, budgetBurn.state, currentPeriod, notificationItems, template.label, totals.budget, totals.budgetRemaining, totals.operatingProfit, totals.revenue, totals.totalCost]);
+  const salesOrdersTrend = useMemo(() => buildDailySalesOrders({ orders, endDate: `${currentPeriod}-${String(currentDay).padStart(2, "0")}`, days: 7 }), [currentDay, currentPeriod, orders]);
+  const periodSkuMetrics = useMemo(() => buildPeriodSkuMetrics({ skus, orders, refunds, period: currentPeriod }), [currentPeriod, orders, refunds, skus]);
+  const skuRankings = useMemo(() => buildSkuRankings(periodSkuMetrics), [periodSkuMetrics]);
+  const costStructure = useMemo(() => buildCostStructure(totals.categoryTotals), [totals.categoryTotals]);
 
   useEffect(() => {
     if (promotionPaused || reducedMotion) return;
@@ -471,20 +505,16 @@ export default function Home() {
   }
 
   function HomePage() {
-    const latestTrend = trend.at(-1);
-    const latestCost = latestTrend?.cost ?? 0;
-    const maxTrendCost = Math.max(...trend.map((point) => point.cost), 1);
-    const trendAmount = (amount: number) => amount === 0 ? "—" : amount >= 10000 ? `¥${(amount / 10000).toFixed(1)}万` : yuan(amount);
     const homeProfile = industryHomeProfiles[book.activeIndustryId];
     const IndustryIcon = iconByIndustry[book.activeIndustryId];
     const focusCategory = totals.categoryTotals.find((category) => category.key === homeProfile.insight.focusCategoryKey);
-    const topCategory = totals.categoryTotals[0];
+    const hasSalesData = salesOrdersTrend.some((item) => item.orders > 0);
     return <div className="prototype-home">
       <section className="dashboard-kicker"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</b><em>{focusCategory?.label || homeProfile.insight.eyebrow}</em></span></section>
       <OperatingSnapshot decision={homeDecision} industryRisk={homeProfile.insight.title} onOpenPriority={openHomeDecision} />
+      {hasSalesData ? <><SalesOrdersTrend items={salesOrdersTrend} onOpen={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}销量`} type="sales" items={skuRankings.sales} onSelect={openCard} onEmpty={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}利润`} type="profit" items={skuRankings.profit} onSelect={openCard} onEmpty={() => setTab("cards")} /></> : <section className="home-chart-card home-sales-gap"><div className="home-chart-head"><span>销售与商品动能</span><b>待补数</b></div><HomeChartEmpty title="销售额 / 商品销量 / 商品利润" copy="还没有带 SKU 的订单，无法形成真实动能与排行" action="记录第一笔订单" onClick={() => openOrdersContext("all")} /></section>}
+      <CostStructureRing items={costStructure} onSelect={(key, label) => { setRecordSearch(label); setRecordMonth(currentPeriod); goSub("records"); }} onEmpty={openNewRecord} />
       <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传" onMouseEnter={() => setPromotionPaused(true)} onMouseLeave={() => setPromotionPaused(false)} onFocusCapture={() => setPromotionPaused(true)} onBlurCapture={() => setPromotionPaused(false)}><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span><img className="promotion-3d-asset" src={banner.asset} alt="" aria-hidden="true" /></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}<button className="promotion-motion-control" onClick={() => setPromotionPaused((value) => !value)} aria-label={promotionPaused ? "播放宣传轮播" : "暂停宣传轮播"}>{promotionPaused ? <Play size={10} /> : <Pause size={10} />}</button></div></section>
-      <button className="home-cost-trend" onClick={() => setTab("analysis")}><div><b>成本趋势</b><span><strong>{trendAmount(latestCost)}</strong><em>本月成本</em></span></div><section>{trend.map((point, index) => <span key={point.month}><b>{trendAmount(point.cost)}</b><i style={{ height: `${Math.max(8, point.cost / maxTrendCost * 100)}%` }} className={index === trend.length - 1 ? "active" : ""} /><em>{point.month.slice(5)}月</em></span>)}</section></button>
-      <button className="home-data-row" onClick={() => { if (topCategory) { setRecordSearch(topCategory.label); setRecordMonth(currentPeriod); goSub("records"); } }}><span className="home-row-icon"><ShoppingBag size={19} /></span><span><em>第一成本</em><b>{topCategory?.label || homeProfile.insight.title}</b></span><strong>{topCategory ? `${Math.round(topCategory.amount / Math.max(totals.totalCost, 1) * 100)}%` : "—"}</strong><ChevronRight size={18} /></button>
     </div>;
   }
 

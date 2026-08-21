@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBudgetBurn, buildCategoryDeltas, buildProfitBridge, buildRefundPareto } from "./chart-metrics";
+import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildDailySalesOrders, buildPeriodSkuMetrics, buildProfitBridge, buildRefundPareto, buildSkuRankings } from "./chart-metrics";
 
 describe("经营图表指标", () => {
   it("利润桥保持净营收、成本、费用与经营利润的统一口径", () => {
@@ -30,5 +30,43 @@ describe("经营图表指标", () => {
     const pareto = buildRefundPareto(refunds);
     expect(pareto[0]).toMatchObject({ label: "质量问题", amount: 170, quantity: 2, cumulativeShare: 85 });
     expect(pareto[1]).toMatchObject({ label: "错发漏发", share: 15, cumulativeShare: 100 });
+  });
+
+  it("销售动能按订单成交日聚合销售额与订单数，不把退款日当成销售日", () => {
+    const orders = [
+      { occurredAt: "2026-07-12", lines: [{ quantity: 2, unitPriceFen: 1000 }] },
+      { occurredAt: "2026-07-14", lines: [{ quantity: 1, unitPriceFen: 3200 }, { quantity: 3, unitPriceFen: 500 }] },
+    ] as never[];
+    const series = buildDailySalesOrders({ orders, endDate: "2026-07-14", days: 3 });
+    expect(series).toEqual([
+      { date: "2026-07-12", sales: 20, orders: 1 },
+      { date: "2026-07-13", sales: 0, orders: 0 },
+      { date: "2026-07-14", sales: 47, orders: 1 },
+    ]);
+  });
+
+  it("SKU 排行按净销量和真实毛利分别排序，并扣除退款数量", () => {
+    const ranks = buildSkuRankings([
+      { id: "a", name: "A", unit: "件", soldQuantity: 12, refundedQuantity: 3, grossProfit: 240, netRevenue: 900 },
+      { id: "b", name: "B", unit: "件", soldQuantity: 8, refundedQuantity: 0, grossProfit: 360, netRevenue: 800 },
+      { id: "c", name: "C", unit: "件", soldQuantity: 20, refundedQuantity: 20, grossProfit: -50, netRevenue: 0 },
+    ]);
+    expect(ranks.sales.map((item) => [item.name, item.netQuantity])).toEqual([["A", 9], ["B", 8]]);
+    expect(ranks.profit.map((item) => item.name)).toEqual(["B", "A"]);
+  });
+
+  it("当前期间 SKU 指标按订单日入销售，按退款日冲减当期净营收和已售成本", () => {
+    const metrics = buildPeriodSkuMetrics({
+      skus: [{ id: "a", name: "商品 A", unit: "件" }],
+      orders: [{ occurredAt: "2026-07-10", lines: [{ skuId: "a", quantity: 3, unitPriceFen: 1000, unitCostFen: 400 }] }, { occurredAt: "2026-06-30", lines: [{ skuId: "a", quantity: 9, unitPriceFen: 1000, unitCostFen: 400 }] }],
+      refunds: [{ occurredAt: "2026-07-12", skuId: "a", quantity: 1, refundFen: 1000, recoveredCostFen: 400 }],
+      period: "2026-07",
+    } as never);
+    expect(metrics[0]).toMatchObject({ soldQuantity: 3, refundedQuantity: 1, netRevenue: 20, grossProfit: 12 });
+  });
+
+  it("成本结构按真实成本金额排序并以全部成本作为占比基数", () => {
+    const structure = buildCostStructure([{ key: "ad", label: "广告", amount: 250 }, { key: "goods", label: "采购", amount: 500 }, { key: "rent", label: "租金", amount: 250 }]);
+    expect(structure.map((item) => [item.label, item.share])).toEqual([["采购", 50], ["广告", 25], ["租金", 25]]);
   });
 });
