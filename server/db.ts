@@ -5,6 +5,11 @@ import { appUsers, auditEvents, mediaAssets, type AppUser, type InsertUser, user
 
 let database: ReturnType<typeof drizzle> | null = null;
 
+/** 仅供自动化回归替换数据库连接；生产路径不会调用。 */
+export function setDatabaseForTesting(next: ReturnType<typeof drizzle> | null) {
+  database = next;
+}
+
 export async function getDb() {
   if (!database && process.env.DATABASE_URL) database = drizzle(process.env.DATABASE_URL);
   return database;
@@ -69,19 +74,35 @@ export async function createInitialAdmin(input: { email: string; name: string; p
   return { userId, workspaceId };
 }
 
+export function preparePersonalWorkspaceRegistration(
+  input: { email: string; name: string; passwordHash: string; workspaceName: string; industryId: string },
+  ids = { userId: randomUUID(), workspaceId: randomUUID(), auditId: randomUUID() },
+) {
+  const userId = ids.userId;
+  const workspaceId = ids.workspaceId;
+  return {
+    userId,
+    workspaceId,
+    user: { id: userId, email: input.email.toLowerCase(), name: input.name, passwordHash: input.passwordHash, role: "member" as const },
+    workspace: { id: workspaceId, name: input.workspaceName, ownerId: userId, industryId: input.industryId, contactName: input.name },
+    membership: { workspaceId, userId, role: "owner" as const },
+    book: { workspaceId, state: {}, updatedByUserId: userId },
+    audit: { id: ids.auditId, workspaceId, actorUserId: userId, action: "workspace.register", targetType: "workspace", targetId: workspaceId, details: { source: "public_registration", industryId: input.industryId } },
+  };
+}
+
 export async function registerAndCreateWorkspace(input: { email: string; name: string; passwordHash: string; workspaceName: string; industryId: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
-  const userId = randomUUID();
-  const workspaceId = randomUUID();
+  const registration = preparePersonalWorkspaceRegistration(input);
   await db.transaction(async tx => {
-    await tx.insert(appUsers).values({ id: userId, email: input.email.toLowerCase(), name: input.name, passwordHash: input.passwordHash, role: "member" });
-    await tx.insert(workspaces).values({ id: workspaceId, name: input.workspaceName, ownerId: userId, industryId: input.industryId, contactName: input.name });
-    await tx.insert(workspaceMembers).values({ workspaceId, userId, role: "owner" });
-    await tx.insert(workspaceBooks).values({ workspaceId, state: {}, updatedByUserId: userId });
-    await tx.insert(auditEvents).values({ id: randomUUID(), workspaceId, actorUserId: userId, action: "workspace.register", targetType: "workspace", targetId: workspaceId, details: { source: "public_registration", industryId: input.industryId } });
+    await tx.insert(appUsers).values(registration.user);
+    await tx.insert(workspaces).values(registration.workspace);
+    await tx.insert(workspaceMembers).values(registration.membership);
+    await tx.insert(workspaceBooks).values(registration.book);
+    await tx.insert(auditEvents).values(registration.audit);
   });
-  return { userId, workspaceId };
+  return { userId: registration.userId, workspaceId: registration.workspaceId };
 }
 
 export async function markSignedIn(userId: string) {
