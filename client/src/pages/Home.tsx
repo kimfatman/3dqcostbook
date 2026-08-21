@@ -53,7 +53,7 @@ import {
 import { channelLabel, type OrderChannel, type RefundReason, type ReturnRecoveryStatus } from "@/lib/order-ledger";
 import { breakEvenPrice, quotePrice } from "@/lib/pricing";
 import { availableMonths, matchesMonth, matchesQuery } from "@/lib/list-search";
-import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildDailySalesOrders, buildPeriodSkuMetrics, buildRefundPareto, buildSkuRankings } from "@/lib/chart-metrics";
+import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildDailySalesOrders, buildMonthlyCashFlow, buildMonthlyCostStack, buildPeriodSkuMetrics, buildRefundPareto, buildSalesTargetProgress, buildSkuRankings } from "@/lib/chart-metrics";
 import { buildHomeDecision, type HomeDecision, type HomeDecisionNotification, type HomeDecisionTarget } from "@/lib/home-decision";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
@@ -165,6 +165,42 @@ function CostStructureRing({ items, onSelect, onEmpty }: { items: ReturnType<typ
   const segments = items.map((item, index) => { const start = cursor; cursor += item.share; return `${costRingColors[index % costRingColors.length]} ${start}% ${cursor}%`; }).join(", ");
   return <section className="home-chart-card home-cost-structure"><div className="home-chart-head"><span>成本结构</span><b>本月</b></div><div className="cost-structure-body"><i className="cost-ring" style={{ background: `conic-gradient(${segments})` }}><span><em>成本</em><b>{items.reduce((sum, item) => sum + item.amount, 0) >= 10000 ? `${(items.reduce((sum, item) => sum + item.amount, 0) / 10000).toFixed(1)}万` : yuan(items.reduce((sum, item) => sum + item.amount, 0))}</b></span></i><div>{items.slice(0, 3).map((item, index) => <button key={item.key} onClick={() => onSelect(item.key, item.label)}><i style={{ background: costRingColors[index] }} /><span>{item.label}</span><b>{item.share}%</b><ChevronRight size={14} /></button>)}</div></div></section>;
 }
+
+function SalesTargetProgress({ progress, runRateForecast, editing, input, onInputChange, onEdit, onSave, onCancel, onOpenOrders }: { progress: ReturnType<typeof buildSalesTargetProgress>; runRateForecast: number; editing: boolean; input: string; onInputChange: (value: string) => void; onEdit: () => void; onSave: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; onOpenOrders: () => void }) {
+  const stateCopy = progress?.state === "reached" ? "已完成目标，可继续复核利润" : progress?.state === "on_track" ? "按当前日均，月末可达目标" : "按当前日均，月末仍低于目标";
+  if (editing) return <section className="home-chart-card home-sales-target target-editor"><div className="home-chart-head"><span>月销售目标</span><b>本月</b></div><form onSubmit={onSave}><label>目标金额（元）<input autoFocus inputMode="decimal" type="number" min="0.01" step="0.01" value={input} onChange={(event) => onInputChange(event.target.value)} placeholder="例如：300000" /></label><div><button type="button" onClick={onCancel}>取消</button><button type="submit">保存目标</button></div></form></section>;
+  if (!progress) return <section className="home-chart-card home-sales-target target-unset"><div className="home-chart-head"><span>月销售目标</span><b>待设置</b></div><div className="target-unset-body"><span><em>日均预计月末</em><b>{yuan(runRateForecast)}</b></span><span><em>当前状态</em><b>未设目标</b></span></div><div className="target-foot"><p>未设置目标，当前仅展示真实销售运行率。</p><button onClick={onEdit}>设置月销售目标 <ChevronRight size={15} /></button></div></section>;
+  const ringRate = Math.min(100, Math.max(0, progress.completionRate));
+  return <section className={`home-chart-card home-sales-target ${progress.state}`}><div className="home-chart-head"><span>月销售目标</span><button onClick={onEdit}>调整目标 <Pencil size={13} /></button></div><div className="sales-target-body"><i className="sales-target-ring" style={{ background: `conic-gradient(#087ff5 0 ${ringRate}%, #e5eef6 ${ringRate}% 100%)` }}><span><em>完成</em><b>{progress.completionRate}%</b><small>{yuan(progress.revenue)}</small></span></i><div className="sales-target-stats"><label><em>目标</em><b>{yuan(progress.target)}</b></label><label><em>预计月末</em><b>{yuan(progress.projectedRevenue)}</b></label><label><em>还需</em><b>{yuan(progress.remaining)}</b></label></div></div><div className="target-foot"><p>{stateCopy}。</p><button onClick={onOpenOrders}>查看订单明细 <ChevronRight size={15} /></button></div></section>;
+}
+
+const stackAreaColors = ["#087ff5", "#0b1836", "#62c5ff", "#4c6f9e", "#8cb5d8", "#f79009", "#667085", "#d3e1ee"];
+function MonthlyCostStackChart({ stack, onOpen }: { stack: ReturnType<typeof buildMonthlyCostStack>; onOpen: (period: string) => void }) {
+  if (!stack.canRender) return <section className="analysis-stack-card"><div className="analysis-card-head"><h2>近 6 月成本结构</h2><span>分类堆积</span></div><HomeChartEmpty title="成本堆积趋势待补齐" copy="少于 2 个有成本月份，先补齐每月成本流水" action="记录成本" onClick={() => onOpen(stack.months.at(-1)?.period || "")} /></section>;
+  const maxTotal = Math.max(...stack.months.map((month) => month.total), 1);
+  const width = Math.max(stack.months.length - 1, 1);
+  const xAt = (index: number) => index / width * 100;
+  const yAt = (amount: number) => 100 - amount / maxTotal * 100;
+  const bands = stack.categories.map((category, categoryIndex) => {
+    let lower = 0;
+    const lowerPoints = stack.months.map((month, monthIndex) => { const point = `${xAt(monthIndex)},${yAt(lower)}`; lower += month.values[category.key] || 0; return point; });
+    lower = 0;
+    const upperPoints = stack.months.map((month, monthIndex) => { lower += month.values[category.key] || 0; return `${xAt(monthIndex)},${yAt(lower)}`; });
+    return { key: category.key, label: category.label, color: stackAreaColors[categoryIndex % stackAreaColors.length], d: `M ${lowerPoints.join(" L ")} L ${[...upperPoints].reverse().join(" L ")} Z` };
+  });
+  const latest = stack.months.at(-1)!;
+  const previous = stack.months.at(-2)!;
+  const delta = latest.total - previous.total;
+  return <section className="analysis-stack-card"><div className="analysis-card-head"><h2>近 6 月成本结构</h2><span>分类堆积</span></div><div className="stack-legend">{bands.slice(0, 4).map((band) => <span key={band.key}><i style={{ background: band.color }} />{band.label}</span>)}{bands.length > 4 && <small>＋{bands.length - 4} 类</small>}</div><button className="stacked-area-chart" onClick={() => onOpen(latest.period)} aria-label={`查看 ${latest.period} 成本流水`}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><g className="stack-grid"><line x1="0" x2="100" y1="25" y2="25" /><line x1="0" x2="100" y1="50" y2="50" /><line x1="0" x2="100" y1="75" y2="75" /></g>{bands.map((band) => <path key={band.key} d={band.d} fill={band.color} />)}</svg><div className="stack-x-labels">{stack.months.map((month) => <span key={month.period}>{Number(month.period.slice(5))}月</span>)}</div></button><div className="analysis-chart-action"><p>最新月成本 {yuan(latest.total)}，较上月 {delta >= 0 ? "增加" : "减少"} {yuan(Math.abs(delta))}。</p><button onClick={() => onOpen(latest.period)}>查看成本流水 <ChevronRight size={15} /></button></div></section>;
+}
+
+function MonthlyCashFlowChart({ flow, onOpen }: { flow: ReturnType<typeof buildMonthlyCashFlow>; onOpen: (period: string) => void }) {
+  if (!flow.canRender) return <section className="analysis-cashflow-card"><div className="analysis-card-head"><h2>现金流收支</h2><span>现金方向</span></div><HomeChartEmpty title="现金流方向待标记" copy="没有已标记流入或流出的分录，先记录收支" action="记录流水" onClick={() => onOpen(flow.months.at(-1)?.period || "")} /></section>;
+  const max = Math.max(...flow.months.flatMap((month) => [month.inflow, month.outflow]), 1);
+  const latest = flow.months.at(-1)!;
+  const net = latest.inflow - latest.outflow;
+  return <section className="analysis-cashflow-card"><div className="analysis-card-head"><h2>现金流收支</h2><span>近 6 月</span></div><div className="cashflow-legend"><span><i className="inflow" />现金流入</span><span><i className="outflow" />现金流出</span></div><div className="cashflow-bars">{flow.months.map((month) => <button key={month.period} onClick={() => onOpen(month.period)} aria-label={`查看 ${month.period} 现金流对应流水`}><span><i className="inflow" style={{ height: `${month.inflow / max * 100}%` }} /><i className="outflow" style={{ height: `${month.outflow / max * 100}%` }} /></span><em>{Number(month.period.slice(5))}月</em></button>)}</div><div className="cashflow-summary"><p>最新月{net >= 0 ? "净流入" : "净流出"} {yuan(Math.abs(net))}。</p><small>仅统计已标记现金方向的分录，不等同于利润。</small></div></section>;
+}
 const today = "2026-07-14";
 
 export default function Home() {
@@ -210,9 +246,11 @@ export default function Home() {
   const [promotionPaused, setPromotionPaused] = useState(false);
   const [reminderIndex, setReminderIndex] = useState(0);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
+  const [targetEditOpen, setTargetEditOpen] = useState(false);
+  const [salesTargetInput, setSalesTargetInput] = useState("");
   const reducedMotion = useReducedMotion();
 
-  const { template, categories, records, cards, skus, skuMetrics, orders, refunds, suppliers, reports, totals, trend, hiddenCosts, currentPeriod, channelTemplates, orderWarnings } = book;
+  const { template, categories, records, cards, skus, skuMetrics, orders, refunds, suppliers, reports, totals, trend, hiddenCosts, currentPeriod, channelTemplates, orderWarnings, salesTarget } = book;
   const IndustryIcon = iconByIndustry[book.activeIndustryId];
   const isSub = subPage !== null;
   const categoryByKey = useMemo(() => new Map(categories.map((category) => [category.key, category])), [categories]);
@@ -227,8 +265,9 @@ export default function Home() {
   const recordMonths = useMemo(() => availableMonths(records.map((record) => record.date)), [records]);
   const orderMonths = useMemo(() => availableMonths(orders.map((order) => order.occurredAt)), [orders]);
   const [periodYear, periodMonth] = currentPeriod.split("-").map(Number);
-  const currentDay = Math.min(Number(today.slice(-2)), new Date(periodYear, periodMonth, 0).getDate());
-  const budgetBurn = useMemo(() => buildBudgetBurn({ budget: totals.budget, used: totals.totalCost, dayOfMonth: currentDay, daysInMonth: new Date(periodYear, periodMonth, 0).getDate() }), [currentDay, periodMonth, periodYear, totals.budget, totals.totalCost]);
+  const daysInCurrentPeriod = new Date(periodYear, periodMonth, 0).getDate();
+  const currentDay = Math.min(Number(today.slice(-2)), daysInCurrentPeriod);
+  const budgetBurn = useMemo(() => buildBudgetBurn({ budget: totals.budget, used: totals.totalCost, dayOfMonth: currentDay, daysInMonth: daysInCurrentPeriod }), [currentDay, daysInCurrentPeriod, totals.budget, totals.totalCost]);
   const notificationItems = useMemo<NotificationItem[]>(() => {
     const items: NotificationItem[] = [];
     const topCategory = totals.categoryTotals[0];
@@ -250,6 +289,8 @@ export default function Home() {
   const periodSkuMetrics = useMemo(() => buildPeriodSkuMetrics({ skus, orders, refunds, period: currentPeriod }), [currentPeriod, orders, refunds, skus]);
   const skuRankings = useMemo(() => buildSkuRankings(periodSkuMetrics), [periodSkuMetrics]);
   const costStructure = useMemo(() => buildCostStructure(totals.categoryTotals), [totals.categoryTotals]);
+  const salesTargetProgress = useMemo(() => buildSalesTargetProgress({ revenue: totals.revenue, targetFen: Math.round(salesTarget * 100), dayOfMonth: currentDay, daysInMonth: daysInCurrentPeriod }), [currentDay, daysInCurrentPeriod, salesTarget, totals.revenue]);
+  const salesRunRateForecast = useMemo(() => Number((Math.max(0, totals.revenue) / Math.max(currentDay, 1) * daysInCurrentPeriod).toFixed(2)), [currentDay, daysInCurrentPeriod, totals.revenue]);
 
   useEffect(() => {
     if (promotionPaused || reducedMotion) return;
@@ -442,6 +483,20 @@ export default function Home() {
     setSubPage("budget");
   }
 
+  function openSalesTargetEditor() {
+    setSalesTargetInput(salesTarget > 0 ? String(salesTarget) : "");
+    setTargetEditOpen(true);
+  }
+
+  function saveSalesTarget(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const target = Number(salesTargetInput);
+    if (!target || target <= 0) return notify("请输入正确的月销售目标");
+    book.updateSalesTarget(target);
+    setTargetEditOpen(false);
+    notify("月销售目标已保存，完成率与月末预测已刷新");
+  }
+
   function saveBomItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!activeCard) return;
@@ -512,7 +567,7 @@ export default function Home() {
     return <div className="prototype-home">
       <section className="dashboard-kicker"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</b><em>{focusCategory?.label || homeProfile.insight.eyebrow}</em></span></section>
       <OperatingSnapshot decision={homeDecision} industryRisk={homeProfile.insight.title} onOpenPriority={openHomeDecision} />
-      {hasSalesData ? <><SalesOrdersTrend items={salesOrdersTrend} onOpen={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}销量`} type="sales" items={skuRankings.sales} onSelect={openCard} onEmpty={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}利润`} type="profit" items={skuRankings.profit} onSelect={openCard} onEmpty={() => setTab("cards")} /></> : <section className="home-chart-card home-sales-gap"><div className="home-chart-head"><span>销售与商品动能</span><b>待补数</b></div><HomeChartEmpty title="销售额 / 商品销量 / 商品利润" copy="还没有带 SKU 的订单，无法形成真实动能与排行" action="记录第一笔订单" onClick={() => openOrdersContext("all")} /></section>}
+      {hasSalesData ? <><SalesOrdersTrend items={salesOrdersTrend} onOpen={() => openOrdersContext("all")} /><SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}销量`} type="sales" items={skuRankings.sales} onSelect={openCard} onEmpty={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}利润`} type="profit" items={skuRankings.profit} onSelect={openCard} onEmpty={() => setTab("cards")} /></> : <><SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} /><section className="home-chart-card home-sales-gap"><div className="home-chart-head"><span>销售与商品动能</span><b>待补数</b></div><HomeChartEmpty title="销售额 / 商品销量 / 商品利润" copy="还没有带 SKU 的订单，无法形成真实动能与排行" action="记录第一笔订单" onClick={() => openOrdersContext("all")} /></section></>}
       <CostStructureRing items={costStructure} onSelect={(key, label) => { setRecordSearch(label); setRecordMonth(currentPeriod); goSub("records"); }} onEmpty={openNewRecord} />
       <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传" onMouseEnter={() => setPromotionPaused(true)} onMouseLeave={() => setPromotionPaused(false)} onFocusCapture={() => setPromotionPaused(true)} onBlurCapture={() => setPromotionPaused(false)}><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span><img className="promotion-3d-asset" src={banner.asset} alt="" aria-hidden="true" /></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}<button className="promotion-motion-control" onClick={() => setPromotionPaused((value) => !value)} aria-label={promotionPaused ? "播放宣传轮播" : "暂停宣传轮播"}>{promotionPaused ? <Play size={10} /> : <Pause size={10} />}</button></div></section>
     </div>;
@@ -571,7 +626,12 @@ export default function Home() {
     const refundPareto = buildRefundPareto(refunds.filter((refund) => refund.occurredAt.slice(0, 7) === period));
     const maxTrend = Math.max(...trend.map((item) => Math.max(item.cost, item.revenue)), 1);
     const sparseTrend = trend.filter((item) => item.cost > 0 || item.revenue > 0).length < 3;
-    return <div className="prototype-analysis"><section className="prototype-analysis-title"><h1>经营分析 · {period.replace("-", " 年 ")} 月</h1></section><section className="analysis-waterfall-card"><div className="analysis-card-head"><h2>利润与成本</h2><div className="segment-control"><button className={analysisPeriod === "current" ? "active" : ""} onClick={() => setAnalysisPeriod("current")}>本月</button><button className={analysisPeriod === "last" ? "active" : ""} onClick={() => setAnalysisPeriod("last")}>上月</button></div></div>{hasRevenue ? <ProfitWaterfall revenue={analysisRevenue} cogs={analysisCogs} expenses={analysisExpenses} profit={periodView.totals.operatingProfit} onSelect={(key) => { if (key === "cogs" || key === "expenses") { setRecordFilter("expense"); setRecordMonth(period); goSub("records"); } else if (key === "revenue") { setRecordFilter("income"); setRecordMonth(period); goSub("records"); } else goSub("reports"); }} /> : <button className="analysis-no-revenue" onClick={openNewRecord}><span>本期尚未录入销售收入</span><b>补录收入后生成利润瀑布图</b><ChevronRight size={16} /></button>}</section><section className={`analysis-trend-card ${sparseTrend ? "sparse" : ""}`}><div className="analysis-card-head"><h2>近 6 月收入与成本</h2><div className="chart-legend"><span><i className="revenue" />收入（¥）</span><span><i className="cost" />成本（¥）</span></div></div><p className="analysis-chart-context">{sparseTrend ? "可用月份较少，先补齐收入与订单以形成连续趋势。" : "收入与成本按自然月归集，可继续下钻核对流水。"}</p><div className="trend-chart">{trend.map((point) => <div key={point.month}><span className="trend-columns"><i style={{ height: `${point.revenue / maxTrend * 100}%` }} /><i style={{ height: `${point.cost / maxTrend * 100}%` }} /></span><em>{point.month.replace("-", "-")}</em></div>)}</div></section><section className="analysis-ranking-card"><div className="analysis-card-head"><h2>成本变化 Top 5</h2><span>较上月</span></div><div className="ranking-card">{periodCategories.slice(0, 5).map((item, index) => { const delta = categoryDeltaByKey.get(item.key); return <button key={item.key} onClick={() => { setRecordSearch(item.label); setRecordMonth(period); goSub("records"); }}><span className="rank">{index + 1}</span><span className="rank-name">{item.label}</span><span className="rank-bar"><b style={{ width: `${item.amount / Math.max(periodCategories[0]?.amount || 1, 1) * 100}%` }} /></span><strong>{yuan(item.amount)}<small className={(delta?.delta || 0) > 0 ? "up" : "down"}>{delta?.deltaRate === null ? "新发生" : `${(delta?.delta || 0) >= 0 ? "↑" : "↓"}${Math.abs(delta?.deltaRate || 0)}%`}</small></strong></button>; })}</div></section></div>;
+    const months = trend.map((item) => item.month);
+    const categoryLabels = Object.fromEntries(categories.map((category) => [category.key, category.label]));
+    const monthlyCostStack = buildMonthlyCostStack({ entries: book.state.entries, industryId: book.activeIndustryId, categoryKeys: categories.map((category) => category.key), categoryLabels, periods: months });
+    const monthlyCashFlow = buildMonthlyCashFlow({ entries: book.state.entries, industryId: book.activeIndustryId, periods: months });
+    const openMonthRecords = (month: string) => { setRecordFilter("all"); setRecordSearch(""); setRecordMonth(month); goSub("records"); };
+    return <div className="prototype-analysis"><section className="prototype-analysis-title"><h1>经营分析 · {period.replace("-", " 年 ")} 月</h1></section><section className="analysis-waterfall-card"><div className="analysis-card-head"><h2>利润与成本</h2><div className="segment-control"><button className={analysisPeriod === "current" ? "active" : ""} onClick={() => setAnalysisPeriod("current")}>本月</button><button className={analysisPeriod === "last" ? "active" : ""} onClick={() => setAnalysisPeriod("last")}>上月</button></div></div>{hasRevenue ? <ProfitWaterfall revenue={analysisRevenue} cogs={analysisCogs} expenses={analysisExpenses} profit={periodView.totals.operatingProfit} onSelect={(key) => { if (key === "cogs" || key === "expenses") { setRecordFilter("expense"); setRecordMonth(period); goSub("records"); } else if (key === "revenue") { setRecordFilter("income"); setRecordMonth(period); goSub("records"); } else goSub("reports"); }} /> : <button className="analysis-no-revenue" onClick={openNewRecord}><span>本期尚未录入销售收入</span><b>补录收入后生成利润瀑布图</b><ChevronRight size={16} /></button>}</section><MonthlyCostStackChart stack={monthlyCostStack} onOpen={(month) => month ? openMonthRecords(month) : openNewRecord()} /><MonthlyCashFlowChart flow={monthlyCashFlow} onOpen={(month) => month ? openMonthRecords(month) : openNewRecord()} /><section className={`analysis-trend-card ${sparseTrend ? "sparse" : ""}`}><div className="analysis-card-head"><h2>近 6 月收入与成本</h2><div className="chart-legend"><span><i className="revenue" />收入（¥）</span><span><i className="cost" />成本（¥）</span></div></div><p className="analysis-chart-context">{sparseTrend ? "可用月份较少，先补齐收入与订单以形成连续趋势。" : "收入与成本按自然月归集，可继续下钻核对流水。"}</p><div className="trend-chart">{trend.map((point) => <div key={point.month}><span className="trend-columns"><i style={{ height: `${point.revenue / maxTrend * 100}%` }} /><i style={{ height: `${point.cost / maxTrend * 100}%` }} /></span><em>{point.month.replace("-", "-")}</em></div>)}</div></section><section className="analysis-ranking-card"><div className="analysis-card-head"><h2>成本变化 Top 5</h2><span>较上月</span></div><div className="ranking-card">{periodCategories.slice(0, 5).map((item, index) => { const delta = categoryDeltaByKey.get(item.key); return <button key={item.key} onClick={() => { setRecordSearch(item.label); setRecordMonth(period); goSub("records"); }}><span className="rank">{index + 1}</span><span className="rank-name">{item.label}</span><span className="rank-bar"><b style={{ width: `${item.amount / Math.max(periodCategories[0]?.amount || 1, 1) * 100}%` }} /></span><strong>{yuan(item.amount)}<small className={(delta?.delta || 0) > 0 ? "up" : "down"}>{delta?.deltaRate === null ? "新发生" : `${(delta?.delta || 0) >= 0 ? "↑" : "↓"}${Math.abs(delta?.deltaRate || 0)}%`}</small></strong></button>; })}</div></section></div>;
   }
 
   function ProfilePage() {

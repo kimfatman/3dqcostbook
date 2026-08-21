@@ -1,4 +1,5 @@
 import type { Order, RefundCase, Sku } from "./order-ledger";
+import type { LedgerEntry } from "./ledger-metrics";
 
 export type ProfitBridgeInput = { netRevenue: number; cogs: number; operatingExpense: number; operatingProfit: number };
 export type CategoryAmount = { key: string; label: string; amount: number };
@@ -129,4 +130,56 @@ export function buildCostStructure(items: CategoryAmount[], limit = 5) {
   const prepared = items.filter((item) => item.amount > 0).sort((a, b) => b.amount - a.amount);
   const total = prepared.reduce((sum, item) => sum + item.amount, 0);
   return prepared.slice(0, limit).map((item) => ({ ...item, share: total > 0 ? Number((item.amount / total * 100).toFixed(1)) : 0 }));
+}
+
+export type MonthlyCostStackCategory = { key: string; label: string };
+export type MonthlyCostStackMonth = { period: string; total: number; values: Record<string, number> };
+
+/**
+ * 月度成本堆积：仅归集已入账的销售成本与经营费用。
+ * 未映射到当前分类的历史成本被收口到“未分类成本”，从而保证每月分类之和严格等于账本总成本。
+ */
+export function buildMonthlyCostStack(input: { entries: LedgerEntry[]; industryId: string; categoryKeys: string[]; categoryLabels: Record<string, string>; periods: string[] }) {
+  const baseCategories = input.categoryKeys.map((key) => ({ key, label: input.categoryLabels[key] || key }));
+  const costEntries = input.entries.filter((entry) => entry.industryId === input.industryId && entry.status === "posted" && (entry.ledgerRole === "cogs" || entry.ledgerRole === "opex") && input.periods.includes(entry.occurredAt.slice(0, 7)));
+  const hasUnmappedCost = costEntries.some((entry) => !input.categoryKeys.includes(entry.categoryKey));
+  const categories = hasUnmappedCost ? [...baseCategories, { key: "__unmapped__", label: "未分类成本" }] : baseCategories;
+  const months: MonthlyCostStackMonth[] = input.periods.map((period) => {
+    const values = Object.fromEntries(categories.map((category) => [category.key, 0])) as Record<string, number>;
+    costEntries.filter((entry) => entry.occurredAt.slice(0, 7) === period).forEach((entry) => {
+      const key = input.categoryKeys.includes(entry.categoryKey) ? entry.categoryKey : "__unmapped__";
+      values[key] = Number(((values[key] || 0) + entry.amountFen / 100).toFixed(2));
+    });
+    const total = Number(Object.values(values).reduce((sum, amount) => sum + amount, 0).toFixed(2));
+    return { period, total, values };
+  });
+  const validMonths = months.filter((month) => month.total !== 0).length;
+  return { categories, months, validMonths, canRender: validMonths >= 2 };
+}
+
+/** 现金流只认分录的现金方向，不借用利润表的收入、成本或费用分类。 */
+export function buildMonthlyCashFlow(input: { entries: LedgerEntry[]; industryId: string; periods: string[] }) {
+  const months = input.periods.map((period) => {
+    const values = input.entries.filter((entry) => entry.industryId === input.industryId && entry.status === "posted" && entry.occurredAt.slice(0, 7) === period);
+    const inflow = values.filter((entry) => entry.cashDirection === "inflow").reduce((sum, entry) => sum + entry.amountFen, 0) / 100;
+    const outflow = values.filter((entry) => entry.cashDirection === "outflow").reduce((sum, entry) => sum + entry.amountFen, 0) / 100;
+    return { period, inflow: Number(inflow.toFixed(2)), outflow: Number(outflow.toFixed(2)) };
+  });
+  return { months, validMonths: months.filter((month) => month.inflow !== 0 || month.outflow !== 0).length, canRender: months.some((month) => month.inflow !== 0 || month.outflow !== 0) };
+}
+
+/** 月销售目标运行率：目标以分传入，收入以元传入，未设置目标时明确返回 null。 */
+export function buildSalesTargetProgress(input: { revenue: number; targetFen: number; dayOfMonth: number; daysInMonth: number }) {
+  const target = Math.max(0, input.targetFen) / 100;
+  if (!target) return null;
+  const daysInMonth = Math.max(1, Math.floor(input.daysInMonth));
+  const dayOfMonth = Math.max(1, Math.min(Math.floor(input.dayOfMonth), daysInMonth));
+  const revenue = Math.max(0, input.revenue);
+  const projectedRevenue = Number((revenue / dayOfMonth * daysInMonth).toFixed(2));
+  const completionRate = Number((revenue / target * 100).toFixed(1));
+  const projectedRate = Number((projectedRevenue / target * 100).toFixed(1));
+  const remaining = Math.max(0, Number((target - revenue).toFixed(2)));
+  const remainingDays = Math.max(0, daysInMonth - dayOfMonth);
+  const requiredDaily = remainingDays > 0 ? Number((remaining / remainingDays).toFixed(2)) : remaining;
+  return { target, revenue, completionRate, projectedRevenue, projectedRate, remaining, requiredDaily, state: revenue >= target ? "reached" as const : projectedRevenue >= target ? "on_track" as const : "behind" as const };
 }

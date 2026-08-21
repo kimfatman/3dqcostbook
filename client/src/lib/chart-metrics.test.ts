@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildDailySalesOrders, buildPeriodSkuMetrics, buildProfitBridge, buildRefundPareto, buildSkuRankings } from "./chart-metrics";
+import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildDailySalesOrders, buildMonthlyCashFlow, buildMonthlyCostStack, buildPeriodSkuMetrics, buildProfitBridge, buildRefundPareto, buildSalesTargetProgress, buildSkuRankings } from "./chart-metrics";
 
 describe("经营图表指标", () => {
   it("利润桥保持净营收、成本、费用与经营利润的统一口径", () => {
@@ -68,5 +68,34 @@ describe("经营图表指标", () => {
   it("成本结构按真实成本金额排序并以全部成本作为占比基数", () => {
     const structure = buildCostStructure([{ key: "ad", label: "广告", amount: 250 }, { key: "goods", label: "采购", amount: 500 }, { key: "rent", label: "租金", amount: 250 }]);
     expect(structure.map((item) => [item.label, item.share])).toEqual([["采购", 50], ["广告", 25], ["租金", 25]]);
+  });
+
+  it("月成本堆积按分类归集已入账成本，并保持分类合计等于每月总成本", () => {
+    const entries = [
+      { industryId: "ecommerce", occurredAt: "2026-06-05", status: "posted", ledgerRole: "cogs", categoryKey: "goods", amountFen: 30000 },
+      { industryId: "ecommerce", occurredAt: "2026-06-06", status: "posted", ledgerRole: "opex", categoryKey: "ad", amountFen: 12000 },
+      { industryId: "ecommerce", occurredAt: "2026-07-06", status: "posted", ledgerRole: "cogs", categoryKey: "goods", amountFen: 50000 },
+      { industryId: "ecommerce", occurredAt: "2026-07-07", status: "draft", ledgerRole: "opex", categoryKey: "ad", amountFen: 99900 },
+      { industryId: "retail", occurredAt: "2026-07-06", status: "posted", ledgerRole: "opex", categoryKey: "ad", amountFen: 88800 },
+    ] as never[];
+    const stack = buildMonthlyCostStack({ entries, industryId: "ecommerce", categoryKeys: ["goods", "ad"], categoryLabels: { goods: "商品采购", ad: "广告投放" }, periods: ["2026-06", "2026-07"] });
+    expect(stack.canRender).toBe(true);
+    expect(stack.months.map((month) => [month.total, Object.values(month.values).reduce((sum, amount) => sum + amount, 0)])).toEqual([[420, 420], [500, 500]]);
+  });
+
+  it("现金流只使用 cashDirection，不把利润角色或无现金方向混入流入流出", () => {
+    const entries = [
+      { industryId: "ecommerce", occurredAt: "2026-07-01", status: "posted", ledgerRole: "revenue", cashDirection: "inflow", amountFen: 100000 },
+      { industryId: "ecommerce", occurredAt: "2026-07-02", status: "posted", ledgerRole: "revenue", cashDirection: "outflow", amountFen: 15000 },
+      { industryId: "ecommerce", occurredAt: "2026-07-03", status: "posted", ledgerRole: "cogs", cashDirection: "none", amountFen: 60000 },
+      { industryId: "ecommerce", occurredAt: "2026-07-04", status: "draft", ledgerRole: "opex", cashDirection: "outflow", amountFen: 80000 },
+    ] as never[];
+    const cash = buildMonthlyCashFlow({ entries, industryId: "ecommerce", periods: ["2026-06", "2026-07"] });
+    expect(cash.months).toEqual([{ period: "2026-06", inflow: 0, outflow: 0 }, { period: "2026-07", inflow: 1000, outflow: 150 }]);
+  });
+
+  it("销售目标未设置时不生成完成率，设置后按实际日均预测月末销售", () => {
+    expect(buildSalesTargetProgress({ revenue: 3000, targetFen: 0, dayOfMonth: 10, daysInMonth: 30 })).toBeNull();
+    expect(buildSalesTargetProgress({ revenue: 3000, targetFen: 900000, dayOfMonth: 10, daysInMonth: 30 })).toMatchObject({ completionRate: 33.3, projectedRevenue: 9000, projectedRate: 100, state: "on_track" });
   });
 });
