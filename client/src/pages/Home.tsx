@@ -893,6 +893,13 @@ export default function Home() {
     return <div className="notification-center"><section className="notification-summary"><span><Bell size={17} />经营提醒</span><b>{unreadNotificationCount ? `${unreadNotificationCount} 条待查看` : "已全部查看"}</b><button onClick={() => setReadNotificationIds(notificationItems.map((item) => item.id))}>{unreadNotificationCount ? "全部标为已读" : "全部已读"}</button></section><section className="notification-list">{notificationItems.map((item) => { const read = readNotificationIds.includes(item.id); return <button key={item.id} className={`${item.tone}${read ? " read" : ""}`} onClick={() => openNotificationTarget(item)}><span className="notification-symbol">{item.tone === "risk" ? "!" : item.tone === "attention" ? "·" : "＝"}</span><div><span className="notification-impact">{notificationImpact(item)}</span><b>{item.title}</b><em>{item.copy}</em><small>＝ {item.action}</small></div><ChevronRight size={18} /></button>; })}</section></div>;
   }
 
+  function ProfileSettingsPage() {
+    const me = meQuery.data;
+    if (!currentWorkspace || !me) return <div className="empty-state">正在读取个人与店铺资料…</div>;
+    const save = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const data = new FormData(event.currentTarget); try { await updateMe.mutateAsync({ name: String(data.get("name") || "").trim(), avatarAssetId: me.avatarAssetId || null }); await updateWorkspace.mutateAsync({ workspaceId: currentWorkspace.id, name: String(data.get("workspaceName") || "").trim(), industryId: String(data.get("industryId")) as IndustryId, contactName: String(data.get("contactName") || "").trim(), logoAssetId: currentWorkspace.logoAssetId || null }); notify("个人与店铺资料已保存"); setSubPage(null); setTab("profile"); } catch (error) { notify(error instanceof Error ? error.message : "资料保存失败"); } };
+    return <form className="record-form" onSubmit={save}><section className="sub-intro compact"><span>账户与店铺</span><h1>个人与店铺资料</h1><p>图片上传将保存于私有对象存储，资料修改不会改写历史账本。</p></section><label>您的姓名<input name="name" defaultValue={me.name} /></label><label>店铺名称<input name="workspaceName" defaultValue={currentWorkspace.name} /></label><label>经营行业<select name="industryId" defaultValue={currentWorkspace.industryId}><option value="canteen">餐饮</option><option value="retail">零售</option><option value="ecommerce">电商</option><option value="beauty">美业服务</option><option value="stall">小商贩</option></select></label><label>店铺联系人<input name="contactName" defaultValue={currentWorkspace.contactName || ""} /></label><button className="fixed-primary form-save" type="submit"><Check size={18} />保存资料</button></form>;
+  }
+
   function renderContent() {
     if (subPage === "notifications") return NotificationsPage();
     if (subPage === "industry") return IndustryPage();
@@ -918,6 +925,7 @@ export default function Home() {
     if (subPage === "orderDetail") return OrderDetailPage();
     if (subPage === "refundForm") return RefundFormPage();
     if (subPage === "skus") return SkusPage();
+    if (subPage === "profileSettings") return ProfileSettingsPage();
     if (tab === "orders") return OrdersPage();
     if (tab === "cards") return CardsPage();
     if (tab === "analysis") return AnalysisPage();
