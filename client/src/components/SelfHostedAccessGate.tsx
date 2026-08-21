@@ -15,7 +15,7 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const bootstrap = trpc.auth.bootstrap.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); await utils.auth.setupStatus.invalidate(); } });
   const login = trpc.auth.login.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
 
-  if (setup.isLoading || me.isLoading) return <div className="min-h-screen grid place-items-center bg-[#f5f7fb] text-sm text-slate-500">正在连接安全账本…</div>;
+  if (setup.isLoading || me.isLoading) return <div className="selfhost-loading">正在连接安全账本…</div>;
   if (me.data) return <>{children}</>;
 
   const isBootstrap = Boolean(setup.data?.needsBootstrap);
@@ -30,22 +30,22 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
     }
   };
 
-  return <main className="min-h-screen bg-[#f5f7fb] px-5 py-10 text-[#0b1836]">
-    <section className="mx-auto max-w-md rounded-[28px] bg-white p-6 shadow-[0_20px_50px_rgba(11,24,54,.12)]">
-      <div className="mb-7 flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#087ff5] text-white"><ShieldCheck size={22} /></div><div><p className="text-lg font-bold">算得清</p><p className="text-xs text-slate-500">商家成本管家 · 安全账本</p></div></div>
-      <h1 className="text-xl font-bold">{isBootstrap ? "初始化管理员" : "登录工作区"}</h1>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{isBootstrap ? "首次部署请使用服务器环境中的初始化令牌创建管理员。令牌不会保存到浏览器或账本中。" : "使用管理员为您创建的账号登录，进入专属工作区。"}</p>
-      <form className="mt-6 space-y-4" onSubmit={submit}>
+  return <main className="selfhost-access">
+    <section className="selfhost-access-card">
+      <div className="selfhost-brand"><div className="selfhost-brand-mark"><ShieldCheck size={22} /></div><div><p>算得清</p><small>商家成本管家 · 安全账本</small></div></div>
+      <h1>{isBootstrap ? "初始化管理员" : "登录工作区"}</h1>
+      <p className="selfhost-access-intro">{isBootstrap ? "首次部署请使用服务器环境中的初始化令牌创建管理员。令牌不会保存到浏览器或账本中。" : "使用管理员为您创建的账号登录，进入专属工作区。"}</p>
+      <form className="selfhost-access-form" onSubmit={submit}>
         {isBootstrap && <><Field label="初始化令牌" value={bootstrapToken} onChange={setBootstrapToken} type="password" autoComplete="one-time-code" placeholder="部署时生成的令牌" /><Field label="管理员姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="工作区名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：我的商店" /></>}
         <Field label="邮箱" value={email} onChange={setEmail} type="email" autoComplete="email" placeholder="name@example.com" />
         <Field label="密码" value={password} onChange={setPassword} type="password" autoComplete={isBootstrap ? "new-password" : "current-password"} placeholder={isBootstrap ? "至少 12 个字符" : "请输入密码"} />
-        {error && <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={bootstrap.isPending || login.isPending} className="h-12 w-full rounded-2xl bg-[#087ff5] text-sm font-semibold text-white transition active:scale-[.98] disabled:opacity-60">{bootstrap.isPending || login.isPending ? "正在验证…" : isBootstrap ? "创建管理员并进入" : "安全登录"}</button>
+        {error && <p role="alert" className="selfhost-access-error">{error}</p>}
+        <button type="submit" disabled={bootstrap.isPending || login.isPending} className="selfhost-access-submit">{bootstrap.isPending || login.isPending ? "正在验证…" : isBootstrap ? "创建管理员并进入" : "安全登录"}</button>
       </form>
     </section>
   </main>;
 }
 
 function Field({ label, value, onChange, type = "text", autoComplete, placeholder }: { label: string; value: string; onChange: (value: string) => void; type?: string; autoComplete?: string; placeholder: string }) {
-  return <label className="block"><span className="mb-1.5 block text-sm font-medium">{label}</span><input className="h-12 w-full rounded-xl border border-slate-200 px-3 text-base outline-none transition focus:border-[#087ff5] focus:ring-4 focus:ring-[#087ff5]/10" value={value} onChange={event => onChange(event.target.value)} type={type} autoComplete={autoComplete} placeholder={placeholder} required /></label>;
+  return <label className="selfhost-field"><span>{label}</span><input value={value} onChange={event => onChange(event.target.value)} type={type} autoComplete={autoComplete} placeholder={placeholder} required /></label>;
 }

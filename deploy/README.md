@@ -4,7 +4,7 @@
 
 ## 首次准备
 
-在服务器的 `/opt/cost-book/deploy` 中，参考 `environment.template.txt` 手动创建 `.env`。所有值均应使用 `openssl rand -hex 32` 独立生成；生成的十六进制值可安全用于 Compose 的数据库连接串。不要把 `.env` 提交到 Git，也不要通过聊天发送其中内容。
+在服务器的 `/opt/cost-book/deploy` 中，参考 `environment.template.txt` 手动创建 `runtime.secrets`。所有值均应使用 `openssl rand -hex 32` 独立生成；生成的十六进制值可安全用于 Compose 的数据库连接串。不要把 `runtime.secrets` 提交到 Git，也不要通过聊天发送其中内容。
 
 在 DNSPod 中创建 `app.3dq.site` 和 `api.3dq.site` 的 A 记录，记录值为服务器公网 IP。完成记录生效后运行 `./release.sh`。Caddy 会自动申请并续期 HTTPS 证书；若证书未签发，请先核验 DNS 生效及腾讯云安全组允许 80/443。
 
