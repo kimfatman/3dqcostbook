@@ -87,3 +87,22 @@
 @media (min-width: 414px) {
   .prototype-home { --home-edge: 0px; --home-module-gap: 14px; }
 }
+
+/* 有订单首页：卡片必须与主结果同宽；销售动能保持“指标一行＋紧凑图表”的标准高度。 */
+.prototype-home > .home-chart-card,
+.prototype-home > .home-promotion {
+  box-sizing: border-box;
+  width: 100% !important;
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+}
+.prototype-home .home-sales-orders { padding-bottom: 12px; }
+.prototype-home .home-sales-orders .sales-summary { padding-bottom: 8px; }
+.prototype-home .home-sales-orders .sales-orders-plot { height: 100px; padding-top: 8px; }
+.prototype-home .home-sales-orders .sales-bars { inset: 8px 0 0; }
+.prototype-home .home-sales-orders .sales-bars span { height: 74px; }
+.prototype-home .home-sales-orders .sales-orders-plot svg { inset: 8px 0 0; height: 74px; }
+.prototype-home .home-sales-orders .sales-bars em { bottom: -15px; }
+.prototype-home .home-sales-target .sales-target-body { padding: 8px 0; }
+.prototype-home .home-sales-target .sales-target-ring { width: 88px; height: 88px; padding: 9px; }
+.prototype-home .home-sales-target .sales-target-body { grid-template-columns: 92px minmax(0, 1fr); gap: 12px; }
