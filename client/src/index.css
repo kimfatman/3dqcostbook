@@ -2,6 +2,47 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
 
 :root { --financial-numeric-font: "IBM Plex Mono", "Noto Sans SC", ui-monospace, monospace; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; color: #172033; background: #eaf0f8; font-synthesis: none; }
+
+/* 商业化视觉收口：有效页面不使用网格纹理或虚线分隔，异常恢复沿用卡片与主次操作层级。 */
+.selfhost-hero::before { background: radial-gradient(circle at 86% 12%, rgba(255,255,255,.23), transparent 28%), radial-gradient(circle at 15% 100%, rgba(11,94,199,.2), transparent 48%); background-size: auto; mask-image: none; }
+.summary-card::before { display: none; }
+.quick-grid button,
+.mini-trend-card,
+.archive-summary,
+.category-cell,
+.pricing-base::after { background-image: none; }
+.quick-grid button::before,
+.category-card::before,
+.ranking-card::before,
+.profile-card::before,
+.detail-breakdown::before,
+.top-card-list::before,
+.supplier-rank::before,
+.supplier-list::before,
+.report-list::before,
+.cost-card-list::before,
+.category-manage-list::before,
+.chart-card::before,
+.mini-trend-card::before,
+.hidden-cost-card::before { display: none; }
+.category-cell::after,
+.record-row::after,
+.top-card-list button::after,
+.supplier-rank button::after,
+.supplier-list > div::after,
+.report-list > button::after,
+.cost-card-list > button::after,
+.category-manage-list > div::after { background: #e8eef4; }
+.industry-insight-card button,
+.archive-history-list > button,
+.add-material { border-top-style: solid; border-style: solid; }
+.archive-summary > div + div { border-left-style: solid; }
+.profile-load-state { display: grid; gap: 9px; justify-items: center; min-height: 164px; padding: 24px 18px; margin-top: 4px; color: #526b86; text-align: center; background: #fff; border: 1px solid #dfe8f1; border-radius: 16px; box-shadow: 0 8px 18px rgba(24,62,101,.05); }
+.profile-load-state > b { color: #213a55; font-size: 14px; }
+.profile-load-state > p { max-width: 270px; margin: 0; color: #71859d; font-size: 11px; line-height: 1.6; }
+.empty-state-actions { display: flex; gap: 8px; margin-top: 5px; }
+.empty-state-actions button { min-height: 36px; padding: 0 12px; color: #087ff5; font-size: 11px; font-weight: 750; background: #edf7ff; border: 1px solid #b8dcf8; border-radius: 9px; }
+.empty-state-actions button + button { color: #526b86; background: #fff; border-color: #dce5ed; }
 * { box-sizing: border-box; }
 body { min-width: 320px; margin: 0; background: #eaf0f8; }
 button, input { font: inherit; }
