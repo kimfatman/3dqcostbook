@@ -82,7 +82,7 @@ type IndustryHomeProfile = {
 };
 
 const deepLinkTabs: TabId[] = ["home", "orders", "cards", "analysis", "profile"];
-const deepLinkSubPages: Exclude<SubPage, null>[] = ["notifications", "industry", "records", "record", "recordDetail", "cardDetail", "cardForm", "pricing", "budget", "healthSettings", "salesTargets", "reports", "reportDetail", "suppliers", "supplierForm", "categories", "categoryForm", "orderForm", "orderDetail", "refundForm", "skus"];
+const deepLinkSubPages: Exclude<SubPage, null>[] = ["notifications", "industry", "records", "record", "recordDetail", "cardDetail", "cardForm", "pricing", "budget", "healthSettings", "salesTargets", "reports", "reportDetail", "suppliers", "supplierForm", "categories", "categoryForm", "orderForm", "orderDetail", "refundForm", "skus", "profileSettings"];
 const requestedParams = new URLSearchParams(window.location.search);
 const requestedScreen = requestedParams.get("screen");
 const requestedQuery = requestedParams.get("q") || "";

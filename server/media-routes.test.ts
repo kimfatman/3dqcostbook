@@ -86,4 +86,20 @@ describe("protected media upload HTTP route", () => {
     expect(mocks.putCosMedia).toHaveBeenCalledWith(expect.objectContaining({ storageKey: expect.stringContaining("workspaces/workspace-1"), mimeType: "image/png" }));
     expect(mocks.createMediaAsset).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "workspace-1", ownerUserId: "user-1", kind: "cost_card_image", storageKey: expect.stringContaining("workspaces/workspace-1") }));
   });
+
+  it.each([
+    { kind: "user_avatar", subjectId: "user-1" },
+    { kind: "workspace_logo", subjectId: "workspace-1" },
+  ] as const)("stores an allowed $kind upload under the owning workspace and returns only a protected route", async ({ kind, subjectId }) => {
+    mocks.getLocalUserFromRequest.mockResolvedValue({ id: "user-1" });
+    mocks.getWorkspaceAccess.mockResolvedValue({ role: "owner" });
+    mocks.buildCosMediaKey.mockReturnValue(`costbook-media/v1/workspaces/workspace-1/${kind}/${subjectId}/asset.png`);
+
+    const response = await requestUpload({ "x-media-kind": kind, "x-workspace-id": "workspace-1", "x-subject-id": subjectId });
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({ url: expect.stringMatching(/^\/api\/media\//) });
+    expect(mocks.buildCosMediaKey).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "workspace-1", subjectId, kind, extension: "png" }));
+    expect(mocks.createMediaAsset).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "workspace-1", ownerUserId: "user-1", kind, storageKey: expect.stringContaining(`workspaces/workspace-1/${kind}/${subjectId}`) }));
+  });
 });
