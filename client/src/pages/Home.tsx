@@ -23,6 +23,7 @@ import {
   Home as HomeIcon,
   LineChart,
   LogOut,
+  MoreHorizontal,
   PackageOpen,
   Pencil,
   Plus,
@@ -124,9 +125,28 @@ function Highlight({ value, query }: { value: string; query: string }) {
 function EquationResult({ firstLabel, firstValue, secondLabel, secondValue, resultLabel, resultValue, detail }: { firstLabel: string; firstValue: string; secondLabel: string; secondValue: string; resultLabel: string; resultValue: string; detail: string }) {
   return <section className="equation-result"><span>本期核算</span><div><label><em>{firstLabel}</em><b>{firstValue}</b></label><i>−</i><label><em>{secondLabel}</em><b>{secondValue}</b></label><i>＝</i><label className="equation-outcome"><em>{resultLabel}</em><b>{resultValue}</b></label></div><p>{detail}</p></section>;
 }
-function OperatingSnapshot({ decision, industryRisk, onOpenPriority }: { decision: HomeDecision; industryRisk: string; onOpenPriority: (priority: HomeDecisionNotification) => void }) {
+function OperatingSnapshot({ decision, industryRisk, costRate, profitMarginRate, profitDelta, onOpenPriority }: { decision: HomeDecision; industryRisk: string; costRate: number; profitMarginRate: number; profitDelta: number; onOpenPriority: (priority: HomeDecisionNotification) => void }) {
   const priority = decision.priority;
-  return <section className="operating-snapshot home-decision" aria-labelledby="home-decision-title"><div className="home-decision-result"><em>净营收 − 本月成本 ＝ 本期结果</em><strong><span id="home-decision-title">{decision.result.label}</span><b>{yuan(decision.result.amount)}</b></strong></div><dl className="home-decision-metrics">{decision.metrics.map((metric) => <div key={metric.key} data-tone={metric.tone}><dt>{metric.label}</dt><dd>{yuan(metric.amount)}</dd></div>)}</dl><p className="home-decision-industry-note"><Sparkles size={13} aria-hidden="true" /><span>{industryRisk}</span></p>{priority && <button className="home-decision-risk" data-tone={priority.tone} onClick={() => onOpenPriority(priority)}><CircleAlert size={16} aria-hidden="true" /><span><em>优先处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} aria-hidden="true" /></button>}</section>;
+  const revenue = decision.metrics.find(metric => metric.key === "revenue");
+  const cost = decision.metrics.find(metric => metric.key === "cost");
+  return <section className="operating-snapshot home-decision" aria-labelledby="home-decision-title"><div className="home-decision-topline"><span>核心经营结果</span><em>本月实时核算</em></div><div className="home-decision-result"><div><em>本月经营利润</em><strong><b id="home-decision-title">{yuan(decision.result.amount)}</b><small>{decision.result.label}</small></strong><p><TrendingUp size={14} />实时账本结果 · {industryRisk}</p></div><i className="profit-sculpture" aria-hidden="true"><span /><span /><span /><em /></i></div><div className="home-decision-equation"><label><em>净营收</em><b>{revenue ? yuan(revenue.amount) : "¥0"}</b></label><i>−</i><label><em>总成本</em><b>{cost ? yuan(cost.amount) : "¥0"}</b></label><i>＝</i><label className="outcome"><em>经营利润</em><b>{yuan(decision.result.amount)}</b></label></div><dl className="home-decision-metrics"><div><dt>成本率</dt><dd>{costRate}%</dd></div><div><dt>利润率</dt><dd>{profitMarginRate}%</dd></div><div><dt>较上月</dt><dd>{profitDelta >= 0 ? "+" : ""}{yuan(profitDelta)}</dd></div></dl>{priority && <button className="home-decision-risk" data-tone={priority.tone} onClick={() => onOpenPriority(priority)}><CircleAlert size={16} aria-hidden="true" /><span><em>优先处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} aria-hidden="true" /></button>}</section>;
+}
+
+function HomeReminderList({ items, onOpen, onOpenAll }: { items: NotificationItem[]; onOpen: (item: NotificationItem) => void; onOpenAll: () => void }) {
+  const iconFor = (tone: NotificationItem["tone"]) => tone === "risk" ? <TrendingDown size={17} /> : tone === "attention" ? <CircleAlert size={17} /> : <TrendingUp size={17} />;
+  return <section className="home-reminders home-chart-card"><div className="home-chart-head"><span>经营提醒</span><button onClick={onOpenAll}>全部 <ChevronRight size={14} /></button></div><div className="home-reminder-list">{items.slice(0, 3).map(item => <button key={item.id} data-tone={item.tone} onClick={() => onOpen(item)}><i>{iconFor(item.tone)}</i><span><b>{item.title}</b><em>{item.copy}</em></span><small>{item.action}<ChevronRight size={15} /></small></button>)}</div></section>;
+}
+
+function MiniTrendCard({ label, caption, total, values, tone, onClick }: { label: string; caption: string; total: number; values: number[]; tone: "income" | "cost"; onClick: () => void }) {
+  const max = Math.max(...values, 1);
+  const points = values.map((value, index) => `${8 + index / Math.max(values.length - 1, 1) * 84},${82 - value / max * 56}`).join(" ");
+  return <button className={`home-mini-trend ${tone}`} onClick={onClick}><span><em>{label}</em><b>{yuan(total)}</b><small>{caption}</small></span>{tone === "cost" ? <i className="home-mini-bars" aria-hidden="true">{values.map((value, index) => <b key={index} style={{ height: `${Math.max(value > 0 ? 8 : 3, value / max * 100)}%` }} />)}</i> : <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points={points} /><g>{values.map((value, index) => <circle key={index} cx={8 + index / Math.max(values.length - 1, 1) * 84} cy={82 - value / max * 56} r="2.5" />)}</g></svg>}</button>;
+}
+
+function HomeAnalysisPreview({ sales, costs, onSales, onCosts }: { sales: ReturnType<typeof buildDailySalesOrders>; costs: number[]; onSales: () => void; onCosts: () => void }) {
+  const salesTotal = sales.reduce((sum, item) => sum + item.sales, 0);
+  const costTotal = costs.reduce((sum, item) => sum + item, 0);
+  return <section className="home-analysis-preview home-chart-card"><div className="home-chart-head"><span>经营分析</span><button onClick={onSales}>全部分析 <ChevronRight size={14} /></button></div><div><MiniTrendCard label="营收趋势" caption="近 7 日净营收" total={salesTotal} values={sales.map(item => item.sales)} tone="income" onClick={onSales} /><MiniTrendCard label="成本趋势" caption="近 7 日已入账成本" total={costTotal} values={costs} tone="cost" onClick={onCosts} /></div></section>;
 }
 function notificationImpact(item: NotificationItem) {
   const amount = item.title.match(/¥[\d,]+/)?.[0];
@@ -684,20 +704,33 @@ export default function Home() {
   function renderHeader() {
     const titles: Record<Exclude<SubPage, null>, string> = { notifications: "消息中心", industry: "切换行业", records: "经营流水", record: recordId ? "编辑记录" : "记一笔", recordDetail: "流水详情", cards: `${template.entityLabel}成本卡`, cardDetail: `${template.entityLabel}成本详情`, cardForm: activeCard ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`, bomForm: activeBomItem ? `编辑${template.formulaLabel}项` : `添加${template.formulaLabel}项`, pricing: "智能测算定价", budget: "预算管理", healthSettings: "健康度评分阈值", salesTargets: "销售目标历史", reports: "成本报表", reportDetail: "报表详情", suppliers: "供应商", supplierForm: "新增供应商", categories: "分类管理", categoryForm: "新增分类", orders: "订单账本", orderForm: "记录订单", orderDetail: "订单详情", refundForm: "登记退款", skus: "SKU 商品成本", profileSettings: "个人与店铺资料", avatarStyle: "个人头像", storeBrand: "店铺品牌" };
     if (isSub) return <header className="page-header sub-header"><button className="back-button" onClick={goBack} aria-label="返回"><ArrowLeft size={21} /></button><strong>{titles[subPage]}</strong><span /></header>;
-    return <header className={`page-header ${tab === "orders" ? "orders-prototype-header" : ""}`}><div className="brand-mini"><span className="brand-seal-stack"><img className="brand-seal" src="/manus-storage/suandeqing-logo-3d_b82ea984.png" alt="算得清印章" /><BrandStoreLogo assetId={currentWorkspace?.logoAssetId} preset={currentWorkspace?.logoPreset} alt={`${currentWorkspace?.name || template.storeName}店铺标识`} size="header" /></span><span><strong>算得清 <i>／</i> {currentWorkspace?.name || template.storeName}</strong><em>{template.label} · {currentPeriod.replace("-", " 年 ")} 月</em></span></div>{tab === "home" && activeReminder ? <button className="header-reminder-ticker" onClick={() => goSub("notifications")} aria-label={`经营提醒：${activeReminder.title}，打开消息中心查看详情`}><Bell size={14} /><span key={activeReminder.id}>{activeReminder.title}</span><i>{unreadNotificationCount || ""}</i></button> : tab === "cards" ? <button className="header-primary-action" onClick={openNewCard}><Plus size={16} />新增成本卡</button> : tab === "orders" ? <span /> : <button className="header-icon" onClick={() => goSub("notifications")} aria-label="经营提醒"><Bell size={20} />{unreadNotificationCount > 0 && <i />}</button>}</header>;
+    return <header className={`page-header ${tab === "orders" ? "orders-prototype-header" : ""}`}><div className="brand-mini"><span className="brand-seal-stack"><img className="brand-seal" src="/manus-storage/suandeqing-logo-3d_b82ea984.png" alt="算得清印章" /><BrandStoreLogo assetId={currentWorkspace?.logoAssetId} preset={currentWorkspace?.logoPreset} alt={`${currentWorkspace?.name || template.storeName}店铺标识`} size="header" /></span><span><strong>{currentWorkspace?.name || template.storeName}<ChevronDown size={13} /></strong><em>{template.label} · {currentPeriod.replace("-", " 年 ")} 月</em></span></div>{tab === "cards" ? <button className="header-primary-action" onClick={openNewCard}><Plus size={16} />新增成本卡</button> : tab === "orders" ? <span /> : <button className="header-icon" onClick={() => goSub("notifications")} aria-label="经营提醒"><Bell size={20} />{unreadNotificationCount > 0 && <i />}</button>}</header>;
   }
 
   function HomePage() {
     const homeProfile = industryHomeProfiles[book.activeIndustryId];
     const IndustryIcon = iconByIndustry[book.activeIndustryId];
-    const focusCategory = totals.categoryTotals.find((category) => category.key === homeProfile.insight.focusCategoryKey);
     const hasSalesData = salesOrdersTrend.some((item) => item.orders > 0);
-    return <div className="prototype-home">
-      <section className="dashboard-kicker"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</b><em>{focusCategory ? `${focusCategory.label} ${yuan(focusCategory.amount)}` : homeProfile.insight.eyebrow}</em></span></section>
-      <OperatingSnapshot decision={homeDecision} industryRisk={homeProfile.insight.title} onOpenPriority={openHomeDecision} />
-      {hasSalesData ? <><SalesOrdersTrend items={salesOrdersTrend} onOpen={() => openOrdersContext("all")} /><SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}销量`} type="sales" items={skuRankings.sales} onSelect={openCard} onEmpty={() => openOrdersContext("all")} /><SkuTopBars title={`${template.entityLabel}利润`} type="profit" items={skuRankings.profit} onSelect={openCard} onEmpty={() => setTab("cards")} /></> : <SalesBaselineGap progress={salesTargetProgress} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} hasSku={skus.length > 0} onPrimary={() => skus.length > 0 ? openOrdersContext("all") : setTab("cards")} onOpenOrders={() => openOrdersContext("all")} />}
-      <CostStructureRing items={costStructure} totalCost={totals.totalCost} onSelect={(key, label) => { setRecordSearch(label); setRecordMonth(currentPeriod); goSub("records"); }} onOpenCostReview={() => { setRecordSearch(""); setRecordFilter("expense"); setRecordMonth(currentPeriod); goSub("records"); }} onEmpty={openNewRecord} />
+    const previousProfit = book.getPeriodView(book.previousPeriod(currentPeriod)).totals.operatingProfit;
+    const costRate = totals.revenue > 0 ? Number((totals.totalCost / totals.revenue * 100).toFixed(1)) : 0;
+    const profitMarginRate = totals.revenue > 0 ? Number((totals.operatingProfit / totals.revenue * 100).toFixed(1)) : 0;
+    const dailyCosts = salesOrdersTrend.map(item => records.filter(record => record.type === "expense" && record.date === item.date).reduce((sum, record) => sum + record.amount, 0));
+    const quickEntries: { label: string; Icon: LucideIcon; tone: string; action: () => void }[] = [
+      { label: `${template.entityLabel}成本`, Icon: PackageOpen, tone: "blue", action: () => { setTab("cards"); setSubPage(null); } },
+      { label: "采购分析", Icon: ShoppingCart, tone: "orange", action: () => { setRecordFilter("expense"); setRecordMonth(currentPeriod); goSub("records"); } },
+      { label: "订单管理", Icon: ClipboardList, tone: "purple", action: () => openOrdersContext("all") },
+      { label: "经营报告", Icon: FileText, tone: "green", action: () => goSub("reports") },
+      { label: "更多功能", Icon: MoreHorizontal, tone: "slate", action: () => setTab("profile") },
+    ];
+    return <div className="prototype-home home-redesign">
+      <section className="dashboard-kicker home-context"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</b><em>本期账本实时更新</em></span><button onClick={() => goSub("notifications")}>查看提醒 <ChevronRight size={14} /></button></section>
+      <OperatingSnapshot decision={homeDecision} industryRisk={homeProfile.insight.title} costRate={costRate} profitMarginRate={profitMarginRate} profitDelta={totals.operatingProfit - previousProfit} onOpenPriority={openHomeDecision} />
+      {hasSalesData && <SalesOrdersTrend items={salesOrdersTrend} onOpen={() => openOrdersContext("all")} />}
+      <SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} />
+      <HomeReminderList items={notificationItems} onOpen={openNotificationTarget} onOpenAll={() => goSub("notifications")} />
       <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传"><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span><img className="promotion-3d-asset" src={banner.asset} alt="" aria-hidden="true" /></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}</div></section>
+      <HomeAnalysisPreview sales={salesOrdersTrend} costs={dailyCosts} onSales={() => openOrdersContext("all")} onCosts={() => { setRecordFilter("expense"); setRecordMonth(currentPeriod); goSub("records"); }} />
+      <section className="home-quick-entry home-chart-card"><div className="home-chart-head"><span>快捷入口</span><b>常用功能</b></div><div>{quickEntries.map(({ label, Icon, tone, action }) => <button key={label} className={tone} onClick={action}><i><Icon size={20} /></i><span>{label}</span></button>)}</div></section>
     </div>;
   }
 
