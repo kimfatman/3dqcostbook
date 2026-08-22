@@ -65,13 +65,15 @@ import { isNonNegativeNumber, isPositiveInteger, isPositiveMoney, toEditableNumb
 import { businessDate } from "@/lib/business-date";
 import { buildReportCsv } from "@/lib/report-export";
 import { groupSuppliers } from "@/lib/supplier-management";
+import { budgetValidationMessage, shouldConfirmDiscard, shouldShowProfileRecovery } from "@/lib/interaction-guards";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trpc } from "@/lib/trpc";
+import { navigationSearch, popNavigationStack, readNavigationState, type NavigationState, type NavigationSubPage, type NavigationTab } from "@/lib/navigation-state";
 import { CostCardMediaEditor, CostCardThumbnail } from "@/components/CostCardMedia";
 import "../cashflow-filter.css";
 
-type TabId = "home" | "orders" | "cards" | "analysis" | "profile";
-type SubPage = "notifications" | "industry" | "records" | "record" | "recordDetail" | "cards" | "cardDetail" | "cardForm" | "bomForm" | "pricing" | "budget" | "healthSettings" | "salesTargets" | "reports" | "reportDetail" | "suppliers" | "supplierForm" | "categories" | "categoryForm" | "orders" | "orderForm" | "orderDetail" | "refundForm" | "skus" | "profileSettings" | "avatarStyle" | "storeBrand" | null;
+type TabId = NavigationTab;
+type SubPage = NavigationSubPage;
 type RecordFilter = "all" | RecordType;
 type DraftMaterial = { name: string; spec: string; quantity: string; amount: EditableNumber };
 type QuickAction = "order" | "budget" | "cards" | "record" | "analysis";
@@ -84,14 +86,16 @@ type IndustryHomeProfile = {
   insight: { eyebrow: string; title: string; copy: string; focusCategoryKey: string };
 };
 
-const deepLinkTabs: TabId[] = ["home", "orders", "cards", "analysis", "profile"];
-const deepLinkSubPages: Exclude<SubPage, null>[] = ["notifications", "industry", "records", "record", "recordDetail", "cardDetail", "cardForm", "pricing", "budget", "healthSettings", "salesTargets", "reports", "reportDetail", "suppliers", "supplierForm", "categories", "categoryForm", "orderForm", "orderDetail", "refundForm", "skus", "profileSettings"];
 const requestedParams = new URLSearchParams(window.location.search);
 const requestedScreen = requestedParams.get("screen");
 const requestedQuery = requestedParams.get("q") || "";
 const requestedMonth = requestedParams.get("month") || "all";
-const initialTab: TabId = deepLinkTabs.includes(requestedScreen as TabId) ? requestedScreen as TabId : "home";
-const initialSubPage: SubPage = deepLinkSubPages.includes(requestedScreen as Exclude<SubPage, null>) ? requestedScreen as Exclude<SubPage, null> : null;
+const initialNavigation = readNavigationState(window.location.search);
+const initialTab: TabId = initialNavigation.tab;
+const initialSubPage: SubPage = initialNavigation.subPage;
+const initialRecordFilter: RecordFilter = ["all", "expense", "income", "refund"].includes(initialNavigation.recordContext?.filter || "") ? initialNavigation.recordContext?.filter as RecordFilter : "all";
+const initialRecordMonth = initialNavigation.recordContext?.month || requestedMonth;
+const initialRecordQuery = initialNavigation.recordContext?.query || requestedQuery;
 
 const format = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
 const yuan = (amount: number) => `¥${format.format(Math.round(amount))}`;
@@ -309,10 +313,12 @@ export default function Home() {
   const logout = trpc.auth.logout.useMutation({ onSuccess: async () => { await Promise.all([utils.auth.me.invalidate(), utils.workspace.list.invalidate()]); } });
   const [tab, setTab] = useState<TabId>(initialTab);
   const [subPage, setSubPage] = useState<SubPage>(initialSubPage);
+  const [pageStack, setPageStack] = useState<NavigationState[]>([]);
+  const historyNavigationMode = useRef<"push" | "replace" | "pop">("push");
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryId>(book.activeIndustryId);
-  const [recordFilter, setRecordFilter] = useState<RecordFilter>("all");
-  const [recordSearch, setRecordSearch] = useState(requestedScreen === "records" ? requestedQuery : "");
-  const [recordMonth, setRecordMonth] = useState(requestedScreen === "records" ? requestedMonth : "all");
+  const [recordFilter, setRecordFilter] = useState<RecordFilter>(initialRecordFilter);
+  const [recordSearch, setRecordSearch] = useState(requestedScreen === "records" || ["record", "recordDetail"].includes(requestedScreen || "") ? initialRecordQuery : "");
+  const [recordMonth, setRecordMonth] = useState(requestedScreen === "records" || ["record", "recordDetail"].includes(requestedScreen || "") ? initialRecordMonth : "all");
   const [recordChannelFilter, setRecordChannelFilter] = useState<OrderChannel | "all">("all");
   const [recordSupplierFilter, setRecordSupplierFilter] = useState("");
   const [selectedCategoryKey, setSelectedCategoryKey] = useState("");
@@ -337,6 +343,8 @@ export default function Home() {
   const [orderLineId, setOrderLineId] = useState<string | null>(null);
   const [draftOrderLines, setDraftOrderLines] = useState<{ skuId: string; quantity: EditableNumber }[]>([]);
   const [draftMaterials, setDraftMaterials] = useState<DraftMaterial[]>([]);
+  const [cardFormDirty, setCardFormDirty] = useState(false);
+  const [budgetError, setBudgetError] = useState("");
   const [pricingPlatformRate, setPricingPlatformRate] = useState<EditableNumber>(0);
   const [pricingFulfillmentCost, setPricingFulfillmentCost] = useState<EditableNumber>(0);
   const [pricingTargetMargin, setPricingTargetMargin] = useState<EditableNumber>(40);
@@ -360,6 +368,38 @@ export default function Home() {
   const [cashSupplierFilter, setCashSupplierFilter] = useState("");
   const reducedMotion = useReducedMotion();
   const currentWorkspace = workspaceQuery.data?.[0];
+
+  useEffect(() => {
+    if (historyNavigationMode.current === "pop") {
+      historyNavigationMode.current = "push";
+      return;
+    }
+    const nextSearch = navigationSearch({ tab, subPage, recordContext: { filter: recordFilter, month: recordMonth, query: recordSearch } });
+    if (window.location.search === nextSearch) return;
+    const nextUrl = `${window.location.pathname}${nextSearch}${window.location.hash}`;
+    const currentScreen = new URLSearchParams(window.location.search).get("screen") || "home";
+    const nextScreen = subPage || tab;
+    if (historyNavigationMode.current === "replace" || currentScreen === nextScreen) window.history.replaceState({ costBookNavigation: true }, "", nextUrl);
+    else window.history.pushState({ costBookNavigation: true }, "", nextUrl);
+    historyNavigationMode.current = "push";
+  }, [recordFilter, recordMonth, recordSearch, subPage, tab]);
+
+  useEffect(() => {
+    const restoreFromBrowserHistory = () => {
+      const next = readNavigationState(window.location.search);
+      historyNavigationMode.current = "pop";
+      setPageStack((current) => popNavigationStack(current));
+      setTab(next.tab);
+      setSubPage(next.subPage);
+      if (next.recordContext) {
+        setRecordFilter(["all", "expense", "income", "refund"].includes(next.recordContext.filter || "") ? next.recordContext.filter as RecordFilter : "all");
+        setRecordMonth(next.recordContext.month || "all");
+        setRecordSearch(next.recordContext.query || "");
+      }
+    };
+    window.addEventListener("popstate", restoreFromBrowserHistory);
+    return () => window.removeEventListener("popstate", restoreFromBrowserHistory);
+  }, []);
 
   async function uploadMedia(file: File, kind: "user_avatar" | "workspace_logo" | "cost_card_image", subjectId: string) {
     if (!currentWorkspace) throw new Error("正在读取店铺资料，请稍后再试");
@@ -476,12 +516,13 @@ export default function Home() {
     window.setTimeout(() => setToast(""), 2200);
   }
 
-  function goSub(page: SubPage) { setSubPage(page); }
+  function goSub(page: SubPage) { if (page === subPage) return; setPageStack((current) => [...current, { tab, subPage, recordContext: { filter: recordFilter, month: recordMonth, query: recordSearch } }]); setSubPage(page); }
+  function replaceSubPage(page: SubPage) { historyNavigationMode.current = "replace"; setPageStack((current) => current.slice(0, -1)); setSubPage(page); }
+  function openRootTab(nextTab: TabId) { setPageStack([]); setSubPage(null); setTab(nextTab); }
   function openOrdersContext(filter: "all" | "low_profit" | "refund" = "all") {
     setOrderStatusFilter(filter);
     setOrderSearchOpen(false);
-    setTab("orders");
-    setSubPage(null);
+    openRootTab("orders");
   }
   function openPromotion(target: PromotionTarget) {
     if (target === "orders") { openOrdersContext(); return; }
@@ -504,9 +545,13 @@ export default function Home() {
     setTab("analysis");
   }
   function goBack() {
+    if (shouldConfirmDiscard(cardFormDirty) && !window.confirm("当前成本卡修改尚未保存，确认放弃并返回吗？")) return;
+    if (subPage === "cardForm") setCardFormDirty(false);
+    if (pageStack.length) { window.history.back(); return; }
     if (subPage === "bomForm") { setSubPage("cardDetail"); return; }
     if (subPage === "pricing") { setSubPage("cardDetail"); return; }
     if (subPage === "cardForm") { setSubPage("cards"); return; }
+    if (subPage === "record") { setSubPage("records"); return; }
     if (subPage === "recordDetail") { setSubPage("records"); return; }
     if (subPage === "cardDetail") { setSubPage("cards"); return; }
     if (subPage === "reportDetail") { setSubPage("reports"); return; }
@@ -533,16 +578,15 @@ export default function Home() {
 
   function openRecordDetail(id: string) { setRecordId(id); goSub("recordDetail"); }
   function openCard(id: string) { setCardId(id); goSub("cardDetail"); }
-  function openNewCard() { setCardId(null); setDraftMaterials([{ name: "直接材料", spec: "", quantity: `1 ${template.unitLabel}`, amount: "" }]); goSub("cardForm"); }
-  function editCard() { if (!activeCard) return; setDraftMaterials(activeCard.items.map((item) => ({ name: item.name, spec: item.spec, quantity: item.quantity, amount: item.amount }))); goSub("cardForm"); }
+  function openNewCard() { setCardId(null); setCardFormDirty(false); setDraftMaterials([{ name: "直接材料", spec: "", quantity: `1 ${template.unitLabel}`, amount: "" }]); goSub("cardForm"); }
+  function editCard() { if (!activeCard) return; setCardFormDirty(false); setDraftMaterials(activeCard.items.map((item) => ({ name: item.name, spec: item.spec, quantity: item.quantity, amount: item.amount }))); goSub("cardForm"); }
   function openPricing() { if (!activeCard) return; const config = channelTemplates.platform; setPricingChannel("platform"); setPricingPlatformRate(config.commissionRatePct); setPricingFulfillmentCost(config.fulfillmentCost); setPricingTargetMargin(config.targetContributionMarginPct); setPricingRoundingStep(config.roundingStep); setCompetitorLow(0); setCompetitorHigh(0); setPromotionDiscount(0); goSub("pricing"); }
   function openReport(id: string) { setReportId(id); goSub("reportDetail"); }
   function openOrder(id: string) { setOrderId(id); setOrderLineId(null); goSub("orderDetail"); }
   function openNewOrder() {
     if (!skus.length) {
-      setTab("cards");
-      setSubPage(null);
-      notify(`请先新增${template.entityLabel}成本卡，系统会自动创建可下单 SKU`);
+      openRootTab("cards");
+      notify(cards.length ? `现有${template.entityLabel}尚未生成可下单 SKU，请打开并保存成本卡后重试` : `请先新增${template.entityLabel}成本卡，系统会自动创建可下单 SKU`);
       return;
     }
     setDraftOrderLines([{ skuId: skus[0].id, quantity: 1 }]);
@@ -550,8 +594,8 @@ export default function Home() {
     setOrderChannel("platform");
     goSub("orderForm");
   }
-  function saveOrder(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const data = new FormData(event.currentTarget); if (!draftOrderLines.length || draftOrderLines.some((line) => !line.skuId || !isPositiveInteger(line.quantity))) return notify("请为每个 SKU 填写正整数数量"); const lines = draftOrderLines.map((line) => ({ skuId: line.skuId, quantity: toNumber(line.quantity) })); const result = book.addOrder({ orderNo: String(data.get("orderNo") || ""), channel: orderChannel, buyer: String(data.get("buyer") || ""), date: String(data.get("date") || today), lines }); if (!result.ok) return notify(result.reason || "订单登记失败"); notify("订单已入账：销售收入、商品成本和渠道费用预警已同步生成"); setSubPage("orders"); }
-  function saveRefund(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!activeOrder || !activeOrderLine) return notify("请先选择订单 SKU"); const data = new FormData(event.currentTarget); const quantity = Number(data.get("quantity")); const refundAmount = Number(data.get("refundAmount")); const date = String(data.get("date") || today); if (!Number.isInteger(quantity) || quantity <= 0) return notify("退款数量必须为正整数"); if (refundAmount > activeOrderLine.unitPriceFen / 100 * quantity) return notify("退款金额不能超过该 SKU 的成交收入"); if (date < activeOrder.occurredAt) return notify("退款日期不能早于订单成交日期"); const result = book.createRefund({ orderId: activeOrder.id, lineId: activeOrderLine.id, quantity, refundAmount, refundFee: Number(data.get("refundFee") || 0), reason: String(data.get("reason")) as RefundReason, recoveryStatus: String(data.get("recoveryStatus")) as ReturnRecoveryStatus, date }); if (!result.ok) return notify(result.reason || "退款登记失败"); notify("退款已登记，净营收与商品成本已同步更新"); setSubPage("orderDetail"); }
+  function saveOrder(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const data = new FormData(event.currentTarget); if (!draftOrderLines.length || draftOrderLines.some((line) => !line.skuId || !isPositiveInteger(line.quantity))) return notify("请为每个 SKU 填写正整数数量"); const lines = draftOrderLines.map((line) => ({ skuId: line.skuId, quantity: toNumber(line.quantity) })); const result = book.addOrder({ orderNo: String(data.get("orderNo") || ""), channel: orderChannel, buyer: String(data.get("buyer") || ""), date: String(data.get("date") || today), lines }); if (!result.ok) return notify(result.reason || "订单登记失败"); notify("订单已入账：销售收入、商品成本和渠道费用预警已同步生成"); replaceSubPage("orders"); }
+  function saveRefund(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!activeOrder || !activeOrderLine) return notify("请先选择订单 SKU"); const data = new FormData(event.currentTarget); const quantity = Number(data.get("quantity")); const refundAmount = Number(data.get("refundAmount")); const date = String(data.get("date") || today); if (!Number.isInteger(quantity) || quantity <= 0) return notify("退款数量必须为正整数"); if (refundAmount > activeOrderLine.unitPriceFen / 100 * quantity) return notify("退款金额不能超过该 SKU 的成交收入"); if (date < activeOrder.occurredAt) return notify("退款日期不能早于订单成交日期"); const result = book.createRefund({ orderId: activeOrder.id, lineId: activeOrderLine.id, quantity, refundAmount, refundFee: Number(data.get("refundFee") || 0), reason: String(data.get("reason")) as RefundReason, recoveryStatus: String(data.get("recoveryStatus")) as ReturnRecoveryStatus, date }); if (!result.ok) return notify(result.reason || "退款登记失败"); notify("退款已登记，净营收与商品成本已同步更新"); replaceSubPage("orderDetail"); }
   function saveSkuCost(event: FormEvent<HTMLFormElement>, skuId: string) { event.preventDefault(); const cost = Number(new FormData(event.currentTarget).get("unitCost")); const result = book.updateSkuCost(skuId, cost); notify(result.ok ? "SKU 单位成本已更新，仅作用于后续订单" : result.reason || "成本更新失败"); }
 
   function saveRecord(event: FormEvent<HTMLFormElement>) {
@@ -574,7 +618,7 @@ export default function Home() {
       notify(`已新增 ${yuan(amount)} 记录`);
     }
     setRecordId(null);
-    setSubPage("records");
+    replaceSubPage("records");
   }
 
   function editRecord() {
@@ -587,7 +631,7 @@ export default function Home() {
     setFormMerchant(activeRecord.merchant);
     setFormNote(activeRecord.note);
     setSelectedSupplierId(activeRecord.supplierId || "");
-    setSubPage("record");
+    goSub("record");
   }
 
   function deleteRecord() {
@@ -596,25 +640,26 @@ export default function Home() {
     book.removeRecord(activeRecord.id);
     notify("记录已删除，预算和分析已同步更新");
     setRecordId(null);
-    setSubPage("records");
+    replaceSubPage("records");
   }
 
   function applyIndustry() {
     if (selectedIndustry === book.activeIndustryId) return notify("当前已是该行业模板");
     book.switchIndustry(selectedIndustry);
     setSelectedCategoryKey("");
-    setSubPage(null);
-    setTab("profile");
+    openRootTab("profile");
     notify(`已切换为${industryTemplates[selectedIndustry].label}模板；历史账本已保留`);
   }
 
   function saveBudget(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const budget = Number(new FormData(event.currentTarget).get("budget"));
-    if (!budget || budget <= 0) return notify("请输入正确的预算金额");
+    const budgetErrorMessage = budgetValidationMessage(budget);
+    if (budgetErrorMessage) { setBudgetError(budgetErrorMessage); return; }
     book.updateBudget(budget);
+    setBudgetError("");
     notify("月度预算已保存，预测已刷新");
-    setSubPage("budget");
+    replaceSubPage("budget");
   }
 
   function openSalesTargetEditor() {
@@ -637,7 +682,7 @@ export default function Home() {
     const result = book.updateHealthSettings({ targetOperatingMarginPct: Number(data.get("targetOperatingMarginPct") || 0), refundTolerancePct: Number(data.get("refundTolerancePct") || 0) });
     if (!result.ok) return notify(result.reason);
     notify("健康度评分阈值已保存，缺口与评分已刷新");
-    setSubPage("healthSettings");
+    replaceSubPage("healthSettings");
   }
 
   function saveBomItem(event: FormEvent<HTMLFormElement>) {
@@ -652,7 +697,7 @@ export default function Home() {
     if (!result.ok) return notify(result.reason);
     notify(activeBomItem ? "成本项已更新，单位成本和 SKU 已同步重算" : "成本项已加入，单位成本已重算");
     setBomItemId(null);
-    setSubPage("cardDetail");
+    replaceSubPage("cardDetail");
   }
 
   function saveCard(event: FormEvent<HTMLFormElement>) {
@@ -666,15 +711,16 @@ export default function Home() {
     if (!name || salePrice <= 0 || labor < 0 || overhead < 0) return notify("请填写名称、售价和正确的成本金额");
     if (!items.length || draftMaterials.some((item) => !item.name.trim() || !item.quantity.trim() || !isPositiveMoney(item.amount))) return notify("请至少保留一项材料，并补齐名称、数量和金额");
     const input = { name, kind: String(data.get("kind") || "").trim(), unit: String(data.get("unit") || "").trim(), salePrice, labor, overhead, items };
-    if (activeCard) { const result = book.updateCard(activeCard.id, input); if (!result.ok) return notify(result.reason); notify("成本卡已更新，SKU 将同步用于后续订单"); setSubPage("cardDetail"); }
-    else { const result = book.addCard(input); if (!result.ok) return notify(result.reason); notify("成本卡已新增，并自动创建关联 SKU"); setSubPage("cards"); }
+    setCardFormDirty(false);
+    if (activeCard) { const result = book.updateCard(activeCard.id, input); if (!result.ok) return notify(result.reason); notify("成本卡已更新，SKU 将同步用于后续订单"); replaceSubPage("cardDetail"); }
+    else { const result = book.addCard(input); if (!result.ok) return notify(result.reason); notify("成本卡已新增，并自动创建关联 SKU"); replaceSubPage("cards"); }
   }
 
   function deleteCard() {
     if (!activeCard || !window.confirm(`确认删除成本卡“${activeCard.name}”吗？`)) return;
     const result = book.removeCard(activeCard.id);
     notify(result.ok ? "成本卡和未使用 SKU 已删除" : result.reason || "无法删除成本卡");
-    if (result.ok) { setCardId(null); setSubPage("cards"); }
+    if (result.ok) { setCardId(null); replaceSubPage("cards"); }
   }
 
   function saveSupplier(event: FormEvent<HTMLFormElement>) {
@@ -686,7 +732,7 @@ export default function Home() {
     if (supplierEditId) { book.updateSupplier(supplierEditId, input); notify("供应商信息已更新"); }
     else { book.addSupplier(input); notify("供应商已新增"); }
     setSupplierEditId(null);
-    setSubPage("suppliers");
+    replaceSubPage("suppliers");
   }
 
   function saveCategory(event: FormEvent<HTMLFormElement>) {
@@ -698,7 +744,7 @@ export default function Home() {
     if (categoryEditId) { book.updateCategory(categoryEditId, input); notify("分类已更新，历史流水口径保持不变"); }
     else { book.addCategory({ key: `custom_${Date.now()}`, ...input }); notify("分类已新增"); }
     setCategoryEditId(null);
-    setSubPage("categories");
+    replaceSubPage("categories");
   }
 
   function renderHeader() {
@@ -716,11 +762,11 @@ export default function Home() {
     const profitMarginRate = totals.revenue > 0 ? Number((totals.operatingProfit / totals.revenue * 100).toFixed(1)) : 0;
     const dailyCosts = salesOrdersTrend.map(item => records.filter(record => record.type === "expense" && record.date === item.date).reduce((sum, record) => sum + record.amount, 0));
     const quickEntries: { label: string; Icon: LucideIcon; tone: string; action: () => void }[] = [
-      { label: `${template.entityLabel}成本`, Icon: PackageOpen, tone: "blue", action: () => { setTab("cards"); setSubPage(null); } },
+      { label: `${template.entityLabel}成本`, Icon: PackageOpen, tone: "blue", action: () => openRootTab("cards") },
       { label: "采购分析", Icon: ShoppingCart, tone: "orange", action: () => { setRecordFilter("expense"); setRecordMonth(currentPeriod); goSub("records"); } },
       { label: "订单管理", Icon: ClipboardList, tone: "purple", action: () => openOrdersContext("all") },
       { label: "经营报告", Icon: FileText, tone: "green", action: () => goSub("reports") },
-      { label: "更多功能", Icon: MoreHorizontal, tone: "slate", action: () => setTab("profile") },
+      { label: "更多功能", Icon: MoreHorizontal, tone: "slate", action: () => openRootTab("profile") },
     ];
     return <div className="prototype-home home-redesign">
       <section className="dashboard-kicker home-context"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</b><em>本期账本实时更新</em></span><button onClick={() => goSub("notifications")}>查看提醒 <ChevronRight size={14} /></button></section>
@@ -872,7 +918,7 @@ export default function Home() {
     const simulatePrice = (price: number) => { const contribution = Number((price * (1 - base.platformRatePct / 100) - cardCost.cost - base.fulfillmentCost).toFixed(2)); return { price, contribution, margin: price > 0 ? Number((contribution / price * 100).toFixed(1)) : 0 }; };
     const promo = suggested?.available ? simulatePrice(Number((suggested.price * (1 - promotionDiscount / 100)).toFixed(2))) : null;
     const competitorPrices = pricingInputsReady ? [competitorLow, competitorHigh].filter((value) => value > 0).sort((a, b) => a - b).map(simulatePrice) : [];
-    const writePrice = (price: number) => { if (!Number.isFinite(price) || price <= 0) return; book.updateCard(activeCard.id, { salePrice: price }); notify(`建议售价 ${yuan(price)} 已写入成本卡，并同步后续订单 SKU`); setSubPage("cardDetail"); };
+    const writePrice = (price: number) => { if (!Number.isFinite(price) || price <= 0) return; book.updateCard(activeCard.id, { salePrice: price }); notify(`建议售价 ${yuan(price)} 已写入成本卡，并同步后续订单 SKU`); replaceSubPage("cardDetail"); };
     return <>
       <section className="sub-intro compact"><span>{activeCard.name} · 智能定价</span><h1>先算保本，再定售价</h1><p>以单位完全成本为基数，扣除渠道费率与单件履约费用后，反推目标贡献毛利率所需售价。</p></section>
       <section className="pricing-base"><span>当前单位完全成本</span><strong>{yuan(cardCost.cost)} / {activeCard.unit}</strong><em>{template.formulaLabel} {yuan(cardCost.material)} + 人工 {yuan(activeCard.labor)} + 分摊 {yuan(activeCard.overhead)}</em></section>
@@ -895,7 +941,7 @@ export default function Home() {
   function CardFormPage() {
     const editing = activeCard;
     const visibleMaterials = draftMaterials.length ? draftMaterials : [{ name: "直接材料", spec: "", quantity: `1 ${template.unitLabel}`, amount: "" as EditableNumber }];
-    return <><section className="sub-intro compact"><span>{template.label} · {template.entityLabel}定价</span><h1>{editing ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`}</h1><p>可连续添加多项材料。保存后会自动创建或同步 SKU；更新只应用于之后创建的订单，历史订单保留成交快照。</p></section><form className="record-form" onSubmit={saveCard}><label>{template.entityLabel}名称<input name="name" defaultValue={editing?.name || ""} placeholder={`例如：${template.entityLabel}名称`} autoFocus /></label><label>类型 / 标签<input name="kind" defaultValue={editing?.kind || ""} placeholder="例如：平台 SKU / 热菜 / 服务项目" /></label><label>计量单位<input name="unit" defaultValue={editing?.unit || template.unitLabel} placeholder={`例如：${template.unitLabel}`} /></label><label>销售单价<div className="amount-input"><span>¥</span><input name="salePrice" type="number" min="0.01" step="0.01" defaultValue={editing?.salePrice || ""} placeholder="例如：68" /></div></label><section className="form-section material-editor"><span>基础材料清单</span><div className="material-list">{visibleMaterials.map((material, index) => <div className="material-row" key={`${index}-${material.name}`}><div className="material-row-head"><b>材料 {index + 1}</b>{visibleMaterials.length > 1 && <button type="button" onClick={() => setDraftMaterials((current) => current.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={14} />删除</button>}</div><div className="form-two-col"><label>名称<input value={material.name} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} placeholder="例如：包装盒" /></label><label>金额<input type="number" min="0.01" step="0.01" value={material.amount} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, amount: toEditableNumber(event.target.value) } : item))} placeholder="0.00" /></label><label>规格<input value={material.spec} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, spec: event.target.value } : item))} placeholder="例如：500g" /></label><label>数量<input value={material.quantity} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: event.target.value } : item))} placeholder="例如：1 件" /></label></div></div>)}</div><button className="add-material" type="button" onClick={() => setDraftMaterials((current) => [...(current.length ? current : visibleMaterials), { name: "", spec: "", quantity: `1 ${template.unitLabel}`, amount: "" }])}><Plus size={16} />新增材料</button></section><section className="form-section"><span>其他单位成本</span><div className="form-two-col"><label>人工分摊<input name="labor" type="number" min="0" step="0.01" defaultValue={editing?.labor ?? "0"} placeholder="0.00" /></label><label>固定分摊<input name="overhead" type="number" min="0" step="0.01" defaultValue={editing?.overhead ?? "0"} placeholder="0.00" /></label></div></section><button className="fixed-primary form-save" type="submit"><Plus size={18} />{editing ? "保存成本卡" : "创建成本卡与 SKU"}</button></form></>;
+    return <><section className="sub-intro compact"><span>{template.label} · {template.entityLabel}定价</span><h1>{editing ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`}</h1><p>可连续添加多项材料。保存后会自动创建或同步 SKU；更新只应用于之后创建的订单，历史订单保留成交快照。</p></section><form className="record-form" onSubmit={saveCard} onChange={() => setCardFormDirty(true)}><label>{template.entityLabel}名称<input name="name" defaultValue={editing?.name || ""} placeholder={`例如：${template.entityLabel}名称`} autoFocus /></label><label>类型 / 标签<input name="kind" defaultValue={editing?.kind || ""} placeholder="例如：平台 SKU / 热菜 / 服务项目" /></label><label>计量单位<input name="unit" defaultValue={editing?.unit || template.unitLabel} placeholder={`例如：${template.unitLabel}`} /></label><label>销售单价<div className="amount-input"><span>¥</span><input name="salePrice" type="number" min="0.01" step="0.01" defaultValue={editing?.salePrice || ""} placeholder="例如：68" /></div></label><section className="form-section material-editor"><span>基础材料清单</span><div className="material-list">{visibleMaterials.map((material, index) => <div className="material-row" key={`${index}-${material.name}`}><div className="material-row-head"><b>材料 {index + 1}</b>{visibleMaterials.length > 1 && <button type="button" onClick={() => setDraftMaterials((current) => current.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={14} />删除</button>}</div><div className="form-two-col"><label>名称<input value={material.name} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} placeholder="例如：包装盒" /></label><label>金额<input type="number" min="0.01" step="0.01" value={material.amount} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, amount: toEditableNumber(event.target.value) } : item))} placeholder="0.00" /></label><label>规格<input value={material.spec} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, spec: event.target.value } : item))} placeholder="例如：500g" /></label><label>数量<input value={material.quantity} onChange={(event) => setDraftMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: event.target.value } : item))} placeholder="例如：1 件" /></label></div></div>)}</div><button className="add-material" type="button" onClick={() => setDraftMaterials((current) => [...(current.length ? current : visibleMaterials), { name: "", spec: "", quantity: `1 ${template.unitLabel}`, amount: "" }])}><Plus size={16} />新增材料</button></section><section className="form-section"><span>其他单位成本</span><div className="form-two-col"><label>人工分摊<input name="labor" type="number" min="0" step="0.01" defaultValue={editing?.labor ?? "0"} placeholder="0.00" /></label><label>固定分摊<input name="overhead" type="number" min="0" step="0.01" defaultValue={editing?.overhead ?? "0"} placeholder="0.00" /></label></div></section><button className="form-cancel" type="button" onClick={goBack}>取消并返回</button><button className="fixed-primary form-save" type="submit"><Plus size={18} />{editing ? "保存成本卡" : "创建成本卡与 SKU"}</button></form></>;
   }
 
   function BomFormPage() {
@@ -905,7 +951,7 @@ export default function Home() {
   function BudgetPage() {
     const budgetBurn = buildBudgetBurn({ budget: totals.budget, used: totals.totalCost, dayOfMonth: currentDay, daysInMonth: new Date(periodYear, periodMonth, 0).getDate() });
     const forecastLabel = budgetBurn.state === "over" ? `月末预计超预算 ${yuan(Math.max(0, budgetBurn.forecast - budgetBurn.budget))}` : budgetBurn.state === "risk" ? `月末预计超预算 ${yuan(Math.max(0, budgetBurn.forecast - budgetBurn.budget))}` : `月末预计结余 ${yuan(Math.max(0, budgetBurn.budget - budgetBurn.forecast))}`;
-    return <div className="prototype-budget"><section className="prototype-budget-title"><h1>预算管理 · {currentPeriod.replace("-", " 年 ")} 月</h1></section><BudgetRing burn={budgetBurn} onClick={() => notify("已按当前入账成本刷新预算预测")} /><div className={budgetBurn.state === "healthy" ? "budget-alert normal" : "budget-alert"}><CircleAlert size={17} />{forecastLabel}</div><section className="budget-forecast"><div className="budget-forecast-head"><span>月末预计趋势</span><CircleAlert size={15} /></div><div className="budget-forecast-line"><i className="budget-line-spent" /><i className="budget-line-projection" /><small className="budget-line-target">预算线 {yuan(budgetBurn.budget)}</small><b className="budget-line-current">{yuan(budgetBurn.used)}</b><b className="budget-line-forecast">{yuan(budgetBurn.forecast)}</b></div><div className="budget-forecast-labels"><span>今天 {String(currentDay).padStart(2, "0")} 日</span><span>月末 {new Date(periodYear, periodMonth, 0).getDate()} 日</span></div></section><form className="budget-form-card" onSubmit={saveBudget}><div><span>当前月度预算</span><b>{yuan(totals.budget)}</b><ChevronRight size={17} /></div><label className="budget-input"><span>调整为</span><div><i>¥</i><input name="budget" type="number" min="1" step="1" defaultValue={totals.budget} inputMode="decimal" aria-label="调整后的月度预算金额" /></div></label><button type="submit">保存预算并刷新预测</button></form></div>;
+    return <div className="prototype-budget"><section className="prototype-budget-title"><h1>预算管理 · {currentPeriod.replace("-", " 年 ")} 月</h1></section><BudgetRing burn={budgetBurn} onClick={() => notify("已按当前入账成本刷新预算预测")} /><div className={budgetBurn.state === "healthy" ? "budget-alert normal" : "budget-alert"}><CircleAlert size={17} />{forecastLabel}</div><section className="budget-forecast"><div className="budget-forecast-head"><span>月末预计趋势</span><CircleAlert size={15} /></div><div className="budget-forecast-line"><i className="budget-line-spent" /><i className="budget-line-projection" /><small className="budget-line-target">预算线 {yuan(budgetBurn.budget)}</small><b className="budget-line-current">{yuan(budgetBurn.used)}</b><b className="budget-line-forecast">{yuan(budgetBurn.forecast)}</b></div><div className="budget-forecast-labels"><span>今天 {String(currentDay).padStart(2, "0")} 日</span><span>月末 {new Date(periodYear, periodMonth, 0).getDate()} 日</span></div></section><form className="budget-form-card" noValidate onSubmit={saveBudget}><div><span>当前月度预算</span><b>{yuan(totals.budget)}</b><ChevronRight size={17} /></div><label className="budget-input"><span>调整为</span><div><i>¥</i><input name="budget" type="number" step="1" defaultValue={totals.budget} inputMode="decimal" aria-label="调整后的月度预算金额" aria-invalid={Boolean(budgetError)} aria-describedby={budgetError ? "budget-error" : undefined} onChange={() => setBudgetError("")} /></div></label>{budgetError && <p id="budget-error" className="field-error" role="alert">{budgetError}</p>}<button type="submit">保存预算并刷新预测</button></form></div>;
   }
 
   function HealthSettingsPage() {
@@ -988,7 +1034,9 @@ export default function Home() {
 
   function ProfileSettingsPage() {
     const me = meQuery.data;
-    if (!currentWorkspace || !me) return <div className="empty-state">正在读取个人与店铺资料…</div>;
+    const profileFailed = shouldShowProfileRecovery({ isProfileLoading: meQuery.isLoading, hasProfile: Boolean(me), isWorkspaceLoading: workspaceQuery.isLoading, hasWorkspace: Boolean(currentWorkspace), hasError: Boolean(meQuery.error || workspaceQuery.error) });
+    const retryProfile = () => { void Promise.all([utils.auth.me.refetch(), utils.workspace.list.refetch()]); };
+    if (!currentWorkspace || !me) return <div className="empty-state profile-load-state" role={profileFailed ? "alert" : "status"}><b>{profileFailed ? "个人与店铺资料暂时无法读取" : "正在读取个人与店铺资料…"}</b><p>{profileFailed ? "请检查网络或重新登录后再试；资料不会因此丢失。" : "正在同步账户和店铺信息，请稍候。"}</p><div className="empty-state-actions"><button type="button" onClick={retryProfile}>重新加载</button><button type="button" onClick={goBack}>返回我的</button></div></div>;
     const refreshProfile = async () => { await Promise.all([utils.auth.me.refetch(), utils.workspace.list.refetch()]); };
     const save = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const data = new FormData(event.currentTarget); try { await updateMe.mutateAsync({ name: String(data.get("name") || "").trim(), avatarAssetId: me.avatarAssetId || null, avatarPreset: String(data.get("avatarPreset") || "classic") as AvatarPresetId }); await updateWorkspace.mutateAsync({ workspaceId: currentWorkspace.id, name: String(data.get("workspaceName") || "").trim(), industryId: String(data.get("industryId")) as IndustryId, contactName: String(data.get("contactName") || "").trim(), logoAssetId: currentWorkspace.logoAssetId || null, logoPreset: String(data.get("logoPreset") || "store") as StorePresetId }); await refreshProfile(); notify("个人与店铺资料已保存"); setSubPage(null); setTab("profile"); } catch (error) { notify(error instanceof Error ? error.message : "资料保存失败"); } };
     const upload = async (file: File | undefined, kind: "user_avatar" | "workspace_logo") => { if (!file) return; try { const asset = await uploadMedia(file, kind, kind === "user_avatar" ? me.id : currentWorkspace.id); if (kind === "user_avatar") await updateMe.mutateAsync({ name: me.name, avatarAssetId: asset.id, avatarPreset: me.avatarPreset as AvatarPresetId | null }); else await updateWorkspace.mutateAsync({ workspaceId: currentWorkspace.id, name: currentWorkspace.name, industryId: currentWorkspace.industryId as IndustryId, contactName: currentWorkspace.contactName || me.name || "", logoAssetId: asset.id, logoPreset: currentWorkspace.logoPreset as StorePresetId | null }); await refreshProfile(); notify(kind === "user_avatar" ? "真实头像已上传，个人身份卡将优先展示" : "私有 Logo 已上传，店铺展示将优先使用"); } catch (error) { notify(error instanceof Error ? error.message : "图片上传失败"); } };
@@ -1031,7 +1079,7 @@ export default function Home() {
   }
 
   const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [{ id: "home", label: "经营", icon: HomeIcon }, { id: "orders", label: "订单", icon: ReceiptText }, { id: "cards", label: "商品", icon: PackageOpen }, { id: "analysis", label: "分析", icon: BarChart3 }, { id: "profile", label: "我的", icon: WalletCards }];
-  return <div className="mobile-shell"><div className="app-frame">{renderHeader()}<main className={isSub ? "app-content sub-content" : "app-content"}>{renderContent()}</main>{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { setTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}</div></div>;
+  return <div className="mobile-shell"><div className="app-frame">{renderHeader()}<main className={isSub ? "app-content sub-content" : "app-content"}>{renderContent()}</main>{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}</div></div>;
 }
 
 function useCloudBookSync(book: ReturnType<typeof useCostBook>) {

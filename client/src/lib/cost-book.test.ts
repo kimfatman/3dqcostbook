@@ -44,4 +44,10 @@ describe("历史本地状态兼容", () => {
     expect(state.categories.length).toBeGreaterThan(0);
     expect(state.workspace.salesTargets.ecommerce).toBe(0);
   });
+
+  it("历史成本卡缺少 SKU 时会补齐可下单关联，避免订单入口错误阻断", () => {
+    const state = normalizeState({ schemaVersion: 3, workspace: { id: "legacy", activeIndustryId: "ecommerce" }, cards: [card], skus: [] });
+    expect(state.skus).toHaveLength(1);
+    expect(state.skus[0]).toMatchObject({ cardId: "card-1", name: "收纳盒", unitPriceFen: 6800, unitCostFen: 3290, active: true });
+  });
 });
