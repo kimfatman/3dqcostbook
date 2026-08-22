@@ -54,3 +54,16 @@
 一级页面以 `--app-surface`、`--app-line`、`--app-radius`、`--app-ink`、`--app-muted` 和 `--financial-numeric-font` 为公共视觉令牌；订单、商品、分析仍以 `ledger-*` 变量补充其数据列表布局。390px截图复核确认首页、订单、商品、分析、我的及资料异常态均维持一致的冷白底、白色承载面、细实线、克制阴影、标题层级和数字可读性。第二批构建输出 CSS 约 194KB，较审计前的约 215KB 压缩输出继续收敛。
 
 本轮 CSS 收口已同步腾讯云正式环境。发布后 `https://api.3dq.site/healthz` 返回 `{"status":"ok"}`，`https://app.3dq.site/` 返回 HTTP 200；应用、反向代理与数据库容器均处于运行状态。
+
+## 物理残留清理
+
+最后一轮移除了 16 处已设为 `background-image: none` 却仍保留 `background-size` 的无效声明；样式表仅保留一处与登录页柔和光晕相关的背景尺寸。根级样式表中已不存在“账本蓝图”或“蓝图”设计表述。再次完成首页、订单、商品、分析、我的和资料异常态的390px复核，且 TypeScript、25 个测试文件共91项测试与生产构建继续通过。
+
+| 剩余图形规则类型 | 代表选择器 | 用途与保留理由 |
+| --- | --- | --- |
+| 必要品牌光效 | `.selfhost-hero`、`.selfhost-hero::before`、`.mobile-shell`、个人/店铺身份卡 | 仅用于登录入口和账户身份面的柔和层次，不构成网格或虚线纹理。 |
+| 经营状态强调 | `.prototype-home .home-decision`、`.budget-detail`、`.pricing-recommend`、`.pricing-base::after` | 用于经营主结果、预算与定价建议的状态层级，不承担页面背景纹理。 |
+| 数据图形语义 | `.trend-chart`、`.waterfall-plot`、`.product-microtrend`、`.sales-orders-plot`、`.cashflow-bars` | 仅在图表绘图区提供坐标参考或数据条形渐变，用于读数而非装饰。 |
+| 宣传媒体回退 | `.home-redesign .promotion-slide` | 透明亚克力3D素材加载前维持深蓝对比底色；当前正文与图像由同一全幅轮播组件承载。 |
+
+已额外删除五组被当前轮播最终规则显式禁用的历史 `promotion-slide` 伪元素。其余规则均归入上表的运行时用途，且 390px 首页、订单、商品、分析、我的和资料异常态复核未见层级或可读性回归。
