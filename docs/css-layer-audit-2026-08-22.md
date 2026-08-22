@@ -52,3 +52,5 @@
 所有两份样式表中的旧 `IBM Plex Mono` 或 `MiSans` 字体族声明均已迁移为 `var(--financial-numeric-font)`，共更新 133 处声明。这样首页、订单、商品、分析、资料金额、趋势标签和表单数值都由用户确认的 A 方案统一控制：IBM Plex Mono 用于金融数字，Noto Sans SC 用于中文与令牌回退。
 
 一级页面以 `--app-surface`、`--app-line`、`--app-radius`、`--app-ink`、`--app-muted` 和 `--financial-numeric-font` 为公共视觉令牌；订单、商品、分析仍以 `ledger-*` 变量补充其数据列表布局。390px截图复核确认首页、订单、商品、分析、我的及资料异常态均维持一致的冷白底、白色承载面、细实线、克制阴影、标题层级和数字可读性。第二批构建输出 CSS 约 194KB，较审计前的约 215KB 压缩输出继续收敛。
+
+本轮 CSS 收口已同步腾讯云正式环境。发布后 `https://api.3dq.site/healthz` 返回 `{"status":"ok"}`，`https://app.3dq.site/` 返回 HTTP 200；应用、反向代理与数据库容器均处于运行状态。
