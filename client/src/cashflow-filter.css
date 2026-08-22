@@ -643,3 +643,62 @@
 .record-export-panel { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; margin: 16px 0 92px; background: var(--app-surface, #fff); border: 1px solid var(--app-line, #e6ebf2); border-radius: var(--app-radius, 16px); box-shadow: 0 8px 22px rgba(20, 52, 92, .06); }
 .record-export-panel > div:first-child { min-width: 0; }.record-export-panel span, .record-export-panel strong, .record-export-panel em { display: block; }.record-export-panel span { color: #667085; font-size: 11px; }.record-export-panel strong { margin-top: 2px; color: #172b4d; font-family: var(--financial-numeric-font); font-size: 16px; }.record-export-panel em { margin-top: 3px; color: #98a2b3; font-size: 10px; font-style: normal; line-height: 1.4; }
 .record-export-actions { display: grid; flex: 0 0 auto; gap: 7px; }.record-export-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 94px; min-height: 32px; padding: 0 10px; color: #087ff5; font-size: 12px; font-weight: 700; background: #fff; border: 1px solid #cfe1fb; border-radius: 9px; }.record-export-actions button:last-child { color: #fff; background: #087ff5; border-color: #087ff5; }
+
+/* 间接成本池：真实费用、项目分摊与行业风险提示保持独立口径。 */
+.indirect-cost-page { gap: 14px; padding-bottom: 28px; }
+.indirect-cost-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; padding: 0; overflow: hidden; }
+.indirect-cost-summary > div { display: grid; gap: 3px; padding: 14px; border-left: 1px solid #e6edf5; }
+.indirect-cost-summary > div:first-child { border-left: 0; }
+.indirect-cost-summary em { color: #71839a; font-size: 10px; font-style: normal; }
+.indirect-cost-summary b { color: #10213e; font-family: var(--financial-numeric-font); font-size: 19px; font-variant-numeric: tabular-nums; letter-spacing: -.07em; }
+.indirect-cost-summary small { color: #95a4b6; font-size: 9px; }
+.indirect-cost-form, .indirect-cost-list, .indirect-cost-empty { padding: 14px; }
+.indirect-cost-form { display: grid; gap: 12px; }
+.indirect-cost-form .analysis-card-head > button { min-height: 28px; padding: 0 7px; color: #53708a; font-size: 10px; font-weight: 700; background: #f7faff; border: 1px solid #dce8f3; border-radius: 8px; }
+.indirect-cost-form > label { display: grid; gap: 6px; color: #526a84; font-size: 11px; font-weight: 700; }
+.indirect-cost-form input, .indirect-cost-form select { min-height: 38px; font-size: 13px; }
+.indirect-source-choice, .allocation-switch { display: grid; gap: 8px; padding: 12px; background: #f7faff; border: 1px solid #deebf7; border-radius: 12px; }
+.indirect-source-choice > span, .allocation-switch b, .allocation-rule > span { color: #193552; font-size: 12px; font-weight: 750; }
+.indirect-source-choice > div, .allocation-mode-options { display: flex; flex-wrap: wrap; gap: 7px; }
+.indirect-source-choice label, .allocation-mode-options label { display: inline-flex; gap: 5px; align-items: center; min-height: 28px; color: #59718b; font-size: 10px; font-weight: 600; }
+.indirect-source-choice input, .allocation-mode-options input { min-height: auto; margin: 0; accent-color: #087ff5; }
+.allocation-switch > div:first-child { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.allocation-switch em { display: block; max-width: 215px; margin-top: 3px; color: #758ba3; font-size: 9px; font-style: normal; font-weight: 500; line-height: 1.45; }
+.allocation-mode-options { flex: 0 0 auto; justify-content: flex-end; }
+.allocation-mode-options label { min-height: 30px; padding: 0 8px; background: #fff; border: 1px solid #d7e5f2; border-radius: 8px; }
+.allocation-mode-options label.selected { color: #087ff5; background: #edf7ff; border-color: #91c9fb; }
+.allocation-rule { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 2px; }
+.allocation-rule select { width: 126px; min-height: 34px; padding: 0 8px; color: #193552; background: #fff; border: 1px solid #d8e6f3; border-radius: 8px; }
+.allocation-rule-note { margin: -4px 0 0; color: #71879f; font-size: 10px; line-height: 1.45; }
+.allocation-targets { display: grid; overflow: hidden; background: #fff; border: 1px solid #deebf5; border-radius: 10px; }
+.allocation-targets > label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; min-height: 49px; padding: 7px 10px; border-top: 1px solid #e9f0f6; }
+.allocation-targets > label:first-child { border-top: 0; }
+.allocation-targets input[type="checkbox"] { min-height: auto; margin: 0; accent-color: #087ff5; }
+.allocation-targets span b, .allocation-targets span em { display: block; }
+.allocation-targets span b { overflow: hidden; color: #1c3854; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.allocation-targets span em { margin-top: 2px; color: #90a1b3; font-size: 9px; font-style: normal; }
+.allocation-weight { display: flex; align-items: center; width: 72px; border-bottom: 1px solid #c8d8e7; }
+.allocation-weight input { width: 50px; min-height: 28px; padding: 0; color: #143a61; font-family: var(--financial-numeric-font); text-align: right; background: transparent; border: 0; }
+.allocation-weight i { color: #7a8da1; font-size: 10px; font-style: normal; }
+.indirect-cost-list { display: grid; gap: 0; }
+.indirect-cost-list > article { display: grid; gap: 7px; padding: 12px 0; border-top: 1px solid #e7eef5; }
+.indirect-cost-list > article:first-of-type { margin-top: 2px; }
+.indirect-cost-list article > div { display: flex; justify-content: space-between; gap: 12px; }
+.indirect-cost-list article span { min-width: 0; }
+.indirect-cost-list article span b, .indirect-cost-list article span em { display: block; }
+.indirect-cost-list article span b { overflow: hidden; color: #173451; font-size: 13px; white-space: nowrap; text-overflow: ellipsis; }
+.indirect-cost-list article span em { margin-top: 3px; color: #8294a7; font-size: 9px; font-style: normal; }
+.indirect-cost-list article strong { flex: none; color: #102b4a; font-family: var(--financial-numeric-font); font-size: 14px; font-variant-numeric: tabular-nums; }
+.indirect-cost-list article > p { margin: 0; color: #71869d; font-size: 10px; line-height: 1.5; }
+.indirect-cost-list article footer { display: flex; flex-wrap: wrap; gap: 7px; }
+.indirect-cost-list article footer button { min-height: 29px; padding: 0 9px; color: #087ff5; font-size: 10px; font-weight: 700; background: #f2f8ff; border: 1px solid #d5e8fb; border-radius: 8px; }
+.indirect-cost-list article footer .danger { color: #bc4b4b; background: #fff6f5; border-color: #f5d9d5; }
+.indirect-cost-empty { display: grid; gap: 5px; text-align: center; }
+.indirect-cost-empty b { color: #1b3855; font-size: 13px; }
+.indirect-cost-empty p { margin: 0; color: #7c90a4; font-size: 10px; line-height: 1.5; }
+.indirect-cost-empty button { justify-self: center; display: inline-flex; gap: 4px; align-items: center; min-height: 32px; padding: 0 10px; color: #087ff5; font-size: 11px; font-weight: 700; background: #eff7ff; border: 1px solid #cce5fb; border-radius: 9px; }
+.indirect-cost-boundary { display: flex; gap: 8px; padding: 11px 12px; color: #70869e; background: #f7faff; border: 1px solid #e0ebf5; border-radius: 12px; }
+.indirect-cost-boundary svg { flex: none; margin-top: 1px; color: #4f8dd0; }
+.indirect-cost-boundary p { margin: 0; font-size: 10px; line-height: 1.55; }
+.indirect-cost-boundary b { color: #36536e; }
+@media (max-width: 360px) { .allocation-switch > div:first-child { display: grid; }.allocation-mode-options { justify-content: flex-start; }.indirect-cost-summary > div { padding: 12px 10px; }.indirect-cost-summary b { font-size: 17px; } }
