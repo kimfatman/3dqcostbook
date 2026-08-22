@@ -200,7 +200,7 @@ function SkuTopBars({ title, type, items, onSelect, onEmpty }: { title: string; 
   return <section className="home-chart-card home-sku-ranking"><div className="home-chart-head"><span>{title}</span><b>Top {positiveItems.length}</b></div><div>{positiveItems.map((item, index) => <button key={item.id} onClick={() => onSelect(item.id)}><em>{index + 1}</em><span><b>{item.name}</b><i><strong style={{ width: `${Math.max(7, value(item) / max * 100)}%` }} /></i></span><label>{type === "sales" ? `${item.netQuantity}${item.unit}` : yuan(item.grossProfit)}</label><ChevronRight size={15} /></button>)}</div></section>;
 }
 
-/* 账本蓝图：首页成本结构以“总成本＝已分类成本＋未分类调整项”为唯一视觉口径。 */
+/* 首页成本结构以“总成本＝已分类成本＋未分类调整项”为唯一视觉口径。 */
 const costRingColors = ["#087ff5", "#0b1836", "#62c5ff", "#4c6f9e", "#8cb5d8", "#b9d7ee", "#667085"];
 function CostStructureRing({ items, totalCost, onSelect, onOpenCostReview, onEmpty }: { items: ReturnType<typeof buildCostStructure>; totalCost: number; onSelect: (key: string, label: string) => void; onOpenCostReview: () => void; onEmpty: () => void }) {
   if (!items.length) return <section className="home-chart-card"><div className="home-chart-head"><span>成本结构</span><b>本月</b></div><HomeChartEmpty title="暂无成本结构" copy="先记录进货、人工或经营费用" action="记录成本" onClick={onEmpty} /></section>;
@@ -221,7 +221,7 @@ function SalesTargetProgress({ progress, runRateForecast, editing, input, onInpu
   return <section className={`home-chart-card home-sales-target ${progress.state}`}><div className="home-chart-head"><span>月销售目标</span><button onClick={onEdit}>调整目标 <Pencil size={13} /></button></div><div className="sales-target-body"><i className="sales-target-ring" style={{ background: `conic-gradient(#087ff5 0 ${ringRate}%, #e5eef6 ${ringRate}% 100%)` }}><span><em>完成</em><b>{progress.completionRate}%</b><small>{yuan(progress.revenue)}</small></span></i><div className="sales-target-stats"><label><em>目标</em><b>{yuan(progress.target)}</b></label><label><em>预计月末</em><b>{yuan(progress.projectedRevenue)}</b></label><label><em>还需</em><b>{yuan(progress.remaining)}</b></label></div></div><div className="target-foot"><p>{stateCopy}。</p><button onClick={onOpenOrders}>查看订单明细 <ChevronRight size={15} /></button></div></section>;
 }
 
-/* 账本蓝图：首页无订单时把目标与 SKU 订单缺口合并，避免两张等权空卡淹没成本判断。 */
+/* 首页无订单时将目标与 SKU 缺口合并，避免两张等权空卡淹没成本判断。 */
 function SalesBaselineGap({ progress, editing, input, onInputChange, onEdit, onSave, onCancel, hasSku, onPrimary, onOpenOrders }: { progress: ReturnType<typeof buildSalesTargetProgress>; editing: boolean; input: string; onInputChange: (value: string) => void; onEdit: () => void; onSave: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; hasSku: boolean; onPrimary: () => void; onOpenOrders: () => void }) {
   if (editing) return <SalesTargetProgress progress={progress} runRateForecast={0} editing input={input} onInputChange={onInputChange} onEdit={onEdit} onSave={onSave} onCancel={onCancel} onOpenOrders={onOpenOrders} />;
   const primaryLabel = hasSku ? "记录第一笔 SKU 订单" : "建立首张成本卡";

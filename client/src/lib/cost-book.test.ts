@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calcCard, type CostCard } from "./cost-book";
+import { calcCard, normalizeState, type CostCard } from "./cost-book";
 
 const card: CostCard = {
   id: "card-1",
@@ -29,5 +29,19 @@ describe("成本卡单位成本与毛利", () => {
   it("多项材料会在同一张成本卡内累计，不会覆盖此前已录入的材料", () => {
     const withThirdMaterial = { ...card, items: [...card.items, { id: "bom-3", name: "封口贴", spec: "单件", quantity: "1 张", amount: 1.8 }] };
     expect(calcCard(withThirdMaterial)).toEqual({ material: 27.4, cost: 34.7, marginRate: 49 });
+  });
+});
+
+describe("历史本地状态兼容", () => {
+  it("缺少集合字段的已保存状态会补齐为空集合或默认分类，避免首页初始化失败", () => {
+    const state = normalizeState({ schemaVersion: 3, workspace: { id: "legacy", activeIndustryId: "ecommerce" } });
+    expect(state.entries).toEqual([]);
+    expect(state.cards).toEqual([]);
+    expect(state.skus).toEqual([]);
+    expect(state.orders).toEqual([]);
+    expect(state.refunds).toEqual([]);
+    expect(state.suppliers).toEqual([]);
+    expect(state.categories.length).toBeGreaterThan(0);
+    expect(state.workspace.salesTargets.ecommerce).toBe(0);
   });
 });

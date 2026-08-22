@@ -1,6 +1,6 @@
 /**
  * 账本内核：所有金额以分存储，所有页面指标只能经本文件派生。
- * 账本蓝图规范：净营收、销售成本、毛利与经营利润必须保持独立口径。
+ * 经营口径规范：净营收、销售成本、毛利与经营利润必须保持独立口径。
  */
 export type LedgerRole = "revenue" | "other_income" | "cogs" | "opex" | "non_operating";
 export type LedgerEventType = "sale" | "income" | "expense" | "customer_refund" | "inventory_return" | "adjustment";
