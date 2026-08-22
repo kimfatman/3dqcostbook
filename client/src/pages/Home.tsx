@@ -64,6 +64,7 @@ import { buildMetrics, entriesForPeriod, fromFen } from "@/lib/ledger-metrics";
 import { isNonNegativeNumber, isPositiveInteger, isPositiveMoney, toEditableNumber, toNumber, type EditableNumber } from "@/lib/editable-number";
 import { businessDate } from "@/lib/business-date";
 import { buildReportCsv } from "@/lib/report-export";
+import { buildBillExportModel, downloadBillExport, type BillExportFormat } from "@/lib/bill-export";
 import { groupSuppliers } from "@/lib/supplier-management";
 import { budgetValidationMessage, shouldConfirmDiscard, shouldShowProfileRecovery } from "@/lib/interaction-guards";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -753,7 +754,7 @@ export default function Home() {
 
   function renderHeader() {
     const titles: Record<Exclude<SubPage, null>, string> = { notifications: "消息中心", industry: "切换行业", records: "经营流水", record: recordId ? "编辑记录" : "记一笔", recordDetail: "流水详情", cards: `${template.entityLabel}成本卡`, cardDetail: `${template.entityLabel}成本详情`, cardForm: activeCard ? `编辑${template.entityLabel}` : `新增${template.entityLabel}`, bomForm: activeBomItem ? `编辑${template.formulaLabel}项` : `添加${template.formulaLabel}项`, pricing: "智能测算定价", budget: "预算管理", healthSettings: "健康度评分阈值", salesTargets: "销售目标历史", reports: "成本报表", reportDetail: "报表详情", suppliers: "供应商", supplierForm: "新增供应商", categories: "分类管理", categoryForm: "新增分类", orders: "订单账本", orderForm: "记录订单", orderDetail: "订单详情", refundForm: "登记退款", skus: "SKU 商品成本", profileSettings: "个人与店铺资料", avatarStyle: "个人头像", storeBrand: "店铺品牌" };
-    if (isSub) return <header className="page-header sub-header"><button className="back-button" onClick={goBack} aria-label="返回"><ArrowLeft size={21} /></button><strong>{titles[subPage]}</strong><span /></header>;
+    if (isSub) return <header className="page-header sub-header"><button className="back-button" onClick={goBack} aria-label="返回"><ArrowLeft size={21} /></button><strong>{titles[subPage]}</strong>{subPage === "records" ? <button className="sub-header-export" type="button" onClick={() => exportFilteredRecords("xlsx")} aria-label="导出当前筛选账单"><FileText size={17} />导出</button> : <span />}</header>;
     return <header className={`page-header ${tab === "orders" ? "orders-prototype-header" : ""}`}><div className="brand-mini"><span className="brand-seal-stack"><img className="brand-seal" src="/manus-storage/suandeqing-logo-3d_b82ea984.png" alt="算得清印章" /><BrandStoreLogo assetId={currentWorkspace?.logoAssetId} preset={currentWorkspace?.logoPreset} alt={`${currentWorkspace?.name || template.storeName}店铺标识`} size="header" /></span><span><strong>{currentWorkspace?.name || template.storeName}<ChevronDown size={13} /></strong><em>{template.label} · {currentPeriod.replace("-", " 年 ")} 月</em></span></div>{tab === "cards" ? <button className="header-primary-action" onClick={openNewCard}><Plus size={16} />新增成本卡</button> : tab === "orders" ? <span /> : <button className="header-icon" onClick={() => goSub("notifications")} aria-label="经营提醒"><Bell size={20} />{unreadNotificationCount > 0 && <i />}</button>}</header>;
   }
 
@@ -987,6 +988,35 @@ export default function Home() {
     notify("已导出月度经营报表 CSV");
   }
 
+  async function exportFilteredRecords(format: BillExportFormat) {
+    if (!filteredRecords.length) {
+      notify("当前筛选没有可导出的流水");
+      return;
+    }
+    const model = buildBillExportModel({
+      records: filteredRecords,
+      storeName: currentWorkspace?.name || template.storeName,
+      industryLabel: template.label,
+      filters: {
+        month: recordMonth,
+        type: recordFilter,
+        query: recordSearch,
+        channelLabel: recordChannelFilter === "all" ? "" : channelLabel[recordChannelFilter],
+        supplierName: recordSupplierFilter ? suppliers.find((supplier) => supplier.id === recordSupplierFilter)?.name || "" : "",
+      },
+      categoryLabel: (categoryKey) => categoryByKey.get(categoryKey)?.label || "未分类",
+      channelLabel: (record) => record.orderId ? channelLabel[orders.find((order) => order.id === record.orderId)?.channel || "other"] : "",
+      supplierName: (supplierId) => supplierId ? suppliers.find((supplier) => supplier.id === supplierId)?.name || "" : "",
+      orderNo: (orderId) => orderId ? orders.find((order) => order.id === orderId)?.orderNo || "" : "",
+    });
+    await downloadBillExport(model, format);
+    notify(`已导出 ${filteredRecords.length} 笔经营流水（${format === "csv" ? "CSV" : "Excel"}）`);
+  }
+
+  function RecordExportActions() {
+    return <section className="record-export-panel" aria-label="导出当前筛选账单"><div><span>导出当前账单</span><strong>{filteredRecords.length} 笔流水</strong><em>将保留当前的月份、类型、关键词、渠道与供应商筛选。</em></div><div className="record-export-actions"><button type="button" onClick={() => exportFilteredRecords("csv")}>导出 CSV</button><button type="button" onClick={() => exportFilteredRecords("xlsx")}><FileText size={15} />导出 Excel</button></div></section>;
+  }
+
   function ReportDetailPage() {
     if (!activeReport) return <div className="empty-state">报表不存在。</div>;
     const reportOrders = orders.filter((order) => order.occurredAt.slice(0, 7) === activeReport.month);
@@ -1049,7 +1079,7 @@ export default function Home() {
   function renderContent() {
     if (subPage === "notifications") return NotificationsPage();
     if (subPage === "industry") return IndustryPage();
-    if (subPage === "records") return RecordsPage();
+    if (subPage === "records") return <><RecordsPage /><RecordExportActions /></>;
     if (subPage === "record") return RecordPage();
     if (subPage === "recordDetail") return RecordDetailPage();
     if (subPage === "cards") return CardsPage();
