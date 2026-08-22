@@ -626,7 +626,7 @@
 .home-redesign .sales-target-ring b { font-size: 24px; letter-spacing: -.09em; }
 .home-redesign .sales-target-ring small { max-width: 82px; overflow: hidden; margin-right: auto; margin-left: auto; font-size: 10px; white-space: nowrap; text-overflow: ellipsis; }
 .home-redesign .home-sales-target .sales-target-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; width: 100%; }
-.home-redesign .home-sales-target .sales-target-stats label, .home-redesign .home-sales-target .sales-target-stats label:last-child { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-height: 44px; padding: 0 8px; border: 0; border-left: 1px solid #e1eaf2; }
+.home-redesign .home-sales-target .sales-target-stats label, .home-redesign .home-sales-target .sales-target-stats label:last-child { display: grid; grid-column: auto; grid-template-columns: minmax(0, 1fr); gap: 4px; min-height: 44px; padding: 0 8px; border: 0; border-left: 1px solid #e1eaf2; }
 .home-redesign .home-sales-target .sales-target-stats label:first-child { padding-left: 0; border-left: 0; }
 .home-redesign .home-sales-target .sales-target-stats em { overflow: hidden; font-size: 10px; text-align: center; text-overflow: ellipsis; }
 .home-redesign .home-sales-target .sales-target-stats b { overflow: visible; font-size: clamp(11px, 3.35vw, 13px); text-align: center; white-space: nowrap; text-overflow: clip; }
