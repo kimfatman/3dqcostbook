@@ -1,4 +1,5 @@
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, LoaderCircle } from "lucide-react";
+import { useState } from "react";
 
 export function costCardMediaUrl(assetId?: string) {
   return assetId ? `/api/media/${assetId}` : null;
@@ -9,7 +10,13 @@ export function CostCardThumbnail({ assetId, alt }: { assetId?: string; alt: str
   return url ? <img className="cost-card-thumb" src={url} alt={alt} /> : <span className="cost-card-thumb placeholder"><ImagePlus size={17} /></span>;
 }
 
-export function CostCardMediaEditor({ assetId, alt, onUpload }: { assetId?: string; alt: string; onUpload: (file: File) => void }) {
+export function CostCardMediaEditor({ assetId, alt, onUpload }: { assetId?: string; alt: string; onUpload: (file: File) => Promise<void> | void }) {
   const url = costCardMediaUrl(assetId);
-  return <label className="cost-card-media-editor">{url ? <img src={url} alt={alt} /> : <span><ImagePlus size={20} />添加商品图片</span>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUpload(file); event.currentTarget.value = ""; }} /></label>;
+  const [uploading, setUploading] = useState(false);
+  return <label className={`cost-card-media-editor ${url ? "has-image" : ""} ${uploading ? "uploading" : ""}`} aria-busy={uploading}>
+    <span className="cost-card-media-preview">{url ? <img src={url} alt={alt} /> : <ImagePlus size={19} />}</span>
+    <span className="cost-card-media-copy"><b>{uploading ? "正在上传图片…" : url ? "更换商品图片" : "添加商品图片"}</b><em>JPEG、PNG 或 WebP · 最大 5MB</em></span>
+    {uploading ? <LoaderCircle className="cost-card-media-loader" size={18} /> : null}
+    <input type="file" disabled={uploading} accept="image/jpeg,image/png,image/webp" onChange={async (event) => { const file = event.target.files?.[0]; event.currentTarget.value = ""; if (!file) return; setUploading(true); try { await onUpload(file); } finally { setUploading(false); } }} />
+  </label>;
 }

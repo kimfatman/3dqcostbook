@@ -31,6 +31,10 @@ services:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       BOOTSTRAP_ADMIN_TOKEN: ${BOOTSTRAP_ADMIN_TOKEN}
+      COS_REGION: ${COS_REGION}
+      COS_BUCKET: ${COS_BUCKET}
+      TENCENT_SECRET_ID: ${TENCENT_SECRET_ID}
+      TENCENT_SECRET_KEY: ${TENCENT_SECRET_KEY}
     depends_on:
       mysql:
         condition: service_healthy

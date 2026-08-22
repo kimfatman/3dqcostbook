@@ -21,6 +21,7 @@ import {
   FileText,
   Home as HomeIcon,
   LineChart,
+  LogOut,
   PackageOpen,
   Pencil,
   Plus,
@@ -251,6 +252,7 @@ export default function Home() {
   const utils = trpc.useUtils();
   const updateMe = trpc.profile.updateMe.useMutation({ onSuccess: () => utils.auth.me.invalidate() });
   const updateWorkspace = trpc.workspace.updateProfile.useMutation({ onSuccess: () => utils.workspace.list.invalidate() });
+  const logout = trpc.auth.logout.useMutation({ onSuccess: async () => { await Promise.all([utils.auth.me.invalidate(), utils.workspace.list.invalidate()]); } });
   const [tab, setTab] = useState<TabId>(initialTab);
   const [subPage, setSubPage] = useState<SubPage>(initialSubPage);
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryId>(book.activeIndustryId);
@@ -307,6 +309,10 @@ export default function Home() {
 
   async function uploadMedia(file: File, kind: "user_avatar" | "workspace_logo" | "cost_card_image", subjectId: string) {
     if (!currentWorkspace) throw new Error("正在读取店铺资料，请稍后再试");
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const sizeLimit = kind === "cost_card_image" ? 5 * 1024 * 1024 : 2 * 1024 * 1024;
+    if (!allowedTypes.includes(file.type)) throw new Error("仅支持 JPEG、PNG 或 WebP 图片");
+    if (file.size > sizeLimit) throw new Error(`图片不能超过 ${sizeLimit / 1024 / 1024}MB`);
     const response = await fetch("/api/media/upload", { method: "POST", credentials: "include", headers: { "Content-Type": file.type, "x-workspace-id": currentWorkspace.id, "x-subject-id": subjectId, "x-media-kind": kind }, body: file });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "图片上传失败");
@@ -736,7 +742,8 @@ export default function Home() {
 
   function ProfilePage() {
     const priority = homeDecision.priority;
-    return <><section className="store-profile"><span className="store-avatar">{meQuery.data?.avatarAssetId ? <img src={`/api/media/${meQuery.data.avatarAssetId}`} alt="用户头像" /> : <IndustryIcon size={24} />}</span><div><h1>{currentWorkspace?.name || template.storeName}</h1><p>{meQuery.data?.name || template.descriptor} · {template.label}</p></div><button onClick={() => goSub("profileSettings")}><Settings2 size={18} /></button></section><section className="profile-card"><button onClick={() => goSub("profileSettings")}><span><Settings2 size={19} />个人与店铺资料</span><strong>编辑<ChevronRight size={16} /></strong></button><button onClick={() => goSub("industry")}><span><Store size={19} />经营行业</span><strong>{template.label}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("budget")}><span><WalletCards size={19} />预算设置</span><strong>{yuan(totals.budget)}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("reports")}><span><FileText size={19} />成本报表</span><strong>{reports.length} 期<ChevronRight size={16} /></strong></button></section>{priority && <button className="profile-pending" onClick={() => openHomeDecision(priority)}><span><em>本期待处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} /></button>}</>;
+    const handleLogout = async () => { if (!window.confirm("确认退出当前账号？本机账本草稿不会被删除。")) return; try { await logout.mutateAsync(); } catch { notify("退出失败，请稍后重试"); } };
+    return <><section className="store-profile"><span className="store-avatar">{meQuery.data?.avatarAssetId ? <img src={`/api/media/${meQuery.data.avatarAssetId}`} alt="用户头像" /> : <IndustryIcon size={24} />}</span><div><h1>{currentWorkspace?.name || template.storeName}</h1><p>{meQuery.data?.name || template.descriptor} · {template.label}</p></div><button onClick={() => goSub("profileSettings")}><Settings2 size={18} /></button></section><section className="profile-card"><button onClick={() => goSub("profileSettings")}><span><Settings2 size={19} />个人与店铺资料</span><strong>编辑<ChevronRight size={16} /></strong></button><button onClick={() => goSub("industry")}><span><Store size={19} />经营行业</span><strong>{template.label}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("budget")}><span><WalletCards size={19} />预算设置</span><strong>{yuan(totals.budget)}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("reports")}><span><FileText size={19} />成本报表</span><strong>{reports.length} 期<ChevronRight size={16} /></strong></button></section><section className="profile-session"><span><em>当前账号</em><b>{meQuery.data?.email || "已登录工作区"}</b></span><button onClick={handleLogout} disabled={logout.isPending}><LogOut size={17} />{logout.isPending ? "正在退出…" : "退出登录"}</button></section>{priority && <button className="profile-pending" onClick={() => openHomeDecision(priority)}><span><em>本期待处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} /></button>}</>;
   }
 
   function IndustryPage() {
