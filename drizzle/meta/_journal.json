@@ -15,6 +15,20 @@
       "when": 1787316556422,
       "tag": "0001_bent_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787364537980,
+      "tag": "0002_friendly_sharon_carter",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787365501078,
+      "tag": "0003_spooky_blonde_phantom",
+      "breakpoints": true
     }
   ]
 }

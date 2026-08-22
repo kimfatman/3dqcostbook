@@ -9,6 +9,7 @@ export const appUsers = mysqlTable("app_users", {
   email: varchar("email", { length: 320 }).notNull(),
   name: varchar("name", { length: 120 }).notNull(),
   avatarAssetId: varchar("avatarAssetId", { length: 36 }),
+  avatarPreset: varchar("avatarPreset", { length: 32 }),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   role: mysqlEnum("role", ["admin", "member"]).notNull().default("member"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
@@ -36,6 +37,7 @@ export const workspaces = mysqlTable("workspaces", {
   industryId: varchar("industryId", { length: 40 }).notNull().default("restaurant"),
   contactName: varchar("contactName", { length: 120 }).notNull().default(""),
   logoAssetId: varchar("logoAssetId", { length: 36 }),
+  logoPreset: varchar("logoPreset", { length: 32 }),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
 }, table => [index("workspaces_owner_idx").on(table.ownerId)]);

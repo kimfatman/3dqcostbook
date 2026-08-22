@@ -8,7 +8,10 @@ describe("腾讯云 COS 媒体存储", () => {
     expect(buildCosMediaKey({ workspaceId: "../other", subjectId: "user-1", kind: "user_avatar", assetId: "asset-1", extension: "jpg" })).not.toContain("..");
   });
 
-  it("可使用已配置的最小权限凭证访问指定私有 Bucket", async () => {
+  it("在显式启用时可使用最小权限凭证访问指定私有 Bucket", async () => {
+    expect(process.env.COS_BUCKET).toBeTruthy();
+    expect(process.env.COS_REGION).toBeTruthy();
+    if (process.env.COS_LIVE_CHECK !== "1") return;
     const result = await verifyCosMediaStorage();
     expect(result).toEqual({ bucket: process.env.COS_BUCKET, region: process.env.COS_REGION });
   }, 20_000);

@@ -25,6 +25,7 @@ until docker compose --env-file "$RUNTIME_FILE" exec -T mysql mysqladmin ping -h
   sleep 2
 done
 
+docker compose --env-file "$RUNTIME_FILE" build app
 docker compose --env-file "$RUNTIME_FILE" run --rm app pnpm drizzle-kit migrate
-docker compose --env-file "$RUNTIME_FILE" up -d --build app caddy
+docker compose --env-file "$RUNTIME_FILE" up -d app caddy
 docker compose --env-file "$RUNTIME_FILE" ps

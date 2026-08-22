@@ -1,0 +1,1 @@
+ALTER TABLE `app_users` ADD `avatarPreset` varchar(32);

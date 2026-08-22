@@ -1,0 +1,1 @@
+ALTER TABLE `workspaces` ADD `logoPreset` varchar(32);

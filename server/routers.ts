@@ -7,6 +7,8 @@ const email = z.string().trim().toLowerCase().email().max(320);
 const password = z.string().min(12, "密码至少需要 12 个字符").max(128);
 const state = z.record(z.string(), z.unknown());
 const industryId = z.enum(["canteen", "retail", "ecommerce", "beauty", "stall"]);
+const avatarPreset = z.enum(["classic", "retail", "ecommerce", "canteen", "beauty", "stall"]).nullable().optional();
+const logoPreset = z.enum(["store", "retail", "ecommerce", "canteen", "beauty", "stall"]).nullable().optional();
 
 export const appRouter = router({
   auth: router({
@@ -39,14 +41,14 @@ export const appRouter = router({
     }),
   }),
   profile: router({
-    updateMe: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(120), avatarAssetId: z.string().uuid().nullable().optional() })).mutation(({ input, ctx }) => updateAppUserProfile(ctx.user.id, input)),
+    updateMe: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(120), avatarAssetId: z.string().uuid().nullable().optional(), avatarPreset })).mutation(({ input, ctx }) => updateAppUserProfile(ctx.user.id, input)),
   }),
   workspace: router({
     list: protectedProcedure.query(({ ctx }) => listWorkspacesForUser(ctx.user.id)),
     book: protectedProcedure.input(z.object({ workspaceId: z.string().uuid() })).query(({ input, ctx }) => getWorkspaceBook(input.workspaceId, ctx.user.id)),
     saveBook: protectedProcedure.input(z.object({ workspaceId: z.string().uuid(), expectedRevision: z.number().int().nonnegative(), schemaVersion: z.number().int().positive().max(100), state })).mutation(({ input, ctx }) => saveWorkspaceBook({ ...input, userId: ctx.user.id })),
     audit: protectedProcedure.input(z.object({ workspaceId: z.string().uuid() })).query(({ input, ctx }) => recentAuditEvents(input.workspaceId, ctx.user.id)),
-    updateProfile: protectedProcedure.input(z.object({ workspaceId: z.string().uuid(), name: z.string().trim().min(1).max(120), industryId, contactName: z.string().trim().min(1).max(120), logoAssetId: z.string().uuid().nullable().optional() })).mutation(({ input, ctx }) => updateWorkspaceProfile({ ...input, userId: ctx.user.id })),
+    updateProfile: protectedProcedure.input(z.object({ workspaceId: z.string().uuid(), name: z.string().trim().min(1).max(120), industryId, contactName: z.string().trim().max(120), logoAssetId: z.string().uuid().nullable().optional(), logoPreset })).mutation(({ input, ctx }) => updateWorkspaceProfile({ ...input, userId: ctx.user.id })),
   }),
 });
 
