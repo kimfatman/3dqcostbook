@@ -589,3 +589,17 @@
 
 .skin-deep .home-redesign .home-chart-card { background: linear-gradient(145deg, rgba(18,53,88,.94), rgba(8,30,55,.96)); border-color: rgba(152,213,255,.16); }.skin-deep .home-redesign .home-context b, .skin-deep .home-reminder-list > button b, .skin-deep .home-mini-trend b { color: #edf7ff; }.skin-deep .home-reminder-list > button, .skin-deep .home-reminder-list > button:last-child { border-color: rgba(152,213,255,.14); }.skin-deep .home-mini-trend { background: rgba(141,204,255,.07); border-color: rgba(152,213,255,.14); }.skin-deep .home-mini-trend em, .skin-deep .home-reminder-list > button em { color: #a4c0d8; }.skin-deep .home-mini-trend.cost { background: rgba(95,215,183,.06); }
 @media (max-width: 360px) { .home-redesign .home-decision-result strong b { font-size: 32px; }.profit-sculpture { width: 82px; transform: scale(.88); transform-origin: right center; }.home-redesign .home-decision-equation label b { font-size: 11px; }.home-reminder-list > button small { display: none; } }
+
+/* 首页数据与宣传图收口：金额采用可读缩写以避免移动端裁切，轮播图使用完整覆盖的亚克力 3D 资产。 */
+.home-redesign .home-decision-result { gap: 10px; min-width: 0; }
+.home-redesign .home-decision-result > div { min-width: 0; flex: 1 1 auto; }
+.financial-amount { display: block; min-width: 0; overflow: hidden; font-family: var(--financial-numeric-font); font-variant-numeric: tabular-nums lining-nums; text-overflow: ellipsis; white-space: nowrap; }
+.home-redesign .home-decision-result strong .financial-amount-primary { max-width: min(100%, 218px); font-size: clamp(30px, 8.8vw, 39px); letter-spacing: -.085em; }
+.home-redesign .home-decision-equation .financial-amount { overflow: visible; font-size: clamp(11px, 3.5vw, 13px); letter-spacing: -.065em; text-overflow: clip; }
+.home-redesign .home-decision-metrics dd { min-width: 0; overflow: hidden; font-family: var(--financial-numeric-font); font-variant-numeric: tabular-nums lining-nums; text-overflow: ellipsis; white-space: nowrap; }
+.home-redesign .home-promotion { position: relative; overflow: hidden; }
+.home-redesign .promotion-slide { position: relative; overflow: hidden; }
+.home-redesign .promotion-3d-asset { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; opacity: 1; object-fit: cover; object-position: center; }
+.home-redesign .promotion-copy { position: relative; z-index: 1; width: 57%; max-width: 236px; min-height: 106px; background: linear-gradient(90deg, rgba(8,24,54,.36), rgba(8,24,54,.02)); }
+.home-redesign .promotion-copy small { max-width: none; }
+@media (max-width: 360px) { .home-redesign .home-decision-result strong .financial-amount-primary { max-width: 184px; font-size: 30px; }.home-redesign .promotion-copy { width: 62%; } }

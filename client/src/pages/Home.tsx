@@ -68,6 +68,7 @@ import { groupSuppliers } from "@/lib/supplier-management";
 import { budgetValidationMessage, shouldConfirmDiscard, shouldShowProfileRecovery } from "@/lib/interaction-guards";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trpc } from "@/lib/trpc";
+import { formatMoneyCompact } from "@/lib/money-display";
 import { navigationSearch, popNavigationStack, readNavigationState, type NavigationState, type NavigationSubPage, type NavigationTab } from "@/lib/navigation-state";
 import { CostCardMediaEditor, CostCardThumbnail } from "@/components/CostCardMedia";
 import "../cashflow-filter.css";
@@ -77,7 +78,7 @@ type SubPage = NavigationSubPage;
 type RecordFilter = "all" | RecordType;
 type DraftMaterial = { name: string; spec: string; quantity: string; amount: EditableNumber };
 type QuickAction = "order" | "budget" | "cards" | "record" | "analysis";
-type PromotionTarget = "cards" | "orders" | "industry";
+type PromotionTarget = "cards" | "orders" | "industry" | "notifications";
 type NotificationTarget = HomeDecisionTarget;
 type NotificationItem = HomeDecisionNotification & { copy: string };
 type VisualSkinOption = { id: VisualSkin; label: string; detail: string; material: string };
@@ -110,9 +111,9 @@ const industryHomeProfiles: Record<IndustryId, IndustryHomeProfile> = {
 const monthLabel = (month: string) => month === "all" ? "全部月份" : `${Number(month.slice(5))} 月`;
 const refundReasonLabel = (reason: RefundReason) => ({ quality_issue: "质量问题", wrong_item: "错发漏发", customer_cancelled: "客户取消", logistics_delay: "物流延误", duplicate_order: "重复下单", other: "其他" })[reason];
 const promotionBanners: { eyebrow: string; title: string; copy: string; action: string; target: PromotionTarget; asset: string }[] = [
-  { eyebrow: "产品功能", title: "成本卡，一键算出保本价", copy: "材料、人工、渠道费统一核算", action: "去测算", target: "cards", asset: "/manus-storage/banner-3d-cost-card_583c5d5c.png" },
-  { eyebrow: "产品功能", title: "订单、退款与商品成本，放进一张账", copy: "每一笔成交都能复核真实贡献利润", action: "查看订单", target: "orders", asset: "/manus-storage/banner-3d-pricing-tag_9e81aaad.png" },
-  { eyebrow: "行业模板", title: "按行业切换成本口径，历史账本不丢失", copy: "餐饮、零售、电商、美业、小商贩", action: "切换行业", target: "industry", asset: "/manus-storage/banner-3d-ledger-stack_c219d6f4.png" },
+  { eyebrow: "产品功能", title: "成本卡，一键算出保本价", copy: "材料、人工、渠道费统一核算", action: "去测算", target: "cards", asset: "/manus-storage/carousel-acrylic-costing-master_609cfb09.png" },
+  { eyebrow: "产品功能", title: "价格与利润，提前算明白", copy: "定价、毛利和渠道费用一屏复核", action: "查看商品", target: "cards", asset: "/manus-storage/carousel-acrylic-pricing-v2_3530824d.png" },
+  { eyebrow: "经营提醒", title: "关键波动，及时发现处理", copy: "成本、订单与现金流统一追踪", action: "查看提醒", target: "notifications", asset: "/manus-storage/carousel-acrylic-insight-v2_276b620b.png" },
 ];
 const visualSkinOptions: VisualSkinOption[] = [
   { id: "soft", label: "柔光材质工作台", detail: "冷白矿物底板 · 陶瓷数据面 · 冰蓝焦点层", material: "mineral" },
@@ -133,7 +134,7 @@ function OperatingSnapshot({ decision, industryRisk, costRate, profitMarginRate,
   const priority = decision.priority;
   const revenue = decision.metrics.find(metric => metric.key === "revenue");
   const cost = decision.metrics.find(metric => metric.key === "cost");
-  return <section className="operating-snapshot home-decision" aria-labelledby="home-decision-title"><div className="home-decision-topline"><span>核心经营结果</span><em>本月实时核算</em></div><div className="home-decision-result"><div><em>本月经营利润</em><strong><b id="home-decision-title">{yuan(decision.result.amount)}</b><small>{decision.result.label}</small></strong><p><TrendingUp size={14} />实时账本结果 · {industryRisk}</p></div><i className="profit-sculpture" aria-hidden="true"><span /><span /><span /><em /></i></div><div className="home-decision-equation"><label><em>净营收</em><b>{revenue ? yuan(revenue.amount) : "¥0"}</b></label><i>−</i><label><em>总成本</em><b>{cost ? yuan(cost.amount) : "¥0"}</b></label><i>＝</i><label className="outcome"><em>经营利润</em><b>{yuan(decision.result.amount)}</b></label></div><dl className="home-decision-metrics"><div><dt>成本率</dt><dd>{costRate}%</dd></div><div><dt>利润率</dt><dd>{profitMarginRate}%</dd></div><div><dt>较上月</dt><dd>{profitDelta >= 0 ? "+" : ""}{yuan(profitDelta)}</dd></div></dl>{priority && <button className="home-decision-risk" data-tone={priority.tone} onClick={() => onOpenPriority(priority)}><CircleAlert size={16} aria-hidden="true" /><span><em>优先处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} aria-hidden="true" /></button>}</section>;
+  return <section className="operating-snapshot home-decision" aria-labelledby="home-decision-title"><div className="home-decision-topline"><span>核心经营结果</span><em>本月实时核算</em></div><div className="home-decision-result"><div><em>本月经营利润</em><strong><b id="home-decision-title" className="financial-amount financial-amount-primary" title={yuan(decision.result.amount)} aria-label={`本月经营利润 ${yuan(decision.result.amount)}`}>{formatMoneyCompact(decision.result.amount)}</b><small>{decision.result.label}</small></strong><p><TrendingUp size={14} />实时账本结果 · {industryRisk}</p></div><i className="profit-sculpture" aria-hidden="true"><span /><span /><span /><em /></i></div><div className="home-decision-equation"><label><em>净营收</em><b className="financial-amount" title={yuan(revenue?.amount || 0)}>{formatMoneyCompact(revenue?.amount || 0)}</b></label><i>−</i><label><em>总成本</em><b className="financial-amount" title={yuan(cost?.amount || 0)}>{formatMoneyCompact(cost?.amount || 0)}</b></label><i>＝</i><label className="outcome"><em>经营利润</em><b className="financial-amount" title={yuan(decision.result.amount)}>{formatMoneyCompact(decision.result.amount)}</b></label></div><dl className="home-decision-metrics"><div><dt>成本率</dt><dd>{costRate}%</dd></div><div><dt>利润率</dt><dd>{profitMarginRate}%</dd></div><div><dt>较上月</dt><dd title={yuan(profitDelta)}>{profitDelta >= 0 ? "+" : ""}{formatMoneyCompact(profitDelta)}</dd></div></dl>{priority && <button className="home-decision-risk" data-tone={priority.tone} onClick={() => onOpenPriority(priority)}><CircleAlert size={16} aria-hidden="true" /><span><em>优先处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} aria-hidden="true" /></button>}</section>;
 }
 
 function HomeReminderList({ items, onOpen, onOpenAll }: { items: NotificationItem[]; onOpen: (item: NotificationItem) => void; onOpenAll: () => void }) {
@@ -297,7 +298,8 @@ type StorePresetId = typeof storePresets[number]["id"];
 function BrandStoreLogo({ assetId, preset = "store", alt, size = "normal" }: { assetId?: string | null; preset?: string | null; alt: string; size?: "normal" | "header" | "mini" }) {
   const selected = storePresets.find(item => item.id === preset) || storePresets[0];
   const Icon = selected.Icon;
-  return <span className={`store-preset-mark store-preset-mark-${size}${size === "header" ? " brand-store-logo" : ""}`}>{assetId ? <img src={`/api/media/${assetId}`} alt={alt} /> : <Icon size={size === "header" ? 9 : size === "mini" ? 13 : 20} aria-label={alt} />}</span>;
+  const iconSize = size === "header" ? 9 : size === "mini" ? 13 : 20;
+  return <span className={`store-preset-mark store-preset-mark-${size}${size === "header" ? " brand-store-logo" : ""}`}><Icon className="store-logo-fallback" size={iconSize} aria-label={alt} />{assetId && <img src={`/api/media/${assetId}`} alt={alt} onError={(event) => event.currentTarget.remove()} />}</span>;
 }
 
 const today = businessDate();
@@ -526,6 +528,7 @@ export default function Home() {
   }
   function openPromotion(target: PromotionTarget) {
     if (target === "orders") { openOrdersContext(); return; }
+    if (target === "notifications") { goSub("notifications"); return; }
     goSub(target);
   }
   function openNotificationTarget(item: NotificationItem) {
