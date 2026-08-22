@@ -10,7 +10,9 @@
 .mini-trend-card,
 .archive-summary,
 .category-cell,
-.pricing-base::after { background-image: none; }
+.pricing-base::after,
+.prototype-home .operating-snapshot,
+.home-cost-trend { background-image: none; }
 .quick-grid button::before,
 .category-card::before,
 .ranking-card::before,
@@ -35,7 +37,9 @@
 .category-manage-list > div::after { background: #e8eef4; }
 .industry-insight-card button,
 .archive-history-list > button,
-.add-material { border-top-style: solid; border-style: solid; }
+.add-material,
+.prototype-home .operating-snapshot > div:last-child,
+.home-data-row { border-top-style: solid; border-style: solid; }
 .archive-summary > div + div { border-left-style: solid; }
 .profile-load-state { display: grid; gap: 9px; justify-items: center; min-height: 164px; padding: 24px 18px; margin-top: 4px; color: #526b86; text-align: center; background: #fff; border: 1px solid #dfe8f1; border-radius: 16px; box-shadow: 0 8px 18px rgba(24,62,101,.05); }
 .profile-load-state > b { color: #213a55; font-size: 14px; }
