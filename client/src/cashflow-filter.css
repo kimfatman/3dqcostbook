@@ -598,8 +598,12 @@
 .home-redesign .home-decision-equation .financial-amount { overflow: visible; font-size: clamp(11px, 3.5vw, 13px); letter-spacing: -.065em; text-overflow: clip; }
 .home-redesign .home-decision-metrics dd { min-width: 0; overflow: hidden; font-family: var(--financial-numeric-font); font-variant-numeric: tabular-nums lining-nums; text-overflow: ellipsis; white-space: nowrap; }
 .home-redesign .home-promotion { position: relative; overflow: hidden; }
-.home-redesign .promotion-slide { position: relative; overflow: hidden; }
+.home-redesign .promotion-track { height: 106px; }
+.home-redesign .promotion-slide { position: relative; display: block; flex: 0 0 33.333%; width: 33.333%; min-height: 106px; padding: 0; overflow: hidden; background-color: #0b1836; background-image: none; }
+.home-redesign .promotion-slide::before, .home-redesign .promotion-slide::after { content: none; }
 .home-redesign .promotion-3d-asset { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; opacity: 1; object-fit: cover; object-position: center; }
+.home-redesign .promotion-slide:nth-child(2) .promotion-3d-asset,
+.home-redesign .promotion-slide:nth-child(3) .promotion-3d-asset { inset: 0; width: 100%; height: 100%; }
 .home-redesign .promotion-copy { position: relative; z-index: 1; width: 57%; max-width: 236px; min-height: 106px; background: linear-gradient(90deg, rgba(8,24,54,.36), rgba(8,24,54,.02)); }
 .home-redesign .promotion-copy small { max-width: none; }
 @media (max-width: 360px) { .home-redesign .home-decision-result strong .financial-amount-primary { max-width: 184px; font-size: 30px; }.home-redesign .promotion-copy { width: 62%; } }

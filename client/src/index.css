@@ -294,9 +294,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 0; bo
 .empty-state,
 .order-prerequisite,
 .notification-list > button { background-image: none !important; }
-.promotion-slide,
-.home-redesign .home-promotion { background-image: radial-gradient(circle at 88% 18%, rgba(84,166,255,.3), transparent 30%), linear-gradient(135deg, #0b1836, #123d74) !important; }
-.promotion-slide::after { border-top: 1px solid rgba(152,204,255,.28) !important; }
+.home-redesign .home-promotion { background-image: none !important; }
+.home-redesign .promotion-slide { background-image: none !important; }
+.home-redesign .promotion-slide::after { content: none; border-top: 0 !important; }
 .prototype-home .home-chart-empty,
 .prototype-home .sales-orders-plot,
 .home-cost-trend > section,
