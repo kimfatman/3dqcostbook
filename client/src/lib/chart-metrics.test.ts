@@ -107,4 +107,10 @@ describe("经营图表指标", () => {
     expect(buildSalesTargetProgress({ revenue: 3000, targetFen: 0, dayOfMonth: 10, daysInMonth: 30 })).toBeNull();
     expect(buildSalesTargetProgress({ revenue: 3000, targetFen: 900000, dayOfMonth: 10, daysInMonth: 30 })).toMatchObject({ completionRate: 33.3, projectedRevenue: 9000, projectedRate: 100, state: "on_track" });
   });
+
+  it("目标金额和本月销售额共同决定环图完成率，销售为零时保留完整目标缺口", () => {
+    expect(buildSalesTargetProgress({ revenue: 0, targetFen: 600000, dayOfMonth: 12, daysInMonth: 31 })).toMatchObject({ target: 6000, revenue: 0, completionRate: 0, projectedRevenue: 0, remaining: 6000, state: "behind" });
+    expect(buildSalesTargetProgress({ revenue: 2400, targetFen: 600000, dayOfMonth: 12, daysInMonth: 31 })).toMatchObject({ target: 6000, revenue: 2400, completionRate: 40, projectedRevenue: 6200, remaining: 3600, state: "on_track" });
+    expect(buildSalesTargetProgress({ revenue: 7200, targetFen: 600000, dayOfMonth: 30, daysInMonth: 30 })).toMatchObject({ completionRate: 120, remaining: 0, state: "reached" });
+  });
 });
