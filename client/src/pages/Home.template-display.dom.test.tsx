@@ -118,3 +118,62 @@ describe("五行业模板的真实页面显示", () => {
     }
   });
 });
+
+describe("统一账本的真实页面路径", () => {
+  it("在真实 Home 中完成流水筛选、记一笔新增/编辑/删除、成本卡搜索与成本结构下钻", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<Home />);
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    expect(screen.getByRole("heading", { name: "记录一笔收支" })).toBeTruthy();
+    await user.clear(screen.getByPlaceholderText("0.00"));
+    await user.type(screen.getByPlaceholderText("0.00"), "123.45");
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "DOM 回归供应商");
+    await user.clear(screen.getByPlaceholderText("例如：货品 / 补货"));
+    await user.type(screen.getByPlaceholderText("例如：货品 / 补货"), "回归新增成本");
+    await user.click(screen.getByRole("button", { name: "平台佣金" }));
+    await user.click(screen.getByRole("button", { name: "凭证状态" }));
+    await user.click(screen.getByRole("button", { name: "保存记录" }));
+
+    expect(screen.getByRole("heading", { name: "收入、成本，逐笔算清" })).toBeTruthy();
+    expect(screen.getByText("DOM 回归供应商")).toBeTruthy();
+    const recordSearch = screen.getByPlaceholderText("搜索商户、备注或分类");
+    await user.type(recordSearch, "DOM 回归供应商");
+    expect(screen.getByText("已找到 1 笔流水")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /DOM 回归供应商/ }));
+    expect(screen.getByRole("heading", { name: "DOM 回归供应商" })).toBeTruthy();
+    expect(screen.getByText(/已附凭证/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "编辑记录" }));
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "DOM 已编辑供应商");
+    await user.click(screen.getByRole("button", { name: "保存修改" }));
+    await user.clear(screen.getByPlaceholderText("搜索商户、备注或分类"));
+    await user.type(screen.getByPlaceholderText("搜索商户、备注或分类"), "DOM 已编辑供应商");
+    const editedRecordRow = screen.getByRole("button", { name: /DOM 已编辑供应商/ });
+    expect(editedRecordRow).toBeTruthy();
+    await user.click(editedRecordRow);
+    await user.click(screen.getByRole("button", { name: "删除记录" }));
+    expect(screen.queryByRole("button", { name: /DOM 已编辑供应商/ })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    window.history.replaceState({}, "", "/");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await screen.findByRole("navigation", { name: "主导航" });
+    await user.click(mainNavigation().getByRole("button", { name: "商品" }));
+    const cardSearch = screen.getByPlaceholderText("搜索商品名称或类型");
+    await user.type(cardSearch, "不存在的成本卡");
+    expect(screen.getByText("没有匹配的成本卡。")).toBeTruthy();
+    await user.clear(cardSearch);
+    expect(screen.getByText("轻盈收纳盒")).toBeTruthy();
+
+    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    const categoryDrilldown = screen.getAllByRole("button", { name: /平台佣金/ }).find((button) => button.textContent?.includes("查看流水"))
+      ?? screen.getAllByRole("button", { name: /平台佣金/ })[0];
+    await user.click(categoryDrilldown);
+    expect((screen.getByPlaceholderText("搜索商户、备注或分类") as HTMLInputElement).value).toBe("平台佣金");
+    confirmSpy.mockRestore();
+  });
+});
