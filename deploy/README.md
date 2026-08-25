@@ -10,7 +10,11 @@
 
 ## 首次管理员初始化
 
-首次访问 `https://app.3dq.site` 时，页面要求输入 `runtime.secrets` 中的 `BOOTSTRAP_ADMIN_TOKEN`、管理员邮箱、姓名、工作区名称和至少 12 位的密码。成功后应从 `runtime.secrets` 删除 `BOOTSTRAP_ADMIN_TOKEN` 并重新运行 `./release.sh`，使该令牌不再存在于运行环境。
+首次访问 `https://app.3dq.site` 时，页面要求输入 `runtime.secrets` 中的 `BOOTSTRAP_ADMIN_TOKEN`、管理员邮箱、姓名、工作区名称和至少 8 位的密码。建议使用长密码短语并避免常见弱口令。成功后应从 `runtime.secrets` 删除 `BOOTSTRAP_ADMIN_TOKEN` 并重新运行 `./release.sh`，使该令牌不再存在于运行环境。
+
+## 响应头安全基线
+
+`deploy/Caddyfile` 会为应用和 API 域名附加 HSTS、反嵌入、MIME 防嗅探、Referrer、权限与 CSP 响应头。修改该文件后，应通过 HTTPS 响应头复核，确认登录、私有媒体、静态资源、API 和账单下载均保持可用。
 
 ## 健康与回滚
 

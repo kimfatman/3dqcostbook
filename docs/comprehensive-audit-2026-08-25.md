@@ -8,21 +8,23 @@
 
 | 项目 | 证据与结论 |
 | --- | --- |
-| 质量门禁 | 审计基线为 TypeScript 检查通过、27 个测试文件、98 项测试通过及生产构建通过；P0 修复并安全合并后续功能后，TypeScript 检查、33 个测试文件、119 项测试与生产构建均通过。 |
-| 生产健康 | `api.3dq.site/healthz` 返回 `{"status":"ok"}`；`app.3dq.site` 返回 HTTP 200；应用、Caddy、MySQL 容器均运行且重启次数为 0。 |
+| 质量门禁 | 审计基线为 TypeScript 检查通过、27 个测试文件、98 项测试通过及生产构建通过；P0/P1 修复并安全合并后续功能后，TypeScript 检查、34 个测试文件、121 项测试与生产构建均通过。 |
+| 生产健康 | `api.3dq.site/healthz` 返回 `{"status":"ok"}`；`app.3dq.site` 返回 HTTP 200；应用、Caddy、MySQL 容器均运行。应用进程运行 UID/GID 为 10001，且应用/API 域名均返回已配置的安全响应头。 |
 | 身份与会话 | 密码使用 scrypt；会话使用 HMAC-SHA256 签名、7 天过期、生产环境 `HttpOnly`、`Secure`、`SameSite=Lax` Cookie。 |
 | 工作区与媒体隔离 | 账本读取、保存、审计与媒体读取均按工作区成员关系校验；媒体上传要求登录、工作区、资源主体、角色、文件类型与 5MB 上限。 |
 | 移动端表现 | 已在 390px 复核首页、流水、商品、分析、我的和资料错误态；主要信息层级、底部导航和账单导出控件均可见。 |
+
+> P1 生产验证证据另见 `docs/p1-production-security-verification-2026-08-25.md`。公开登录/注册入口、静态资源、API、未认证私有媒体边界、响应头、迁移与非 root UID 均已复核；需要真实已登录业务数据的私有媒体预览与 CSV/XLSX 下载仍保留为独立待验收项。
 | 账单导出 | CSV 使用 UTF-8 BOM、CRLF 和字段转义；Excel 含元数据、冻结表头、筛选与金额格式；本地浏览器已实际生成两种文件。 |
 
 ## 发现与优先级
 
 | 优先级 | 发现 | 证据 | 风险 | 修复建议与验收标准 |
 | --- | --- | --- | --- | --- |
-| **P0（已修复，待生产回归）** | 登录、注册和首次初始化没有速率限制、失败冷却、IP/账号维度告警或 CAPTCHA 阈值。 | 原始版本中 `auth.login`、`registerAndCreateWorkspace`、`bootstrap` 均为公共过程且无应用层限流。 | 可被撞库、暴力猜测或批量注册消耗资源。 | 新增同 IP 与身份散列双维度、5 次/15 分钟的单进程失败计数；达阈值返回通用“操作过于频繁”提示，登录失败和注册重复邮箱不泄露账号存在性，成功后清除计数。当前实现的边界是容器重启或多实例不会共享计数，后续扩容时应迁移到 Redis/数据库。 |
+| **P0（已修复并生产验证）** | 登录、注册和首次初始化没有速率限制、失败冷却、IP/账号维度告警或 CAPTCHA 阈值。 | 原始版本中 `auth.login`、`registerAndCreateWorkspace`、`bootstrap` 均为公共过程且无应用层限流。 | 可被撞库、暴力猜测或批量注册消耗资源。 | 新增同 IP 与身份散列双维度、5 次/15 分钟的单进程失败计数；达阈值返回通用“操作过于频繁”提示，登录失败和注册重复邮箱不泄露账号存在性，成功后清除计数。当前实现的边界是容器重启或多实例不会共享计数，后续扩容时应迁移到 Redis/数据库。 |
 | **P0（已修复，待生产回归）** | 账本保存采用“先读取 revision，再条件更新”的乐观锁，但未检查条件更新实际影响行数。 | 原始 `saveWorkspaceBook` 在更新 `workspaceBooks` 后直接写审计并返回 `conflict:false`。 | 两个并发保存窗口可能让后一请求未写入账本却向客户端报告成功，造成静默丢失修改。 | 条件 `UPDATE` 现以 mysql2 `ResultSetHeader.affectedRows === 1` 作为唯一成功条件；0 行时事务中止，随后查询并返回当前 revision，且不会写入工作区时间戳或审计事件。 |
-| **P1** | 生产应用与 API 缺少 HSTS、CSP、X-Frame-Options/`frame-ancestors`、X-Content-Type-Options、Referrer-Policy 与 Permissions-Policy。 | Caddy 仅配置压缩与反向代理；公网响应头实测未包含上述策略。 | 增加点击劫持、MIME 嗅探与脚本注入后的影响面。 | 在 Caddy 增加最小安全头；以资源实际来源制定可工作的 CSP，并验证登录、媒体、静态素材与下载不被阻断。 |
-| **P1** | 生产应用以 root 用户运行。 | `docker exec deploy-app-1 id` 返回 `uid=0(root)`；Dockerfile 未创建非特权用户。 | 一旦 Node 进程或依赖被利用，容器内权限过高。 | Dockerfile 建立只读/最小权限应用用户，使用 `USER nodeapp`；确认文件读取、构建产物与 COS 上传仍可用。 |
+| **P1（已修复并生产验证）** | 生产应用与 API 缺少 HSTS、CSP、X-Frame-Options/`frame-ancestors`、X-Content-Type-Options、Referrer-Policy 与 Permissions-Policy。 | 原始 Caddy 仅配置压缩与反向代理；P1 发布后应用/API HTTPS 响应均实测返回上述策略。 | 增加点击劫持、MIME 嗅探与脚本注入后的影响面。 | Caddy 已共享 HSTS、反嵌入、MIME 防嗅探、Referrer、权限与 CSP 头；CSP 允许当前同源应用、COS/HTTPS 图片、字体、分析脚本和 API 通信。 |
+| **P1（已修复并生产验证）** | 生产应用以 root 用户运行。 | 原始 `docker exec deploy-app-1 id` 返回 `uid=0(root)`；Dockerfile 未创建非特权用户。 | 一旦 Node 进程或依赖被利用，容器内权限过高。 | Dockerfile 现创建 `costbook` 专用用户/组，构建后将 `/app` 所有权交给该用户并使用 `USER costbook`；迁移与长期运行均已成功，生产实测 UID/GID 为 10001。 |
 | **P1** | 依赖审计存在 19 条高危、47 条中危、8 条低危通告；直接生产依赖包含过期 `axios`、`nanoid`、`drizzle-orm`，新增 `xlsx@0.18.5` 本身没有可用修复。 | `pnpm audit --prod`；高危包还包括间接 `lodash`、`path-to-regexp`、`form-data`。 | 供应链与运行时攻击面扩大；其中 Axios 用于服务端 SDK，Drizzle 用于数据访问。 | 建立可升级矩阵：先升级有兼容修复的直接依赖和 Express 链；评估用维护中的 XLSX 写入库替代 SheetJS 社区版或隔离其输入面；每批升级跑全量测试与生产构建。 |
 | **P1（已提前处理，待生产回归）** | 全局 JSON/URL 编码请求体上限为 50MB，且无通用请求速率/负载防护。 | 原始 `server/_core/index.ts` 在所有路由前使用 `express.json({ limit: "50mb" })`。 | 未认证端点也需解析大请求，放大内存和 DoS 风险。 | 通用 JSON/URL 编码解析已收紧到 1MB；媒体保持独立 5MB raw 路由。自动化回归确认超限 JSON 与表单均返回 413，1.5MB 二进制媒体可通过独立 5MB 解析器。 |
 | **P1** | OAuth 模块在生产日志持续输出 `OAUTH_SERVER_URL is not configured`。 | 最近 300 条应用日志出现该错误，当前自托管认证仍可运行。 | 混淆故障监控，并暗示未使用模板模块仍参与启动。 | 在自托管模式禁用未使用 OAuth 初始化，或补齐有意配置；生产日志在冷启动后不应出现 ERROR。 |

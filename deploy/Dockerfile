@@ -10,7 +10,11 @@ COPY patches ./patches
 RUN corepack enable && corepack prepare pnpm@10.15.1 --activate && pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm run build
+RUN pnpm run build \
+  && groupadd --system --gid 10001 costbook \
+  && useradd --system --uid 10001 --gid costbook --home-dir /app --shell /usr/sbin/nologin costbook \
+  && chown -R costbook:costbook /app
 
 EXPOSE 3000
+USER costbook
 CMD ["node", "dist/index.js"]
