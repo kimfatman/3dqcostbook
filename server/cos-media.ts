@@ -9,7 +9,7 @@ function safeSegment(value: string) {
   return normalized;
 }
 
-export function buildCosMediaKey(input: { workspaceId: string; subjectId: string; kind: "user_avatar" | "workspace_logo" | "cost_card_image"; assetId: string; extension: "jpg" | "png" | "webp" }) {
+export function buildCosMediaKey(input: { workspaceId: string; subjectId: string; kind: "user_avatar" | "workspace_logo" | "cost_card_image" | "record_voucher"; assetId: string; extension: "jpg" | "png" | "webp" }) {
   const prefix = (process.env.COS_MEDIA_PREFIX || DEFAULT_MEDIA_PREFIX).replace(/^\/+|\/+$/g, "");
   return `${prefix}/workspaces/${safeSegment(input.workspaceId)}/${input.kind}/${safeSegment(input.subjectId)}/${safeSegment(input.assetId)}.${input.extension}`;
 }

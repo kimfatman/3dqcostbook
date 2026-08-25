@@ -15,4 +15,10 @@ describe("媒体上传校验", () => {
     expect(validateMediaUpload({ ...base, kind: "user_avatar", mimeType: "image/gif" })).toMatchObject({ ok: false });
     expect(validateMediaUpload({ ...base, kind: "cost_card_image", subjectId: "card-1", sizeBytes: 5 * 1024 * 1024 + 1 })).toMatchObject({ ok: false });
   });
+
+  it("允许成员为当前工作区流水上传至多 5MB 的私有凭证图片", () => {
+    expect(validateMediaUpload({ ...base, kind: "record_voucher", subjectId: "record-1", sizeBytes: 5 * 1024 * 1024 })).toEqual({ ok: true, extension: "webp" });
+    expect(validateMediaUpload({ ...base, kind: "record_voucher", subjectId: "record-1", sizeBytes: 5 * 1024 * 1024 + 1 })).toMatchObject({ ok: false });
+    expect(validateMediaUpload({ ...base, kind: "record_voucher", subjectId: "record-1", role: "viewer" })).toMatchObject({ ok: false, reason: "查看者不能上传图片" });
+  });
 });

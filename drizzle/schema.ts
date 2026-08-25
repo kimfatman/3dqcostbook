@@ -46,7 +46,7 @@ export const mediaAssets = mysqlTable("media_assets", {
   id: varchar("id", { length: 36 }).primaryKey(),
   workspaceId: varchar("workspaceId", { length: 36 }).notNull(),
   ownerUserId: varchar("ownerUserId", { length: 36 }).notNull(),
-  kind: mysqlEnum("kind", ["user_avatar", "workspace_logo", "cost_card_image"]).notNull(),
+  kind: mysqlEnum("kind", ["user_avatar", "workspace_logo", "cost_card_image", "record_voucher"]).notNull(),
   storageKey: varchar("storageKey", { length: 512 }).notNull(),
   mimeType: varchar("mimeType", { length: 80 }).notNull(),
   sizeBytes: int("sizeBytes").notNull(),

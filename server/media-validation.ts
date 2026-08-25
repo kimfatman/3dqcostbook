@@ -1,4 +1,4 @@
-export const MEDIA_KINDS = ["user_avatar", "workspace_logo", "cost_card_image"] as const;
+export const MEDIA_KINDS = ["user_avatar", "workspace_logo", "cost_card_image", "record_voucher"] as const;
 export type MediaKind = typeof MEDIA_KINDS[number];
 
 const mimeToExtension: Record<string, "jpg" | "png" | "webp"> = {
@@ -15,7 +15,7 @@ export function validateMediaUpload(input: { kind: string; mimeType: string; siz
   if (!input.workspaceId.trim() || !input.subjectId.trim()) return { ok: false as const, reason: "缺少工作区或资源主体" };
   if (!MEDIA_KINDS.includes(input.kind as MediaKind)) return { ok: false as const, reason: "不支持的图片类型" };
   if (!mediaExtension(input.mimeType)) return { ok: false as const, reason: "仅支持 JPG、PNG 或 WebP 图片" };
-  const maxBytes = input.kind === "cost_card_image" ? 5 * 1024 * 1024 : 2 * 1024 * 1024;
+  const maxBytes = input.kind === "cost_card_image" || input.kind === "record_voucher" ? 5 * 1024 * 1024 : 2 * 1024 * 1024;
   if (!Number.isInteger(input.sizeBytes) || input.sizeBytes <= 0 || input.sizeBytes > maxBytes) return { ok: false as const, reason: `图片大小不能超过 ${maxBytes / 1024 / 1024} MB` };
   if (input.role === "viewer") return { ok: false as const, reason: "查看者不能上传图片" };
   if (input.kind === "user_avatar" && input.subjectId !== input.userId) return { ok: false as const, reason: "只能更新自己的头像" };

@@ -1,0 +1,1 @@
+ALTER TABLE `media_assets` MODIFY COLUMN `kind` enum('user_avatar','workspace_logo','cost_card_image','record_voucher') NOT NULL;

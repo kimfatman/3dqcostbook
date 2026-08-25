@@ -356,6 +356,10 @@ export default function Home() {
   const [analysisPeriod, setAnalysisPeriod] = useState<"current" | "last">("current");
   const [analysisDetailsOpen, setAnalysisDetailsOpen] = useState(false);
   const [hasAttachment, setHasAttachment] = useState(false);
+  const [attachmentAssetId, setAttachmentAssetId] = useState<string | null>(null);
+  const [recordAttachmentSubjectId, setRecordAttachmentSubjectId] = useState<string | null>(null);
+  const [isUploadingVoucher, setIsUploadingVoucher] = useState(false);
+  const [voucherUploadError, setVoucherUploadError] = useState("");
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderLineId, setOrderLineId] = useState<string | null>(null);
   const [draftOrderLines, setDraftOrderLines] = useState<{ skuId: string; quantity: EditableNumber }[]>([]);
@@ -421,10 +425,10 @@ export default function Home() {
     return () => window.removeEventListener("popstate", restoreFromBrowserHistory);
   }, []);
 
-  async function uploadMedia(file: File, kind: "user_avatar" | "workspace_logo" | "cost_card_image", subjectId: string) {
+  async function uploadMedia(file: File, kind: "user_avatar" | "workspace_logo" | "cost_card_image" | "record_voucher", subjectId: string) {
     if (!currentWorkspace) throw new Error("正在读取店铺资料，请稍后再试");
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    const sizeLimit = kind === "cost_card_image" ? 5 * 1024 * 1024 : 2 * 1024 * 1024;
+    const sizeLimit = kind === "cost_card_image" || kind === "record_voucher" ? 5 * 1024 * 1024 : 2 * 1024 * 1024;
     if (!allowedTypes.includes(file.type)) throw new Error("仅支持 JPEG、PNG 或 WebP 图片");
     if (file.size > sizeLimit) throw new Error(`图片不能超过 ${sizeLimit / 1024 / 1024}MB`);
     const response = await fetch("/api/media/upload", { method: "POST", credentials: "include", headers: { "Content-Type": file.type, "x-workspace-id": currentWorkspace.id, "x-subject-id": subjectId, "x-media-kind": kind }, body: file });
@@ -593,12 +597,33 @@ export default function Home() {
     setRecordType("expense");
     setSelectedCategoryKey(categories[0]?.key || "");
     setHasAttachment(false);
+    setAttachmentAssetId(null);
+    setRecordAttachmentSubjectId(null);
+    setVoucherUploadError("");
     setFormAmount("");
     setFormDate(today);
     setFormMerchant("");
     setFormNote("");
     setSelectedSupplierId("");
     goSub("record");
+  }
+
+  async function uploadRecordVoucher(file: File | undefined) {
+    if (!file) return;
+    const subjectId = recordId || recordAttachmentSubjectId || `record-${crypto.randomUUID()}`;
+    setRecordAttachmentSubjectId(subjectId);
+    setVoucherUploadError("");
+    setIsUploadingVoucher(true);
+    try {
+      const asset = await uploadMedia(file, "record_voucher", subjectId);
+      setAttachmentAssetId(asset.id);
+      setHasAttachment(true);
+      notify("凭证图片已附加，保存记录后生效");
+    } catch (error) {
+      setVoucherUploadError(error instanceof Error ? error.message : "凭证图片上传失败");
+    } finally {
+      setIsUploadingVoucher(false);
+    }
   }
 
   function openRecordDetail(id: string) { setRecordId(id); goSub("recordDetail"); }
@@ -634,15 +659,18 @@ export default function Home() {
     const data = new FormData(event.currentTarget);
     const refundFee = Number(data.get("refundFee") || 0);
     const recovery = Number(data.get("recovery") || 0);
-    const payload = { categoryKey: currentCategoryKey, date, type: recordType, amount, merchant, note, status: "accounted" as const, hasAttachment, supplierId: recordType === "expense" ? selectedSupplierId || suppliers.find((supplier) => supplier.name === merchant)?.id : undefined, refundFee, recovery };
+    const payload = { categoryKey: currentCategoryKey, date, type: recordType, amount, merchant, note, status: "accounted" as const, hasAttachment, attachmentAssetId: attachmentAssetId || undefined, supplierId: recordType === "expense" ? selectedSupplierId || suppliers.find((supplier) => supplier.name === merchant)?.id : undefined, refundFee, recovery };
     if (recordId) {
       book.updateRecord(recordId, payload);
       notify(`已更新 ${yuan(amount)} 记录`);
     } else {
-      book.addRecord(payload);
+      book.addRecord({ ...payload, id: attachmentAssetId ? recordAttachmentSubjectId || undefined : undefined });
       notify(`已新增 ${yuan(amount)} 记录`);
     }
     setRecordId(null);
+    setAttachmentAssetId(null);
+    setRecordAttachmentSubjectId(null);
+    setVoucherUploadError("");
     replaceSubPage("records");
   }
 
@@ -651,6 +679,9 @@ export default function Home() {
     setRecordType(activeRecord.type);
     setSelectedCategoryKey(activeRecord.categoryKey);
     setHasAttachment(activeRecord.hasAttachment);
+    setAttachmentAssetId(activeRecord.attachmentAssetId || null);
+    setRecordAttachmentSubjectId(activeRecord.id);
+    setVoucherUploadError("");
     setFormAmount(String(activeRecord.amount));
     setFormDate(activeRecord.date);
     setFormMerchant(activeRecord.merchant);
@@ -978,13 +1009,15 @@ export default function Home() {
 
   function RecordPage() {
     const editing = activeRecord;
-    return <><section className="sub-intro compact"><span>{template.label} · 经营交易</span><h1>{editing ? "编辑一笔记录" : "记录一笔收支"}</h1><p>收入、退款、销售成本和经营费用会按不同口径归集；退款不会直接计作成本。</p></section><form className="record-form" onSubmit={saveRecord}><label>交易类型<div className="type-switch"><button type="button" className={recordType === "expense" ? "selected" : ""} onClick={() => setRecordType("expense")}>支出</button><button type="button" className={recordType === "income" ? "selected" : ""} onClick={() => setRecordType("income")}>销售收入</button><button type="button" className={recordType === "refund" ? "selected" : ""} onClick={() => setRecordType("refund")}>客户退款</button></div></label><label>{recordType === "refund" ? "退款金额" : "金额"}<div className="amount-input"><span>¥</span><input name="amount" type="number" min="0.01" step="0.01" value={formAmount} onChange={(event) => setFormAmount(event.target.value)} placeholder="0.00" autoFocus /></div></label>{recordType === "refund" && <><label>退款手续费（可选）<div className="amount-input"><span>¥</span><input name="refundFee" type="number" min="0" step="0.01" defaultValue="0" /></div></label><label>退货可回收成本（可选）<div className="amount-input"><span>¥</span><input name="recovery" type="number" min="0" step="0.01" defaultValue="0" /></div></label></>}<label>日期<input name="date" type="date" value={formDate} onChange={(event) => setFormDate(event.target.value)} /></label><label>成本分类<div className="category-chips">{categories.map((item) => <button type="button" key={item.key} className={currentCategoryKey === item.key ? "selected" : ""} onClick={() => setSelectedCategoryKey(item.key)}>{item.label}</button>)}</div></label><label>商户 / 对方<input name="merchant" value={formMerchant} onChange={(event) => setFormMerchant(event.target.value)} placeholder="例如：平台服务商" /></label>{recordType === "expense" && suppliers.length > 0 && <label>关联供应商（可选）<select value={selectedSupplierId} onChange={(event) => setSelectedSupplierId(event.target.value)}><option value="">未关联供应商</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select><small>关联后可在现金流图按供应商筛选与下钻。</small></label>}<label>备注<input name="note" value={formNote} onChange={(event) => setFormNote(event.target.value)} placeholder={`例如：${categories[0]?.hint || "本次交易"}`} /></label><label className="attachment-row"><span><Upload size={16} />凭证状态</span><button type="button" className={hasAttachment ? "attachment-on" : ""} onClick={() => setHasAttachment((value) => !value)}>{hasAttachment ? "已附凭证" : "添加凭证"}</button></label><button type="submit" className="fixed-primary form-save"><Plus size={18} />{editing ? "保存修改" : "保存记录"}</button></form></>;
+    const hasImageVoucher = Boolean(attachmentAssetId);
+    return <><section className="sub-intro compact"><span>{template.label} · 经营交易</span><h1>{editing ? "编辑一笔记录" : "记录一笔收支"}</h1><p>收入、退款、销售成本和经营费用会按不同口径归集；退款不会直接计作成本。</p></section><form className="record-form" onSubmit={saveRecord}><label>交易类型<div className="type-switch"><button type="button" className={recordType === "expense" ? "selected" : ""} onClick={() => setRecordType("expense")}>支出</button><button type="button" className={recordType === "income" ? "selected" : ""} onClick={() => setRecordType("income")}>销售收入</button><button type="button" className={recordType === "refund" ? "selected" : ""} onClick={() => setRecordType("refund")}>客户退款</button></div></label><label>{recordType === "refund" ? "退款金额" : "金额"}<div className="amount-input"><span>¥</span><input name="amount" type="number" min="0.01" step="0.01" value={formAmount} onChange={(event) => setFormAmount(event.target.value)} placeholder="0.00" autoFocus /></div></label>{recordType === "refund" && <><label>退款手续费（可选）<div className="amount-input"><span>¥</span><input name="refundFee" type="number" min="0" step="0.01" defaultValue="0" /></div></label><label>退货可回收成本（可选）<div className="amount-input"><span>¥</span><input name="recovery" type="number" min="0" step="0.01" defaultValue="0" /></div></label></>}<label>日期<input name="date" type="date" value={formDate} onChange={(event) => setFormDate(event.target.value)} /></label><label>成本分类<div className="category-chips">{categories.map((item) => <button type="button" key={item.key} className={currentCategoryKey === item.key ? "selected" : ""} onClick={() => setSelectedCategoryKey(item.key)}>{item.label}</button>)}</div></label><label>商户 / 对方<input name="merchant" value={formMerchant} onChange={(event) => setFormMerchant(event.target.value)} placeholder="例如：平台服务商" /></label>{recordType === "expense" && suppliers.length > 0 && <label>关联供应商（可选）<select value={selectedSupplierId} onChange={(event) => setSelectedSupplierId(event.target.value)}><option value="">未关联供应商</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select><small>关联后可在现金流图按供应商筛选与下钻。</small></label>}<label>备注<input name="note" value={formNote} onChange={(event) => setFormNote(event.target.value)} placeholder={`例如：${categories[0]?.hint || "本次交易"}`} /></label><fieldset className="record-voucher-field"><legend><Upload size={16} />凭证图片</legend>{hasImageVoucher ? <div className="record-voucher-attached"><img src={`/api/media/${attachmentAssetId}`} alt="已附凭证图片" /><span><b>已附私有图片凭证</b><small>仅当前店铺成员可查看；保存记录后关联生效。</small><button type="button" onClick={() => { setAttachmentAssetId(null); setHasAttachment(false); setVoucherUploadError(""); }}>移除图片</button></span></div> : <label className="record-voucher-picker"><input aria-label="上传凭证图片" type="file" accept="image/jpeg,image/png,image/webp" disabled={isUploadingVoucher} onChange={(event) => void uploadRecordVoucher(event.currentTarget.files?.[0])} /><span>{isUploadingVoucher ? "正在上传凭证图片…" : "选择凭证图片"}</span><em>JPEG、PNG 或 WebP，最大 5MB</em></label>}{voucherUploadError && <small className="record-voucher-error" role="alert">{voucherUploadError}</small>}{!hasImageVoucher && <label className="record-voucher-legacy"><input type="checkbox" checked={hasAttachment} onChange={(event) => setHasAttachment(event.currentTarget.checked)} />此笔已有线下凭证（仅标记）</label>}</fieldset><button type="submit" className="fixed-primary form-save" disabled={isUploadingVoucher}><Plus size={18} />{editing ? "保存修改" : "保存记录"}</button></form></>;
   }
 
   function RecordDetailPage() {
     if (!activeRecord) return <div className="empty-state">记录不存在或已被删除。</div>;
     const category = categoryByKey.get(activeRecord.categoryKey);
-    return <><section className="detail-hero"><span className="detail-dot" style={{ background: category?.color || "#1677FF" }} /><span>{activeRecord.type === "income" ? "收入记录" : activeRecord.type === "refund" ? "退款记录" : "支出记录"}</span><h1>{activeRecord.merchant}</h1><strong>{activeRecord.type === "income" ? "+" : "-"}{yuan(activeRecord.amount)}</strong><p>{activeRecord.date} · {category?.label || "未分类"} · {activeRecord.status === "accounted" ? "已核算" : activeRecord.status === "pending" ? "待核算" : "异常"}</p></section><section className="detail-breakdown"><h2>记录说明</h2><div><span className="tip-icon"><ReceiptText size={18} /></span><p>{activeRecord.note || "未填写备注"}{activeRecord.hasAttachment ? " · 已附凭证" : " · 未附凭证"}</p></div><button onClick={editRecord}>编辑记录 <Pencil size={16} /></button><button className="danger-button" onClick={deleteRecord}>删除记录 <Trash2 size={16} /></button></section></>;
+    const hasImageVoucher = Boolean(activeRecord.attachmentAssetId);
+    return <><section className="detail-hero"><span className="detail-dot" style={{ background: category?.color || "#1677FF" }} /><span>{activeRecord.type === "income" ? "收入记录" : activeRecord.type === "refund" ? "退款记录" : "支出记录"}</span><h1>{activeRecord.merchant}</h1><strong>{activeRecord.type === "income" ? "+" : "-"}{yuan(activeRecord.amount)}</strong><p>{activeRecord.date} · {category?.label || "未分类"} · {activeRecord.status === "accounted" ? "已核算" : activeRecord.status === "pending" ? "待核算" : "异常"}</p></section><section className="detail-breakdown"><h2>记录说明</h2><div><span className="tip-icon"><ReceiptText size={18} /></span><p>{activeRecord.note || "未填写备注"}{hasImageVoucher ? " · 已附图片凭证" : activeRecord.hasAttachment ? " · 已附凭证" : " · 未附凭证"}</p></div>{hasImageVoucher && <a className="record-voucher-preview" href={`/api/media/${activeRecord.attachmentAssetId}`} target="_blank" rel="noreferrer"><img src={`/api/media/${activeRecord.attachmentAssetId}`} alt={`${activeRecord.merchant}的凭证图片`} /><span>查看受保护凭证图片 <ChevronRight size={15} /></span></a>}<button onClick={editRecord}>编辑记录 <Pencil size={16} /></button><button className="danger-button" onClick={deleteRecord}>删除记录 <Trash2 size={16} /></button></section></>;
   }
 
   function CardsPage() {

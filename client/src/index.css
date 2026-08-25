@@ -1,6 +1,26 @@
 /* 移动端数据优先：首页 Banner 仅承载产品宣传，Logo 旁文字跑马灯仅承载经营提醒，二者不替代经营利润—趋势—预算主线。 */
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
 
+/* 流水凭证：私有图片只在表单和详情内呈现，不抢占经营数据主线。 */
+.record-voucher-field { display: grid; gap: 10px; margin: 2px 0 0; padding: 12px; border: 1px solid #dce7f2; border-radius: 12px; background: #f8fbff; }
+.record-voucher-field legend { display: flex; gap: 7px; align-items: center; padding: 0 4px; color: #24415e; font-size: 13px; font-weight: 700; }
+.record-voucher-picker { display: grid; gap: 5px; padding: 12px; border: 1px dashed #b8cee5; border-radius: 10px; color: #0b73d9; background: #fff; cursor: pointer; }
+.record-voucher-picker input { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; opacity: 0; }
+.record-voucher-picker span { font-weight: 700; }
+.record-voucher-picker em, .record-voucher-legacy, .record-voucher-attached small { color: #687b91; font-size: 12px; font-style: normal; line-height: 1.45; }
+.record-voucher-attached { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: center; }
+.record-voucher-attached > img { inline-size: 64px; block-size: 64px; border: 1px solid #dce7f2; border-radius: 10px; object-fit: cover; background: #eef5fc; }
+.record-voucher-attached > span { display: grid; gap: 3px; min-width: 0; }
+.record-voucher-attached b { color: #203a56; font-size: 13px; }
+.record-voucher-attached button { justify-self: start; padding: 0; border: 0; color: #c43226; background: transparent; font: inherit; font-size: 12px; }
+.record-voucher-error { color: #c43226; font-size: 12px; line-height: 1.45; }
+.record-voucher-legacy { display: flex; gap: 8px; align-items: center; color: #4f647a; }
+.record-voucher-legacy input { inline-size: 16px; block-size: 16px; accent-color: #087ff5; }
+.record-voucher-preview { display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 10px; align-items: center; margin: 10px 0 12px; padding: 9px; border: 1px solid #dce7f2; border-radius: 10px; color: #0874dc; text-decoration: none; background: #f8fbff; }
+.record-voucher-preview img { inline-size: 66px; block-size: 66px; border-radius: 7px; object-fit: cover; background: #eef5fc; }
+.record-voucher-preview span { display: flex; gap: 5px; align-items: center; font-size: 13px; font-weight: 700; }
+@media (max-width: 375px) { .record-voucher-attached { grid-template-columns: 56px minmax(0, 1fr); }.record-voucher-attached > img { inline-size: 56px; block-size: 56px; }.record-voucher-preview { grid-template-columns: 58px minmax(0, 1fr); }.record-voucher-preview img { inline-size: 58px; block-size: 58px; } }
+
 :root { --financial-numeric-font: "IBM Plex Mono", "Noto Sans SC", ui-monospace, monospace; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; color: #172033; background: #eaf0f8; font-synthesis: none; }
 
 /* 商业化视觉收口：有效页面不使用网格纹理或虚线分隔，异常恢复沿用卡片与主次操作层级。 */

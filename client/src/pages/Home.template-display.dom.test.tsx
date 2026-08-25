@@ -5,14 +5,19 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import Home from "./Home";
 
+const trpcMocks = vi.hoisted(() => ({
+  authData: undefined as any,
+  workspaceData: undefined as any,
+}));
+
 vi.mock("@/lib/trpc", () => {
-  const queryResult = () => ({ data: undefined, error: null, isLoading: false, refetch: vi.fn() });
+  const queryResult = (data: unknown = undefined) => ({ data, error: null, isLoading: false, refetch: vi.fn() });
   const mutationResult = () => ({ mutate: vi.fn(), mutateAsync: vi.fn().mockResolvedValue({}), isPending: false });
   return {
     trpc: {
-      auth: { me: { useQuery: queryResult }, logout: { useMutation: mutationResult } },
+      auth: { me: { useQuery: () => queryResult(trpcMocks.authData) }, logout: { useMutation: mutationResult } },
       workspace: {
-        list: { useQuery: queryResult },
+        list: { useQuery: () => queryResult(trpcMocks.workspaceData) },
         book: { useQuery: queryResult },
         saveBook: { useMutation: mutationResult },
         updateProfile: { useMutation: mutationResult },
@@ -58,6 +63,9 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
+  trpcMocks.authData = undefined;
+  trpcMocks.workspaceData = undefined;
+  vi.unstubAllGlobals();
   window.localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
@@ -134,7 +142,8 @@ describe("统一账本的真实页面路径", () => {
     await user.clear(screen.getByPlaceholderText("例如：货品 / 补货"));
     await user.type(screen.getByPlaceholderText("例如：货品 / 补货"), "回归新增成本");
     await user.click(screen.getByRole("button", { name: "平台佣金" }));
-    await user.click(screen.getByRole("button", { name: "凭证状态" }));
+    expect(screen.getByLabelText("上传凭证图片")).toMatchObject({ accept: "image/jpeg,image/png,image/webp", type: "file" });
+    await user.click(screen.getByRole("checkbox", { name: "此笔已有线下凭证（仅标记）" }));
     await user.click(screen.getByRole("button", { name: "保存记录" }));
 
     expect(screen.getByRole("heading", { name: "收入、成本，逐笔算清" })).toBeTruthy();
@@ -175,5 +184,59 @@ describe("统一账本的真实页面路径", () => {
     await user.click(categoryDrilldown);
     expect((screen.getByPlaceholderText("搜索商户、备注或分类") as HTMLInputElement).value).toBe("平台佣金");
     confirmSpy.mockRestore();
+  });
+});
+
+describe("流水私有凭证图片", () => {
+  function prepareAuthenticatedWorkspace() {
+    trpcMocks.authData = { id: "user-1", name: "测试经营者" };
+    trpcMocks.workspaceData = [{ id: "workspace-test", name: "测试店铺", industryId: "ecommerce", contactName: "测试经营者", role: "owner" }];
+  }
+
+  it("选择图片后可预览、移除、保存资产关联，并在详情提供受保护预览入口", async () => {
+    prepareAuthenticatedWorkspace();
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "voucher-asset-1", url: "/api/media/voucher-asset-1" }) });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<Home />);
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    const voucherInput = screen.getByLabelText("上传凭证图片") as HTMLInputElement;
+    const voucher = new File(["proof"], "voucher.png", { type: "image/png" });
+    await user.upload(voucherInput, voucher);
+    expect(await screen.findByAltText("已附凭证图片")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith("/api/media/upload", expect.objectContaining({ method: "POST", body: voucher, headers: expect.objectContaining({ "x-media-kind": "record_voucher", "x-workspace-id": "workspace-test", "x-subject-id": expect.stringMatching(/^record-/) }) }));
+
+    await user.click(screen.getByRole("button", { name: "移除图片" }));
+    expect(screen.queryByAltText("已附凭证图片")).toBeNull();
+    await user.upload(screen.getByLabelText("上传凭证图片"), voucher);
+    expect(await screen.findByAltText("已附凭证图片")).toBeTruthy();
+
+    await user.clear(screen.getByPlaceholderText("0.00"));
+    await user.type(screen.getByPlaceholderText("0.00"), "88.50");
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "凭证回归供应商");
+    await user.click(screen.getByRole("button", { name: "平台佣金" }));
+    await user.click(screen.getByRole("button", { name: "保存记录" }));
+
+    const search = screen.getByPlaceholderText("搜索商户、备注或分类");
+    await user.type(search, "凭证回归供应商");
+    await user.click(screen.getByRole("button", { name: /凭证回归供应商/ }));
+    expect(screen.getByText(/已附图片凭证/)).toBeTruthy();
+    const preview = screen.getByRole("link", { name: /查看受保护凭证图片/ });
+    expect(preview.getAttribute("href")).toBe("/api/media/voucher-asset-1");
+  });
+
+  it("上传失败时展示服务端错误，并保持保存前的无图片状态", async () => {
+    prepareAuthenticatedWorkspace();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "凭证图片上传失败" }) }));
+    const user = userEvent.setup();
+    render(<Home />);
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await user.upload(screen.getByLabelText("上传凭证图片"), new File(["proof"], "voucher.png", { type: "image/png" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("凭证图片上传失败");
+    expect(screen.queryByAltText("已附凭证图片")).toBeNull();
   });
 });

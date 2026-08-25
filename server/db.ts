@@ -146,7 +146,7 @@ export async function updateWorkspaceProfile(input: { workspaceId: string; userI
   return getWorkspaceAccess(input.workspaceId, input.userId);
 }
 
-export async function createMediaAsset(input: { id: string; workspaceId: string; ownerUserId: string; kind: "user_avatar" | "workspace_logo" | "cost_card_image"; storageKey: string; mimeType: string; sizeBytes: number }) {
+export async function createMediaAsset(input: { id: string; workspaceId: string; ownerUserId: string; kind: "user_avatar" | "workspace_logo" | "cost_card_image" | "record_voucher"; storageKey: string; mimeType: string; sizeBytes: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   await db.insert(mediaAssets).values(input);

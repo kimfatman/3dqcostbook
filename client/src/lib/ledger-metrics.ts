@@ -23,6 +23,8 @@ export type LedgerEntry = {
   note: string;
   status: EntryStatus;
   hasAttachment: boolean;
+  /** 私有媒体资产 ID；缺失时保留旧账本的布尔凭证状态。 */
+  attachmentAssetId?: string;
   relatedEntryId?: string;
   orderId?: string;
   skuId?: string;
