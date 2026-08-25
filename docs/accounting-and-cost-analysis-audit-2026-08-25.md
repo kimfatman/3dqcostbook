@@ -52,4 +52,4 @@
 | 腾讯云发布 | 已完成镜像构建、数据库迁移与应用/网关容器切换。 |
 | 生产健康与安全 | `https://api.3dq.site/healthz` 返回 200；应用 HTTPS 返回 200；应用、Caddy、MySQL 容器运行，应用进程 UID/GID 均为 10001。Caddy 适配配置仍包含 HSTS、CSP、反嵌入、MIME 防嗅探、Referrer 与 Permissions 策略。 |
 | 生产浏览器入口 | 匿名会话已到达安全登录页；成本分析内容需要授权账本会话，未使用或请求任何用户凭据。 |
-| 后续发布门禁 | 待完成 GitHub 同步后归档。 |
+| GitHub 同步 | 已推送至私有仓库 `kimfatman/3dqcostbook` 的 `main`；本地与远程 `main` 同为 `1dd68dc649186c71289b612b09708d5b57e7c945`。 |
