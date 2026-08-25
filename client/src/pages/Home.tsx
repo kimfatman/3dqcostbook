@@ -24,6 +24,7 @@ import {
   LineChart,
   LogOut,
   MoreHorizontal,
+  Moon,
   PackageOpen,
   Pencil,
   Plus,
@@ -43,6 +44,7 @@ import {
   Utensils,
   WalletCards,
   Download,
+  Sun,
 } from "lucide-react";
 import {
   calcCard,
@@ -82,6 +84,9 @@ import { chartRole } from "@/lib/chart-page-roles";
 import { navigationSearch, popNavigationStack, readNavigationState, type NavigationState, type NavigationSubPage, type NavigationTab } from "@/lib/navigation-state";
 import { indirectCostAllocationMethodLabel, indirectCostKindLabel, type IndirectCostAllocationMethod, type IndirectCostAllocationMode, type IndirectCostKind, type IndirectCostSource } from "@/lib/indirect-costs";
 import { CostCardMediaEditor, CostCardThumbnail } from "@/components/CostCardMedia";
+import { ChartTooltip } from "@/components/ChartTooltip";
+import { AnimatedChartValue } from "@/components/AnimatedChartValue";
+import { useTheme } from "@/contexts/ThemeContext";
 import "../cashflow-filter.css";
 
 type TabId = NavigationTab;
@@ -148,11 +153,12 @@ function HomeReminderList({ items, onOpen, onOpenAll }: { items: NotificationIte
 
 function MiniTrendCard({ label, caption, total, values, tone, onClick }: { label: string; caption: string; total: number; values: number[]; tone: "income" | "cost"; onClick: () => void }) {
   const max = Math.max(...values, 1);
+  const min = Math.min(...values);
   const coordinates = values.map((value, index) => ({ x: 8 + index / Math.max(values.length - 1, 1) * 84, y: 82 - value / max * 56 }));
   const curve = buildSmoothPricingProfitPolyline(coordinates);
   const area = `${curve} 92,92 8,92`;
   const gradientId = `mini-trend-${tone}`;
-  return <button className={`home-mini-trend ${tone}`} onClick={onClick}><span><em>{label}</em><b>{yuan(total)}</b><small>{caption}</small></span>{tone === "cost" ? <i className="home-mini-bars" aria-hidden="true">{values.map((value, index) => <b key={index} style={{ height: `${Math.max(value > 0 ? 8 : 3, value / max * 100)}%` }} />)}</i> : <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#49b9ff" stopOpacity=".34" /><stop offset="100%" stopColor="#49b9ff" stopOpacity="0" /></linearGradient></defs><polygon className="chart-soft-area" points={area} fill={`url(#${gradientId})`} /><polyline className="chart-soft-line" points={curve} /><g>{coordinates.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r={index === coordinates.length - 1 ? "3" : "1.8"} />)}</g></svg>}</button>;
+  return <button className={`home-mini-trend ${tone}`} onClick={onClick}><span><em>{label}</em><b>{yuan(total)}</b><small>{caption}</small></span>{tone === "cost" ? <i className="home-mini-bars" aria-hidden="true">{values.map((value, index) => <b key={index} style={{ height: `${Math.max(value > 0 ? 8 : 3, value / max * 100)}%` }} />)}</i> : <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#49b9ff" stopOpacity=".34" /><stop offset="100%" stopColor="#49b9ff" stopOpacity="0" /></linearGradient></defs><polygon className="chart-soft-area" points={area} fill={`url(#${gradientId})`} /><polyline className="chart-soft-line" points={curve} /><g>{coordinates.map((point, index) => <circle key={index} className={`chart-soft-point${index === values.length - 1 ? " is-current" : values[index] === max ? " is-peak" : values[index] === min ? " is-low" : ""}`} cx={point.x} cy={point.y} r={index === values.length - 1 ? "3" : "1.8"} />)}</g></svg>}</button>;
 }
 
 function HomeAnalysisPreview({ sales, costs, onOpen }: { sales: ReturnType<typeof buildDailySalesOrders>; costs: number[]; onOpen: () => void }) {
@@ -178,12 +184,12 @@ function ProfitWaterfall({ revenue, cogs, expenses, profit, onSelect }: { revenu
 function BudgetRing({ burn, onClick }: { burn: ReturnType<typeof buildBudgetBurn>; onClick: () => void }) {
   const usedRate = Math.min(100, Math.max(0, burn.usedRate));
   const tone = "#087ff5";
-  return <button className={`budget-ring ${burn.state}`} onClick={onClick}><i style={{ background: `conic-gradient(${tone} 0 ${usedRate}%, #e9eef4 ${usedRate}% 100%)` }}><span><em>已用</em><b>{usedRate}%</b><strong>{yuan(burn.used)}</strong></span></i><div><label><em>本月预算</em><b>{yuan(burn.budget)}</b></label><label><em>剩余可用</em><b>{yuan(burn.remaining)}</b></label></div><small>{burn.state === "over" ? `已超预算 ${yuan(Math.abs(burn.remaining))}` : burn.state === "risk" ? `月末预计超预算 ${yuan(Math.max(0, burn.forecast - burn.budget))}` : `月末预计 ${yuan(burn.forecast)}`}</small></button>;
+  return <button className={`budget-ring ${burn.state}`} onClick={onClick}><i style={{ background: `conic-gradient(${tone} 0 ${usedRate}%, #e9eef4 ${usedRate}% 100%)` }}><span><em>已用</em><b><AnimatedChartValue value={usedRate} format={(value) => `${Number(value.toFixed(1))}%`} /></b><strong><AnimatedChartValue value={burn.used} format={yuan} /></strong></span></i><div><label><em>本月预算</em><b>{yuan(burn.budget)}</b></label><label><em>剩余可用</em><b>{yuan(burn.remaining)}</b></label></div><small>{burn.state === "over" ? `已超预算 ${yuan(Math.abs(burn.remaining))}` : burn.state === "risk" ? `月末预计超预算 ${yuan(Math.max(0, burn.forecast - burn.budget))}` : `月末预计 ${yuan(burn.forecast)}`}</small></button>;
 }
 function RefundPareto({ items, onSelect }: { items: ReturnType<typeof buildRefundPareto>; onSelect: (reason: string) => void }) {
   if (!items.length) return <div className="chart-empty">本期无退款</div>;
   const max = Math.max(...items.map((item) => item.amount), 1);
-  return <section className="refund-pareto"><div className="chart-heading"><span>退款原因</span><b>{yuan(items.reduce((sum, item) => sum + item.amount, 0))}</b></div>{items.slice(0, 6).map((item) => <button key={item.reason} onClick={() => onSelect(item.label)}><span>{item.label}<small>{item.quantity} 件 · 累计 {item.cumulativeShare}%</small></span><i><em style={{ width: `${Math.max(8, item.amount / max * 100)}%` }} /></i><strong>{yuan(item.amount)}</strong></button>)}</section>;
+  return <section className="refund-pareto"><div className="chart-heading"><span>退款原因</span><ChartTooltip label="退款影响" value={yuan(items.reduce((sum, item) => sum + item.amount, 0))} detail="按退款金额排序；点击某一原因可查看对应订单。" /><b>{yuan(items.reduce((sum, item) => sum + item.amount, 0))}</b></div>{items.slice(0, 6).map((item) => <button key={item.reason} onClick={() => onSelect(item.label)}><span>{item.label}<small>{item.quantity} 件 · 累计 {item.cumulativeShare}%</small></span><i><em style={{ width: `${Math.max(8, item.amount / max * 100)}%` }} /></i><strong>{yuan(item.amount)}</strong></button>)}</section>;
 }
 
 function HomeChartEmpty({ title, copy, action, onClick }: { title: string; copy: string; action: string; onClick: () => void }) {
@@ -191,7 +197,8 @@ function HomeChartEmpty({ title, copy, action, onClick }: { title: string; copy:
 }
 
 function VisualSkinPicker({ skin, onChange }: { skin: VisualSkin; onChange: (skin: VisualSkin) => void }) {
-  return <section className="visual-skin-picker" aria-labelledby="visual-skin-title"><div className="visual-skin-heading"><span><em>视觉皮肤</em><b id="visual-skin-title">选择你的经营工作台</b></span><small>切换不影响账本数据</small></div><div className="visual-skin-options">{visualSkinOptions.map((option) => <button key={option.id} className={`skin-option ${option.material} ${skin === option.id ? "active" : ""}`} aria-pressed={skin === option.id} onClick={() => onChange(option.id)}><i aria-hidden="true"><span /><span /><span /></i><span><b>{option.label}</b><em>{option.detail}</em></span>{skin === option.id ? <Check size={17} /> : <ChevronRight size={16} />}</button>)}</div></section>;
+  const { theme, toggleTheme } = useTheme();
+  return <section className="visual-skin-picker" aria-labelledby="visual-skin-title"><div className="visual-skin-heading"><span><em>视觉皮肤</em><b id="visual-skin-title">选择你的经营工作台</b></span><small>切换不影响账本数据</small></div><div className="visual-skin-options">{visualSkinOptions.map((option) => <button key={option.id} className={`skin-option ${option.material} ${skin === option.id ? "active" : ""}`} aria-pressed={skin === option.id} onClick={() => onChange(option.id)}><i aria-hidden="true"><span /><span /><span /></i><span><b>{option.label}</b><em>{option.detail}</em></span>{skin === option.id ? <Check size={17} /> : <ChevronRight size={16} />}</button>)}</div><button className="chart-theme-toggle" type="button" onClick={toggleTheme}><span>{theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}<b>图表深色模式</b><em>{theme === "dark" ? "深色已开启" : "跟随浅色界面"}</em></span><strong>{theme === "dark" ? "切换浅色" : "切换深色"}<ChevronRight size={16} /></strong></button></section>;
 }
 
 function SalesOrdersTrend({ items, onOpen }: { items: ReturnType<typeof buildDailySalesOrders>; onOpen: () => void }) {
@@ -199,11 +206,13 @@ function SalesOrdersTrend({ items, onOpen }: { items: ReturnType<typeof buildDai
   const orderTotal = items.reduce((sum, item) => sum + item.orders, 0);
   if (!orderTotal) return <section className="home-chart-card"><div className="home-chart-head"><span>销售动能</span><b>近 7 日</b></div><HomeChartEmpty title="销售额 / 订单数" copy="本期还没有订单数据" action="记录订单" onClick={onOpen} /></section>;
   const maxSales = Math.max(...items.map((item) => item.sales), 1);
-  const maxOrders = Math.max(...items.map((item) => item.orders), 1);
+  const orderValues = items.map((item) => item.orders);
+  const maxOrders = Math.max(...orderValues);
+  const minOrders = Math.min(...orderValues);
   const lineCoordinates = items.map((item, index) => ({ x: 8 + index / Math.max(items.length - 1, 1) * 84, y: 88 - item.orders / maxOrders * 68 }));
   const curve = buildSmoothPricingProfitPolyline(lineCoordinates);
   const area = `${curve} 92,92 8,92`;
-  return <button className="home-chart-card home-sales-orders" onClick={onOpen}><div className="home-chart-head"><span>销售动能</span><b>近 7 日</b></div><div className="sales-summary"><label><em>销售额</em><strong>{yuan(salesTotal)}</strong></label><label><em>订单数</em><strong>{orderTotal} 笔</strong></label><small><i className="sales" />销售额　<i className="orders" />订单数</small></div><div className="sales-orders-plot"><div className="sales-bars">{items.map((item) => <span key={item.date}><i style={{ height: `${Math.max(item.sales > 0 ? 8 : 2, item.sales / maxSales * 100)}%` }} /><em>{Number(item.date.slice(-2))}日</em></span>)}</div><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sales-orders-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#0b1836" stopOpacity=".2" /><stop offset="100%" stopColor="#0b1836" stopOpacity="0" /></linearGradient></defs><polygon className="sales-orders-area" points={area} fill="url(#sales-orders-area)" /><polyline className="sales-orders-line" points={curve} />{lineCoordinates.map((point, index) => <circle key={items[index].date} className="sales-orders-point" cx={point.x} cy={point.y} r={index === lineCoordinates.length - 1 ? "2.8" : "1.65"} />)}</svg></div></button>;
+  return <button className="home-chart-card home-sales-orders" onClick={onOpen}><div className="home-chart-head"><span>销售动能</span><b>近 7 日</b></div><div className="sales-summary"><label><em>销售额</em><strong><AnimatedChartValue value={salesTotal} format={yuan} /></strong></label><label><em>订单数</em><strong><AnimatedChartValue value={orderTotal} format={(value) => `${Math.round(value)} 笔`} /></strong></label><small><i className="sales" />销售额　<i className="orders" />订单数</small></div><div className="sales-orders-plot"><div className="sales-bars">{items.map((item) => <span key={item.date}><i style={{ height: `${Math.max(item.sales > 0 ? 8 : 2, item.sales / maxSales * 100)}%` }} /><em>{Number(item.date.slice(-2))}日</em></span>)}</div><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sales-orders-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#0b1836" stopOpacity=".2" /><stop offset="100%" stopColor="#0b1836" stopOpacity="0" /></linearGradient></defs><polygon className="sales-orders-area" points={area} fill="url(#sales-orders-area)" /><polyline className="sales-orders-line" points={curve} />{lineCoordinates.map((point, index) => <circle key={items[index].date} className={`sales-orders-point${index === items.length - 1 ? " is-current" : items[index].orders === maxOrders ? " is-peak" : items[index].orders === minOrders ? " is-low" : ""}`} cx={point.x} cy={point.y} r={index === items.length - 1 ? "2.8" : "1.65"} />)}</svg></div></button>;
 }
 
 function SkuTopBars({ title, type, items, onSelect, onEmpty }: { title: string; type: "sales" | "profit"; items: ReturnType<typeof buildSkuRankings>["sales"]; onSelect: (id: string) => void; onEmpty: () => void }) {
@@ -211,7 +220,7 @@ function SkuTopBars({ title, type, items, onSelect, onEmpty }: { title: string; 
   const positiveItems = type === "profit" ? items.filter((item) => item.grossProfit > 0) : items;
   if (!positiveItems.length) return <section className="home-chart-card"><div className="home-chart-head"><span>{title}</span><b>Top 5</b></div><HomeChartEmpty title={type === "sales" ? "暂无商品销量" : "暂无正利润商品"} copy={type === "sales" ? "先记录带 SKU 的订单" : "先补齐商品售价、成本与订单"} action={type === "sales" ? "记录订单" : "查看商品"} onClick={onEmpty} /></section>;
   const max = Math.max(...positiveItems.map(value), 1);
-  return <section className="home-chart-card home-sku-ranking"><div className="home-chart-head"><span>{title}</span><b>Top {positiveItems.length}</b></div><div>{positiveItems.map((item, index) => <button key={item.id} onClick={() => onSelect(item.id)}><em>{index + 1}</em><span><b>{item.name}</b><i><strong style={{ width: `${Math.max(7, value(item) / max * 100)}%` }} /></i></span><label>{type === "sales" ? `${item.netQuantity}${item.unit}` : yuan(item.grossProfit)}</label><ChevronRight size={15} /></button>)}</div></section>;
+  return <section className="home-chart-card home-sku-ranking"><div className="home-chart-head"><span>{title}</span><ChartTooltip label={type === "sales" ? "销量排行" : "利润排行"} value={type === "sales" ? `${positiveItems[0].netQuantity}${positiveItems[0].unit}` : yuan(positiveItems[0].grossProfit)} detail="按当前期间已入账订单汇总；点击条目可查看商品明细。" /><b>Top {positiveItems.length}</b></div><div>{positiveItems.map((item, index) => <button key={item.id} onClick={() => onSelect(item.id)}><em>{index + 1}</em><span><b>{item.name}</b><i><strong style={{ width: `${Math.max(7, value(item) / max * 100)}%` }} /></i></span><label>{type === "sales" ? <AnimatedChartValue value={item.netQuantity} format={(value) => `${Math.round(value)}${item.unit}`} /> : <AnimatedChartValue value={item.grossProfit} format={yuan} />}</label><ChevronRight size={15} /></button>)}</div></section>;
 }
 
 /* 首页成本结构以“总成本＝已分类成本＋未分类调整项”为唯一视觉口径。 */
@@ -225,7 +234,7 @@ function CostStructureRing({ items, totalCost, onSelect, onOpenCostReview, onEmp
   const ringItems = [...items.map((item) => ({ ...item, share: Number((item.amount / total * 100).toFixed(1)) })), ...(unclassifiedCost > 0 ? [{ key: "__unclassified__", label: "未分类调整项", amount: unclassifiedCost, share: Number((unclassifiedCost / total * 100).toFixed(1)) }] : [])];
   let cursor = 0;
   const segments = ringItems.map((item, index) => { const start = cursor; cursor += item.share; return `${costRingColors[index % costRingColors.length]} ${start}% ${cursor}%`; }).join(", ");
-  return <section className="home-chart-card home-cost-structure"><div className="home-chart-head"><span>成本结构</span><b>正向成本口径</b></div><div className="cost-structure-body"><i className="cost-ring" style={{ background: `conic-gradient(${segments})` }}><span><em>正向成本</em><b>{categorizedCost >= 10000 ? `${(categorizedCost / 10000).toFixed(1)}万` : yuan(categorizedCost)}</b><small>{costCredits > 0 ? `成本回冲 −${yuan(costCredits)}` : unclassifiedCost > 0 ? `已分类 ${yuan(categorizedCost)}` : "分类已核对"}</small></span></i><div>{ringItems.slice(0, 3).map((item, index) => <button key={item.key} onClick={() => item.key === "__unclassified__" ? onOpenCostReview() : onSelect(item.key, item.label)}><i style={{ background: costRingColors[index] }} /><span>{item.label}</span><b>{item.share}%</b><ChevronRight size={14} /></button>)}{unclassifiedCost > 0 && !ringItems.slice(0, 3).some((item) => item.key === "__unclassified__") && <button className="cost-adjustment-row" onClick={onOpenCostReview}><i style={{ background: costRingColors[ringItems.length - 1] }} /><span>未分类调整项</span><b>{yuan(unclassifiedCost)}</b><ChevronRight size={14} /></button>}</div></div></section>;
+  return <section className="home-chart-card home-cost-structure"><div className="home-chart-head"><span>成本结构</span><ChartTooltip label="正向成本" value={yuan(categorizedCost)} detail="按已入账的正向成本分类汇总；点击分类可下钻至对应流水。" /><b>正向成本口径</b></div><div className="cost-structure-body"><i className="cost-ring" style={{ background: `conic-gradient(${segments})` }}><span><em>正向成本</em><b><AnimatedChartValue value={categorizedCost} format={(value) => value >= 10000 ? `${(value / 10000).toFixed(1)}万` : yuan(value)} /></b><small>{costCredits > 0 ? `成本回冲 −${yuan(costCredits)}` : unclassifiedCost > 0 ? `已分类 ${yuan(categorizedCost)}` : "分类已核对"}</small></span></i><div>{ringItems.slice(0, 3).map((item, index) => <button key={item.key} onClick={() => item.key === "__unclassified__" ? onOpenCostReview() : onSelect(item.key, item.label)}><i style={{ background: costRingColors[index] }} /><span>{item.label}</span><b>{item.share}%</b><ChevronRight size={14} /></button>)}{unclassifiedCost > 0 && !ringItems.slice(0, 3).some((item) => item.key === "__unclassified__") && <button className="cost-adjustment-row" onClick={onOpenCostReview}><i style={{ background: costRingColors[ringItems.length - 1] }} /><span>未分类调整项</span><b>{yuan(unclassifiedCost)}</b><ChevronRight size={14} /></button>}</div></div></section>;
 }
 
 function SalesTargetProgress({ progress, runRateForecast, editing, input, onInputChange, onEdit, onSave, onCancel, onOpenOrders }: { progress: ReturnType<typeof buildSalesTargetProgress>; runRateForecast: number; editing: boolean; input: string; onInputChange: (value: string) => void; onEdit: () => void; onSave: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; onOpenOrders: () => void }) {
@@ -249,7 +258,7 @@ function SalesBaselineGap({ progress, editing, input, onInputChange, onEdit, onS
 
 const stackAreaColors = ["#087ff5", "#0b1836", "#62c5ff", "#4c6f9e", "#8cb5d8", "#f79009", "#667085", "#d3e1ee"];
 function MonthlyCostStackChart({ stack, onOpen }: { stack: ReturnType<typeof buildMonthlyCostStack>; onOpen: (period: string) => void }) {
-  if (!stack.canRender) return <section className="analysis-stack-card"><div className="analysis-card-head"><h2>近 6 月成本结构</h2><span>分类堆积</span></div><HomeChartEmpty title="成本堆积趋势待补齐" copy="少于 2 个有成本月份，先补齐每月成本流水" action="记录成本" onClick={() => onOpen(stack.months.at(-1)?.period || "")} /></section>;
+  if (!stack.canRender) return <section className="analysis-stack-card"><div className="analysis-card-head"><h2>成本趋势</h2><span>近 6 月</span></div><HomeChartEmpty title="成本趋势待补齐" copy="少于 2 个有成本月份，先补齐每月成本流水" action="记录成本" onClick={() => onOpen(stack.months.at(-1)?.period || "")} /></section>;
   const maxTotal = Math.max(...stack.months.map((month) => month.total), 1);
   const width = Math.max(stack.months.length - 1, 1);
   const xAt = (index: number) => index / width * 100;
@@ -264,7 +273,7 @@ function MonthlyCostStackChart({ stack, onOpen }: { stack: ReturnType<typeof bui
   const latest = stack.months.at(-1)!;
   const previous = stack.months.at(-2)!;
   const delta = latest.total - previous.total;
-  return <section className="analysis-stack-card"><div className="analysis-card-head"><h2>近 6 月成本结构</h2><span>分类堆积</span></div><div className="stack-legend">{bands.slice(0, 4).map((band) => <span key={band.key}><i style={{ background: band.color }} />{band.label}</span>)}{bands.length > 4 && <small>＋{bands.length - 4} 类</small>}</div><button className="stacked-area-chart" onClick={() => onOpen(latest.period)} aria-label={`查看 ${latest.period} 成本流水`}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><g className="stack-grid"><line x1="0" x2="100" y1="25" y2="25" /><line x1="0" x2="100" y1="50" y2="50" /><line x1="0" x2="100" y1="75" y2="75" /></g>{bands.map((band) => <path key={band.key} d={band.d} fill={band.color} />)}</svg><div className="stack-x-labels">{stack.months.map((month) => <span key={month.period}>{Number(month.period.slice(5))}月</span>)}</div></button><div className="analysis-chart-action"><p>最新月成本 {yuan(latest.total)}，较上月 {delta >= 0 ? "增加" : "减少"} {yuan(Math.abs(delta))}。</p><button onClick={() => onOpen(latest.period)}>查看成本流水 <ChevronRight size={15} /></button></div></section>;
+  return <section className="analysis-stack-card"><div className="analysis-card-head"><h2>成本趋势</h2><span>近 6 月</span></div><div className="stack-legend">{bands.slice(0, 4).map((band) => <span key={band.key}><i style={{ background: band.color }} />{band.label}</span>)}{bands.length > 4 && <small>＋{bands.length - 4} 类</small>}</div><button className="stacked-area-chart" onClick={() => onOpen(latest.period)} aria-label={`查看 ${latest.period} 成本流水`}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><g className="stack-grid"><line x1="0" x2="100" y1="25" y2="25" /><line x1="0" x2="100" y1="50" y2="50" /><line x1="0" x2="100" y1="75" y2="75" /></g>{bands.map((band) => <path key={band.key} d={band.d} fill={band.color} />)}</svg><div className="stack-x-labels">{stack.months.map((month) => <span key={month.period}>{Number(month.period.slice(5))}月</span>)}</div></button><div className="analysis-chart-action"><p>最新月成本 {yuan(latest.total)}，较上月 {delta >= 0 ? "增加" : "减少"} {yuan(Math.abs(delta))}。</p><button onClick={() => onOpen(latest.period)}>查看成本流水 <ChevronRight size={15} /></button></div></section>;
 }
 
 function MonthlyCashFlowChart({ flow, onOpen, channelOptions, supplierOptions, channelFilter, supplierFilter, onChannelChange, onSupplierChange }: { flow: ReturnType<typeof buildMonthlyCashFlow>; onOpen: (period: string) => void; channelOptions: OrderChannel[]; supplierOptions: { id: string; name: string }[]; channelFilter: OrderChannel | "all"; supplierFilter: string; onChannelChange: (value: OrderChannel | "all") => void; onSupplierChange: (value: string) => void }) {
@@ -1062,7 +1071,30 @@ export default function Home() {
     const suggestedX = markerX(suggestedPrice);
     const currentX = xAt(trend.current.price);
     const currentY = yAt(trend.current.contribution);
-    return <section className="pricing-profit-trend" aria-labelledby="pricing-profit-trend-title"><div className="pricing-profit-trend-head"><span><b id="pricing-profit-trend-title">不同售价下的预期利润</b><em>每{activeCard?.unit}贡献</em></span><strong>{yuan(trend.current.contribution)}</strong></div><figure><svg viewBox="0 0 100 64" preserveAspectRatio="none" role="img" aria-label={`不同售价下的每${activeCard?.unit}预期贡献趋势；当前试算价 ${yuan(trend.current.price)}，每${activeCard?.unit}贡献 ${yuan(trend.current.contribution)}`}><defs><linearGradient id="pricing-profit-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#9dddff" stopOpacity=".42" /><stop offset="100%" stopColor="#9dddff" stopOpacity="0" /></linearGradient></defs><polygon className="pricing-profit-area" points={areaPoints} fill="url(#pricing-profit-area)" /><line className="pricing-profit-zero" x1="4" x2="96" y1={zeroLine} y2={zeroLine} /><polyline className="pricing-profit-line" points={polyline} />{breakEvenX !== null && <line className="pricing-profit-marker break-even" x1={breakEvenX} x2={breakEvenX} y1="7" y2="56" />}{suggestedX !== null && <line className="pricing-profit-marker suggested" x1={suggestedX} x2={suggestedX} y1="7" y2="56" />}{trend.points.map((point) => <circle key={point.price} className={point.isCurrent ? "pricing-profit-point current" : "pricing-profit-point"} cx={xAt(point.price)} cy={yAt(point.contribution)} r={point.isCurrent ? "3.2" : "1.15"} />)}<circle className="pricing-profit-current-ring" cx={currentX} cy={currentY} r="5" /></svg><figcaption><span>{yuan(minPrice)}</span><span>{yuan(maxPrice)}</span></figcaption></figure><div className="pricing-profit-legend"><span><i className="current" />当前 {yuan(trend.current.price)}</span><span><i className="break-even" />保本 {yuan(breakEvenPrice)}</span><span><i className="suggested" />建议 {yuan(suggestedPrice)}</span></div></section>;
+    const peak = Math.max(...trend.points.map((point) => point.contribution));
+    const low = Math.min(...trend.points.map((point) => point.contribution));
+    return <section className="pricing-profit-trend" aria-labelledby="pricing-profit-trend-title">
+      <div className="pricing-profit-trend-head"><span><b id="pricing-profit-trend-title">预期利润</b><ChartTooltip label="当前试算" value={`${yuan(trend.current.price)} · ${yuan(trend.current.contribution)}`} detail={`拖动售价后按现有渠道费率、履约费与单位成本即时计算每${activeCard?.unit}贡献。`} /><em>每{activeCard?.unit}贡献</em></span><strong><AnimatedChartValue value={trend.current.contribution} format={yuan} /></strong></div>
+      <figure>
+        <svg viewBox="0 0 100 64" preserveAspectRatio="none" role="img" aria-label={`不同售价下的每${activeCard?.unit}预期贡献趋势；当前试算价 ${yuan(trend.current.price)}，每${activeCard?.unit}贡献 ${yuan(trend.current.contribution)}`}>
+          <defs><linearGradient id="pricing-profit-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#9dddff" stopOpacity=".42" /><stop offset="100%" stopColor="#9dddff" stopOpacity="0" /></linearGradient></defs>
+          <polygon className="pricing-profit-area" points={areaPoints} fill="url(#pricing-profit-area)" />
+          <line className="pricing-profit-zero" x1="4" x2="96" y1={zeroLine} y2={zeroLine} />
+          <polyline className="pricing-profit-line" points={polyline} />
+          {breakEvenX !== null && <line className="pricing-profit-marker break-even" x1={breakEvenX} x2={breakEvenX} y1="7" y2="56" />}
+          {suggestedX !== null && <line className="pricing-profit-marker suggested" x1={suggestedX} x2={suggestedX} y1="7" y2="56" />}
+          {trend.points.map((point) => {
+            const pointClass = point.isCurrent ? "current" : point.contribution === peak ? "peak" : point.contribution === low ? "low" : "";
+            const label = point.isCurrent ? "当前" : point.contribution === peak ? "最高" : point.contribution === low ? "最低" : "价格点";
+            return <circle key={point.price} className={`pricing-profit-point ${pointClass}`} cx={xAt(point.price)} cy={yAt(point.contribution)} r={point.isCurrent ? "3.2" : pointClass ? "2.35" : "1.15"} aria-label={`${label}：售价 ${yuan(point.price)}，贡献 ${yuan(point.contribution)}`}><title>{`${label} · ${yuan(point.price)} · 贡献 ${yuan(point.contribution)}`}</title></circle>;
+          })}
+          <circle className="pricing-profit-current-ring" cx={currentX} cy={currentY} r="5" />
+        </svg>
+        <figcaption><span>区间 {yuan(minPrice)}–{yuan(maxPrice)}</span><span>峰值 {yuan(peak)}</span></figcaption>
+      </figure>
+      <div className="pricing-profit-tooltip" role="status"><i className="current" /><span>当前试算</span><b>{yuan(trend.current.price)} · 贡献 {yuan(trend.current.contribution)}</b></div>
+      <div className="pricing-profit-legend"><span><i className="break-even" />保本 {yuan(breakEvenPrice)}</span><span><i className="suggested" />建议 {yuan(suggestedPrice)}</span></div>
+    </section>;
   }
 
   function PricingPage() {

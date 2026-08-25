@@ -4,7 +4,8 @@
 /* 流水凭证：私有图片只在表单和详情内呈现，不抢占经营数据主线。 */
 .record-voucher-field { display: grid; gap: 10px; margin: 2px 0 0; padding: 12px; border: 1px solid #dce7f2; border-radius: 12px; background: #f8fbff; }
 .record-voucher-field legend { display: flex; gap: 7px; align-items: center; padding: 0 4px; color: #24415e; font-size: 13px; font-weight: 700; }
-.record-voucher-picker { display: grid; gap: 5px; padding: 12px; border: 1px dashed #b8cee5; border-radius: 10px; color: #0b73d9; background: #fff; cursor: pointer; }
+.record-voucher-picker { display: grid; gap: 5px; padding: 12px; border: 1px solid #cbddea; border-radius: 10px; color: #0b73d9; background: #fff; cursor: pointer; transition: border-color 160ms var(--ease-out, ease-out), background-color 160ms var(--ease-out, ease-out); }
+.record-voucher-picker:focus-within { border-color: #087ff5; background: #f7fbff; box-shadow: 0 0 0 3px rgba(8,127,245,.09); }
 .record-voucher-picker input { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; opacity: 0; }
 .record-voucher-picker span { font-weight: 700; }
 .record-voucher-picker em, .record-voucher-legacy, .record-voucher-attached small { color: #687b91; font-size: 12px; font-style: normal; line-height: 1.45; }
@@ -42,6 +43,143 @@
 .analysis-supplier-empty b { color: #315b82; font-size: 13px; }
 .analysis-supplier-empty em { color: #7890aa; font-size: 10px; font-style: normal; line-height: 1.45; }
 @media (max-width: 375px) { .analysis-supplement { padding-right: 13px; padding-left: 13px; }.analysis-compare-list > button, .analysis-supplier-list > button { gap: 7px; }.analysis-compare-list em, .analysis-supplier-list em { font-size: 9px; } }
+
+/* 消费级图表系统：统一语义色、数字层级和动效；仅服务展示，不改变任何账本口径。 */
+:root {
+  --chart-brand: #087ff5;
+  --chart-brand-strong: #0b5fc2;
+  --chart-brand-soft: rgba(8,127,245,.14);
+  --chart-success: #21a366;
+  --chart-risk: #d84a4a;
+  --chart-warning: #d98619;
+  --chart-ink: #102a43;
+  --chart-muted: #7890a8;
+  --chart-grid: rgba(112,140,170,.14);
+  --chart-track: #eaf0f6;
+  --chart-surface: #fff;
+  --chart-radius: 18px;
+  --chart-ease: cubic-bezier(.23,1,.32,1);
+  --chart-numeric: var(--financial-numeric-font);
+}
+.dark {
+  --chart-brand: #5ba8ff;
+  --chart-brand-strong: #8bc4ff;
+  --chart-brand-soft: rgba(91,168,255,.2);
+  --chart-success: #56d59a;
+  --chart-risk: #ff8a8a;
+  --chart-warning: #ffc366;
+  --chart-ink: #eff7ff;
+  --chart-muted: #a8bdd1;
+  --chart-grid: rgba(164,196,228,.16);
+  --chart-track: #203348;
+  --chart-surface: #10263b;
+}
+.home-chart-card, .analysis-stack-card, .analysis-cashflow-card, .analysis-health-card, .pricing-profit-trend, .refund-pareto, .profit-waterfall {
+  --chart-local-accent: var(--chart-brand);
+  border-color: color-mix(in srgb, var(--chart-brand) 10%, #dfe8f0);
+  border-radius: var(--chart-radius);
+}
+.home-chart-head > span, .analysis-card-head h2, .chart-heading > span, .pricing-profit-trend-head b { color: var(--chart-ink); }
+.home-chart-head > b, .analysis-card-head > span, .chart-heading > b, .pricing-profit-trend-head em { color: var(--chart-muted); }
+.home-chart-card strong, .analysis-stack-card strong, .analysis-cashflow-card strong, .analysis-health-card .health-score b, .pricing-profit-trend strong, .refund-pareto strong, .profit-waterfall strong { font-family: var(--chart-numeric); font-variant-numeric: tabular-nums; letter-spacing: -.055em; }
+.home-chart-card button, .analysis-stack-card button, .analysis-cashflow-card button, .analysis-health-card button, .pricing-profit-trend button, .refund-pareto button, .profit-waterfall button { transition: transform 160ms var(--chart-ease), background-color 180ms var(--chart-ease), color 180ms var(--chart-ease), opacity 180ms var(--chart-ease); }
+.home-chart-card button:active, .analysis-stack-card button:active, .analysis-cashflow-card button:active, .analysis-health-card button:active, .pricing-profit-trend button:active, .refund-pareto button:active, .profit-waterfall button:active { transform: scale(.985); }
+.home-chart-card button:focus-visible, .analysis-stack-card button:focus-visible, .analysis-cashflow-card button:focus-visible, .analysis-health-card button:focus-visible, .pricing-profit-trend button:focus-visible, .refund-pareto button:focus-visible, .profit-waterfall button:focus-visible { outline: 3px solid var(--chart-brand-soft); outline-offset: 2px; }
+.stack-grid line, .health-grid polygon, .health-grid line { stroke: var(--chart-grid) !important; stroke-dasharray: none !important; }
+.trend-chart, .cashflow-bars { background-image: none !important; }
+.stacked-area-chart svg, .sales-orders-plot svg, .pricing-profit-trend svg, .health-radar svg { overflow: visible; }
+@media (prefers-reduced-motion: no-preference) {
+  .home-chart-card, .analysis-stack-card, .analysis-cashflow-card, .analysis-health-card, .pricing-profit-trend, .refund-pareto, .profit-waterfall { animation: chart-card-in 280ms var(--chart-ease) both; }
+  .chart-soft-line, .sales-orders-line, .pricing-profit-line { stroke-dasharray: 160; stroke-dashoffset: 160; animation: chart-line-in 720ms var(--chart-ease) forwards; }
+  .sales-bars i, .cashflow-bars i, .home-mini-bars b, .refund-pareto i em, .home-sku-ranking i strong { transform-origin: bottom; animation: chart-bar-in 460ms var(--chart-ease) both; }
+}
+@keyframes chart-card-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes chart-line-in { to { stroke-dashoffset: 0; } }
+@keyframes chart-bar-in { from { opacity: .2; transform: scaleY(.28); } to { opacity: 1; transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .home-chart-card, .analysis-stack-card, .analysis-cashflow-card, .analysis-health-card, .pricing-profit-trend, .refund-pareto, .profit-waterfall, .chart-soft-line, .sales-orders-line, .pricing-profit-line, .sales-bars i, .cashflow-bars i, .home-mini-bars b, .refund-pareto i em, .home-sku-ranking i strong { animation: none !important; transition: none !important; } }
+
+/* 折线：3px 平滑曲线、低对比渐变面积与语义关键点。 */
+.home-mini-trend .chart-soft-line, .prototype-home .sales-orders-plot .sales-orders-line, .pricing-profit-line { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3px; vector-effect: non-scaling-stroke; }
+.home-mini-trend .chart-soft-line { stroke: var(--chart-brand); filter: drop-shadow(0 3px 5px rgba(8,127,245,.18)); }
+.prototype-home .sales-orders-plot .sales-orders-line { stroke: var(--chart-brand-strong); filter: drop-shadow(0 3px 5px rgba(11,95,194,.18)); }
+.pricing-profit-line { stroke: #9dddff; filter: drop-shadow(0 3px 6px rgba(157,221,255,.28)); }
+.chart-soft-area, .sales-orders-area, .pricing-profit-area { opacity: .9; }
+.chart-soft-point, .sales-orders-point, .pricing-profit-point { fill: var(--chart-surface); stroke: var(--chart-brand); stroke-width: 1.8px; vector-effect: non-scaling-stroke; }
+.chart-soft-point.is-current, .sales-orders-point.is-current, .pricing-profit-point.current { fill: var(--chart-brand); stroke: #fff; stroke-width: 2.2px; filter: drop-shadow(0 2px 4px rgba(8,127,245,.32)); }
+.chart-soft-point.is-peak, .sales-orders-point.is-peak { fill: var(--chart-success); stroke: #fff; stroke-width: 1.8px; }
+.chart-soft-point.is-low, .sales-orders-point.is-low { fill: var(--chart-warning); stroke: #fff; stroke-width: 1.8px; opacity: .92; }
+.pricing-profit-current-ring { fill: none; stroke: rgba(157,221,255,.42); stroke-width: 1.4px; vector-effect: non-scaling-stroke; }
+.pricing-profit-point.peak { fill: var(--chart-success); stroke: #fff; stroke-width: 1.8px; filter: drop-shadow(0 2px 4px rgba(33,163,102,.32)); }
+.pricing-profit-point.low { fill: var(--chart-warning); stroke: #fff; stroke-width: 1.8px; }
+.pricing-profit-trend figcaption { display: flex; justify-content: space-between; gap: 10px; padding-top: 5px; font-family: var(--chart-numeric); font-size: 9px; font-variant-numeric: tabular-nums; }
+.pricing-profit-tooltip { display: grid; grid-template-columns: 8px auto minmax(0, 1fr); gap: 6px; align-items: center; min-height: 30px; padding: 7px 9px; margin-top: 8px; color: #cfe8ff; font-size: 9px; background: rgba(129,193,255,.1); border-radius: 9px; }
+.pricing-profit-tooltip i { width: 7px; height: 7px; border-radius: 50%; background: #9dddff; box-shadow: 0 0 0 3px rgba(157,221,255,.12); }
+.pricing-profit-tooltip b { overflow: hidden; color: #fff; font-family: var(--chart-numeric); font-size: 10px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; text-overflow: ellipsis; }
+
+/* 柱状、排行与环形：统一圆角、留白和核心数字层级。 */
+.sales-bars i, .cashflow-bars i, .home-mini-bars b { border-radius: 999px 999px 4px 4px; }
+.sales-bars i { background: linear-gradient(180deg, #49b9ff 0%, var(--chart-brand) 100%); box-shadow: 0 3px 7px rgba(8,127,245,.15); }
+.cashflow-bars i.inflow { background: linear-gradient(180deg, #65d8a2, var(--chart-success)); }
+.cashflow-bars i.outflow { background: linear-gradient(180deg, #ffc16a, var(--chart-warning)); }
+.home-mini-bars b { background: linear-gradient(180deg, #aacbea, #52799e); }
+.home-sku-ranking i, .refund-pareto i { background: var(--chart-track); border-radius: 999px; overflow: hidden; }
+.home-sku-ranking i strong, .refund-pareto i em { min-width: 8px; border-radius: inherit; background: linear-gradient(90deg, var(--chart-brand), #62c5ff); }
+.refund-pareto button:first-of-type i em { background: linear-gradient(90deg, var(--chart-risk), #f58d7f); }
+.cost-ring, .budget-ring > i { box-shadow: inset 0 0 0 1px rgba(8,127,245,.06), 0 10px 22px rgba(15,74,127,.08); }
+.cost-ring > span, .budget-ring > i > span { background: var(--chart-surface); border-radius: 50%; box-shadow: 0 2px 8px rgba(15,56,94,.04); }
+.cost-ring b, .budget-ring b { color: var(--chart-ink); font-family: var(--chart-numeric); letter-spacing: -.07em; }
+.cost-ring em, .budget-ring em { color: var(--chart-muted); }
+
+/* 统一数据提示条：用简短实时结论取代重复标题、图例与坐标轴。 */
+.sales-summary small, .stack-legend, .cashflow-legend, .pricing-profit-legend { color: var(--chart-muted); font-size: 10px; }
+.sales-summary small i, .stack-legend i, .cashflow-legend i, .pricing-profit-legend i { border-radius: 999px; }
+.analysis-chart-action p, .cashflow-summary p, .pricing-profit-trend figcaption { color: var(--chart-muted); }
+.health-grid polygon, .health-grid line { opacity: .72; }
+.health-shape { fill: color-mix(in srgb, var(--chart-brand) 16%, transparent); stroke: var(--chart-brand); stroke-width: 1.8px; }
+.health-point { fill: var(--chart-brand); stroke: var(--chart-surface); stroke-width: 1.8px; }
+.health-missing { stroke: var(--chart-muted); fill: var(--chart-surface); }
+
+@media (max-width: 390px) { .home-chart-card, .analysis-stack-card, .analysis-cashflow-card, .analysis-health-card, .pricing-profit-trend, .refund-pareto, .profit-waterfall { border-radius: 16px; }.sales-summary small, .stack-legend, .cashflow-legend, .pricing-profit-legend { font-size: 9px; } }
+@media (prefers-color-scheme: dark) { html:not(.dark) .home-chart-card, html:not(.dark) .analysis-stack-card, html:not(.dark) .analysis-cashflow-card, html:not(.dark) .analysis-health-card, html:not(.dark) .pricing-profit-trend, html:not(.dark) .refund-pareto, html:not(.dark) .profit-waterfall { --chart-surface: #10263b; --chart-ink: #eff7ff; --chart-muted: #a8bdd1; --chart-track: #203348; --chart-grid: rgba(164,196,228,.16); } }
+.dark .home-chart-card, .dark .analysis-stack-card, .dark .analysis-cashflow-card, .dark .analysis-health-card, .dark .pricing-profit-trend, .dark .refund-pareto, .dark .profit-waterfall { background-color: var(--chart-surface) !important; border-color: rgba(164,196,228,.16) !important; }
+.dark .home-chart-card :is(span, em, small), .dark .analysis-stack-card :is(span, em, small), .dark .analysis-cashflow-card :is(span, em, small), .dark .analysis-health-card :is(span, em, small), .dark .refund-pareto :is(span, em, small), .dark .profit-waterfall :is(span, em, small) { color: var(--chart-muted); }
+.dark .home-chart-card :is(b, strong), .dark .analysis-stack-card :is(b, strong), .dark .analysis-cashflow-card :is(b, strong), .dark .analysis-health-card :is(b, strong), .dark .refund-pareto :is(b, strong), .dark .profit-waterfall :is(b, strong) { color: var(--chart-ink); }
+@media (prefers-color-scheme: dark) {
+  html:not(.dark) .home-chart-card, html:not(.dark) .analysis-stack-card, html:not(.dark) .analysis-cashflow-card, html:not(.dark) .analysis-health-card, html:not(.dark) .pricing-profit-trend, html:not(.dark) .refund-pareto, html:not(.dark) .profit-waterfall { background-color: var(--chart-surface) !important; border-color: rgba(164,196,228,.16) !important; }
+  html:not(.dark) .home-chart-card :is(span, em, small), html:not(.dark) .analysis-stack-card :is(span, em, small), html:not(.dark) .analysis-cashflow-card :is(span, em, small), html:not(.dark) .analysis-health-card :is(span, em, small), html:not(.dark) .refund-pareto :is(span, em, small), html:not(.dark) .profit-waterfall :is(span, em, small) { color: var(--chart-muted); }
+  html:not(.dark) .home-chart-card :is(b, strong), html:not(.dark) .analysis-stack-card :is(b, strong), html:not(.dark) .analysis-cashflow-card :is(b, strong), html:not(.dark) .analysis-health-card :is(b, strong), html:not(.dark) .refund-pareto :is(b, strong), html:not(.dark) .profit-waterfall :is(b, strong) { color: var(--chart-ink); }
+}
+
+/* 可复用图表提示：默认克制，仅在聚焦、悬停或触碰时显示。 */
+.chart-tooltip-wrap { position: relative; display: inline-flex; vertical-align: middle; }
+.chart-tooltip-trigger { display: inline-grid; width: 22px; height: 22px; place-items: center; padding: 0; margin-left: 5px; color: var(--chart-muted); background: color-mix(in srgb, var(--chart-brand) 7%, transparent); border: 0; border-radius: 50%; cursor: help; }
+.chart-tooltip-trigger:hover, .chart-tooltip-trigger[aria-expanded="true"] { color: var(--chart-brand); background: var(--chart-brand-soft); }
+.chart-tooltip-trigger:focus-visible { outline: 3px solid var(--chart-brand-soft); outline-offset: 2px; }
+.chart-tooltip { position: absolute; z-index: 20; top: calc(100% + 7px); left: 0; display: grid; gap: 3px; width: min(220px, 62vw); padding: 10px 11px; color: var(--chart-muted); background: color-mix(in srgb, var(--chart-surface) 94%, var(--chart-ink)); border: 1px solid color-mix(in srgb, var(--chart-brand) 16%, transparent); border-radius: 11px; box-shadow: 0 12px 28px rgba(18,56,92,.16); font-size: 10px; line-height: 1.45; text-align: left; }
+.chart-tooltip em { color: var(--chart-muted); font-size: 9px; font-style: normal; }
+.chart-tooltip b { color: var(--chart-ink); font-family: var(--chart-numeric); font-size: 12px; font-variant-numeric: tabular-nums; }
+.chart-tooltip small { color: var(--chart-muted); font-size: 9px; }
+.dark .chart-tooltip { box-shadow: 0 14px 32px rgba(0,0,0,.36); }
+.chart-theme-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; padding: 11px 0 0; margin-top: 10px; color: #17324d; text-align: left; background: transparent; border: 0; border-top: 1px solid #e5edf5; }
+.chart-theme-toggle > span { display: grid; grid-template-columns: 18px minmax(0, 1fr); column-gap: 8px; align-items: center; }.chart-theme-toggle svg { color: var(--chart-brand); }.chart-theme-toggle b { font-size: 12px; }.chart-theme-toggle em { grid-column: 2; margin-top: 2px; color: #8294a8; font-size: 9px; font-style: normal; }.chart-theme-toggle strong { display: inline-flex; gap: 4px; align-items: center; color: var(--chart-brand); font-size: 10px; }.dark .chart-theme-toggle { color: var(--chart-ink); border-top-color: rgba(164,196,228,.16); }.dark .chart-theme-toggle em { color: var(--chart-muted); }
+
+/* 说明图标不继承定价曲线画布尺寸；定价参考线保持低对比实线。 */
+.pricing-profit-trend > figure > svg { display: block; width: 100%; height: 104px; overflow: visible; }
+.pricing-profit-trend-head .chart-tooltip-trigger svg { display: block; width: 13px; height: 13px; }
+.pricing-profit-zero, .pricing-profit-marker { stroke-dasharray: none !important; }
+.pricing-profit-zero { opacity: .45; }.pricing-profit-marker { opacity: .55; }
+@media (min-width: 768px) { .pricing-profit-trend > figure > svg { height: 126px; } }
+@media (min-width: 1080px) { .pricing-profit-trend > figure > svg { height: 140px; } }
+
+/* 图表深色模式：主题切换后为数据卡提供真实深色表面，避免仅替换文字令牌导致浅底浅字。 */
+.dark .prototype-home, .dark .prototype-analysis, .dark .app-content, .dark .ledger-page-shell { background: #091321; color: #edf5ff; }
+.dark .prototype-home > .home-chart-card, .dark .budget-ring, .dark .home-reminder-card, .dark .home-reminder-list, .dark .home-analysis-preview, .dark .analysis-waterfall-card, .dark .analysis-trend-card, .dark .analysis-ranking-card, .dark .analysis-stack-card, .dark .analysis-cashflow-card, .dark .analysis-health-card { background: linear-gradient(145deg, rgba(17, 35, 56, .98), rgba(10, 24, 41, .98)) !important; border-color: rgba(164, 196, 228, .16) !important; box-shadow: 0 10px 25px rgba(0, 0, 0, .22); }
+.dark .prototype-home > .home-chart-card :is(span, b, strong, label), .dark .budget-ring :is(span, b, strong, label), .dark .home-reminder-card :is(span, b, strong, label), .dark .home-reminder-list :is(span, b, strong, label), .dark .home-analysis-preview :is(span, b, strong, label), .dark .analysis-waterfall-card :is(h2, span, b, strong, label), .dark .analysis-trend-card :is(h2, span, b, strong, label), .dark .analysis-ranking-card :is(h2, span, b, strong, label), .dark .analysis-stack-card :is(h2, span, b, strong, label), .dark .analysis-cashflow-card :is(h2, span, b, strong, label), .dark .analysis-health-card :is(h2, span, b, strong, label) { color: #edf5ff; }
+.dark .prototype-home > .home-chart-card :is(em, small), .dark .budget-ring :is(em, small), .dark .home-reminder-card :is(em, small), .dark .home-reminder-list :is(em, small), .dark .home-analysis-preview :is(em, small), .dark .analysis-waterfall-card :is(em, small), .dark .analysis-trend-card :is(em, small), .dark .analysis-ranking-card :is(em, small), .dark .analysis-stack-card :is(em, small), .dark .analysis-cashflow-card :is(em, small), .dark .analysis-health-card :is(em, small) { color: #a8bfd5; }
+.dark .prototype-home .home-chart-empty, .dark .analysis-stack-card .home-chart-empty, .dark .analysis-cashflow-card .home-chart-empty { background: rgba(124, 171, 218, .08); border-color: rgba(164, 196, 228, .15); }
+.dark .chart-tooltip-content { color: #edf5ff; background: #12243a; border-color: rgba(164, 196, 228, .24); box-shadow: 0 10px 26px rgba(0, 0, 0, .3); }
+.dark .prototype-analysis-title :is(h1, p), .dark .detail-hero :is(h1, h2, p, span, em), .dark .ledger-page-heading :is(h1, h2, p, span, em) { color: #edf5ff; }
+.dark .detail-hero :is(p, span, em), .dark .prototype-analysis-title p, .dark .ledger-page-heading p { color: #a8bfd5; }
 
 :root { --financial-numeric-font: "IBM Plex Mono", "Noto Sans SC", ui-monospace, monospace; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; color: #172033; background: #eaf0f8; font-synthesis: none; }
 

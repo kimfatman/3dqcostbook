@@ -3,6 +3,7 @@ import React from "react";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Home from "./Home";
 
 const trpcMocks = vi.hoisted(() => ({
@@ -74,6 +75,10 @@ function mainNavigation() {
   return within(screen.getByRole("navigation", { name: "主导航" }));
 }
 
+function renderHome() {
+  return render(<ThemeProvider defaultTheme="light" switchable><Home /></ThemeProvider>);
+}
+
 async function openProfile(user: ReturnType<typeof userEvent.setup>) {
   await user.click(mainNavigation().getByRole("button", { name: "我的" }));
 }
@@ -81,7 +86,7 @@ async function openProfile(user: ReturnType<typeof userEvent.setup>) {
 describe("五行业模板的真实页面显示", () => {
   it("沿实际导航切换五个行业，并在成本卡/SKU、资料、预算和分析页显示对应实体、分类与单位", async () => {
     const user = userEvent.setup();
-    render(<Home />);
+    renderHome();
 
     for (const scenario of scenarios) {
       await openProfile(user);
@@ -131,7 +136,7 @@ describe("统一账本的真实页面路径", () => {
   it("在真实 Home 中完成流水筛选、记一笔新增/编辑/删除、成本卡搜索与成本结构下钻", async () => {
     const user = userEvent.setup();
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
-    render(<Home />);
+    renderHome();
 
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
     expect(screen.getByRole("heading", { name: "记录一笔收支" })).toBeTruthy();
@@ -198,7 +203,7 @@ describe("流水私有凭证图片", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "voucher-asset-1", url: "/api/media/voucher-asset-1" }) });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
-    render(<Home />);
+    renderHome();
 
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
     const voucherInput = screen.getByLabelText("上传凭证图片") as HTMLInputElement;
@@ -231,7 +236,7 @@ describe("流水私有凭证图片", () => {
     prepareAuthenticatedWorkspace();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "凭证图片上传失败" }) }));
     const user = userEvent.setup();
-    render(<Home />);
+    renderHome();
 
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
     await user.upload(screen.getByLabelText("上传凭证图片"), new File(["proof"], "voucher.png", { type: "image/png" }));
@@ -244,7 +249,7 @@ describe("流水私有凭证图片", () => {
 describe("成本分析供应商排行与结构对照", () => {
   it("将已关联供应商的真实支出展示在排行中，并能下钻到该供应商的当期流水", async () => {
     const user = userEvent.setup();
-    render(<Home />);
+    renderHome();
 
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
     await user.clear(screen.getByPlaceholderText("0.00"));
@@ -264,5 +269,21 @@ describe("成本分析供应商排行与结构对照", () => {
     expect(supplierButton.textContent).toContain("¥66.60");
     await user.click(supplierButton);
     expect(screen.getByText("供应商排行回归支出")).toBeTruthy();
+  });
+});
+
+describe("图表主题", () => {
+  it("允许用户在个性化区切换图表深色模式", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await openProfile(user);
+    const toggle = screen.getByRole("button", { name: /图表深色模式/ });
+    await user.click(toggle);
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(screen.getByText("深色已开启")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /图表深色模式/ }));
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 });
