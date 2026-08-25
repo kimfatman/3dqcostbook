@@ -58,7 +58,8 @@ import {
 import { channelLabel, getOrderAfterSalesMetrics, recoveryStatusLabel, type OrderChannel, type RefundReason, type ReturnRecoveryStatus } from "@/lib/order-ledger";
 import { breakEvenPrice, quotePrice } from "@/lib/pricing";
 import { buildPriceSliderRange, clampSliderPrice } from "@/lib/pricing-slider";
-import { buildPricingProfitTrend } from "@/lib/pricing-profit-trend";
+import { buildPricingProfitTrend, buildSmoothPricingProfitPolyline } from "@/lib/pricing-profit-trend";
+import { promotionBanners, type PromotionTarget } from "@/lib/promotion-banners";
 import { availableMonths, matchesMonth, matchesQuery } from "@/lib/list-search";
 import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildDailySalesOrders, buildMonthlyCashFlow, buildMonthlyCostStack, buildPeriodSkuMetrics, buildRefundPareto, buildSalesTargetProgress, buildSkuRankings } from "@/lib/chart-metrics";
 import { buildHiddenCostEstimates } from "@/lib/hidden-costs";
@@ -87,7 +88,6 @@ type TabId = NavigationTab;
 type SubPage = NavigationSubPage;
 type RecordFilter = "all" | RecordType;
 type QuickAction = "order" | "budget" | "cards" | "record" | "analysis";
-type PromotionTarget = "cards" | "orders" | "industry" | "notifications";
 type NotificationTarget = HomeDecisionTarget;
 type NotificationItem = HomeDecisionNotification & { copy: string };
 type VisualSkinOption = { id: VisualSkin; label: string; detail: string; material: string };
@@ -119,11 +119,6 @@ const industryHomeProfiles: Record<IndustryId, IndustryHomeProfile> = {
 };
 const monthLabel = (month: string) => month === "all" ? "全部月份" : `${Number(month.slice(5))} 月`;
 const refundReasonLabel = (reason: RefundReason) => ({ quality_issue: "质量问题", wrong_item: "错发漏发", customer_cancelled: "客户取消", logistics_delay: "物流延误", duplicate_order: "重复下单", other: "其他" })[reason];
-const promotionBanners: { eyebrow: string; title: string; copy: string; action: string; target: PromotionTarget; asset: string }[] = [
-  { eyebrow: "产品功能", title: "成本卡，一键算出保本价", copy: "材料、人工、渠道费统一核算", action: "去测算", target: "cards", asset: "/manus-storage/carousel-acrylic-costing-master_609cfb09.png" },
-  { eyebrow: "产品功能", title: "价格与利润，提前算明白", copy: "定价、毛利和渠道费用一屏复核", action: "查看商品", target: "cards", asset: "/manus-storage/carousel-acrylic-pricing-v2_3530824d.png" },
-  { eyebrow: "经营提醒", title: "关键波动，及时发现处理", copy: "成本、订单与现金流统一追踪", action: "查看提醒", target: "notifications", asset: "/manus-storage/carousel-acrylic-insight-v2_276b620b.png" },
-];
 const visualSkinOptions: VisualSkinOption[] = [
   { id: "soft", label: "柔光材质工作台", detail: "冷白矿物底板 · 陶瓷数据面 · 冰蓝焦点层", material: "mineral" },
   { id: "aurora", label: "极光玻璃工作台", detail: "冰雾玻璃 · 蓝紫折射 · 轻盈浮层", material: "aurora" },
@@ -798,7 +793,7 @@ export default function Home() {
       <OperatingSnapshot decision={homeDecision} industryRisk={homeProfile.insight.title} costRate={costRate} profitMarginRate={profitMarginRate} profitDelta={totals.operatingProfit - previousProfit} onOpenPriority={openHomeDecision} />
       <SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} />
       <HomeReminderList items={notificationItems} onOpen={openNotificationTarget} onOpenAll={() => goSub("notifications")} />
-      <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传"><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span><img className="promotion-3d-asset" src={banner.asset} alt="" aria-hidden="true" /></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}</div></section>
+      <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传"><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" style={{ backgroundImage: `linear-gradient(90deg, rgba(2, 42, 113, .92) 0%, rgba(5, 91, 191, .78) 43%, rgba(8, 127, 245, .12) 68%, rgba(8, 127, 245, .02) 100%), url(${banner.asset})` }} onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}</div></section>
       <HomeAnalysisPreview sales={salesOrdersTrend} costs={dailyCosts} onOpen={() => openRootTab("analysis")} />
       <section className="home-quick-entry home-chart-card"><div className="home-chart-head"><span>快捷入口</span><b>常用功能</b></div><div>{quickEntries.map(({ label, Icon, tone, action }) => <button key={label} className={tone} onClick={action}><i><Icon size={20} /></i><span>{label}</span></button>)}</div></section>
     </div>;
@@ -1011,7 +1006,7 @@ export default function Home() {
     const contributionRange = Math.max(1, highestContribution - lowestContribution);
     const xAt = (price: number) => 4 + (price - minPrice) / Math.max(0.01, maxPrice - minPrice) * 92;
     const yAt = (contribution: number) => 56 - (contribution - lowestContribution) / contributionRange * 48;
-    const polyline = trend.points.map((point) => `${xAt(point.price)},${yAt(point.contribution)}`).join(" ");
+    const polyline = buildSmoothPricingProfitPolyline(trend.points.map((point) => ({ x: xAt(point.price), y: yAt(point.contribution) })));
     const zeroLine = yAt(0);
     const markerX = (price: number) => price >= minPrice && price <= maxPrice ? xAt(price) : null;
     const breakEvenX = markerX(breakEvenPrice);

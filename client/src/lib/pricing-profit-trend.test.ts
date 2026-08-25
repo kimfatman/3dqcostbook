@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPricingProfitTrend } from "./pricing-profit-trend";
+import { buildPricingProfitTrend, buildSmoothPricingProfitPolyline } from "./pricing-profit-trend";
 
 describe("智能定价利润趋势", () => {
   it("在滑块实际价格范围内采样单件贡献，并保留两位小数口径", () => {
@@ -38,5 +38,17 @@ describe("智能定价利润趋势", () => {
       fulfillmentCost: 0,
       currentPrice: 23.45,
     })).toEqual({ points: [], current: null });
+  });
+
+  it("将真实采样坐标连接为不改写端点的柔和曲线坐标", () => {
+    const polyline = buildSmoothPricingProfitPolyline([
+      { x: 4, y: 56 },
+      { x: 50, y: 32 },
+      { x: 96, y: 8 },
+    ]);
+
+    expect(polyline).toMatch(/^4,56 /);
+    expect(polyline.trim().split(" ").length).toBeGreaterThan(3);
+    expect(polyline).toMatch(/96,8$/);
   });
 });

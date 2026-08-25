@@ -12,6 +12,11 @@ export type PricingProfitTrend = {
   current: PricingProfitPoint | null;
 };
 
+export type PricingProfitCurveCoordinate = {
+  x: number;
+  y: number;
+};
+
 const money = (value: number) => {
   const sign = value < 0 ? -1 : 1;
   return sign * Math.round((Math.abs(value) + 1e-9) * 100) / 100;
@@ -59,4 +64,38 @@ export function buildPricingProfitTrend(input: {
     .sort((left, right) => left - right)
     .map((price) => makePoint(price, unitCost, platformRatePct, fulfillmentCost, currentPrice));
   return { points, current: points.find((point) => point.isCurrent) || null };
+}
+
+/**
+ * 在已有真实采样点之间插入 Catmull–Rom 曲线插值点。
+ * 结果仍是 SVG polyline 坐标，因而不会影响现有的当前价、保本价和建议价标记；
+ * 仅将视觉连线从折角收敛为柔和曲线。
+ */
+export function buildSmoothPricingProfitPolyline(points: PricingProfitCurveCoordinate[], stepsPerSegment = 7): string {
+  if (points.length === 0) return "";
+  if (points.length === 1) return `${points[0].x},${points[0].y}`;
+
+  const coordinates = [{ ...points[0] }];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const previous = points[index - 1] || points[index];
+    const start = points[index];
+    const end = points[index + 1];
+    const following = points[index + 2] || end;
+    for (let step = 1; step <= stepsPerSegment; step += 1) {
+      const t = step / stepsPerSegment;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      const interpolate = (before: number, from: number, to: number, after: number) => 0.5 * (
+        2 * from
+        + (-before + to) * t
+        + (2 * before - 5 * from + 4 * to - after) * t2
+        + (-before + 3 * from - 3 * to + after) * t3
+      );
+      coordinates.push({
+        x: Number(interpolate(previous.x, start.x, end.x, following.x).toFixed(3)),
+        y: Number(interpolate(previous.y, start.y, end.y, following.y).toFixed(3)),
+      });
+    }
+  }
+  return coordinates.map((point) => `${point.x},${point.y}`).join(" ");
 }
