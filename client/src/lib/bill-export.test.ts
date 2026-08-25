@@ -1,41 +1,40 @@
-import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
-import { billExportFilename, buildBillCsv, buildBillRows, buildBillWorkbook, protectSpreadsheetText, type BillExportInput } from "./bill-export";
+import type { CostRecord } from "./cost-book";
+import { billExportFilename, buildBillCsv, buildBillExportModel, protectSpreadsheetText } from "./bill-export";
 
-const input: BillExportInput = {
-  storeName: "晴空,严选\"旗舰店\"",
-  industryLabel: "电商",
-  generatedAt: "2026-08-25T10:30:00.000Z",
-  filterSummary: "2026年8月 · 成本 · 搜索：包装",
-  categoryLabels: { packaging: "包装,耗材" },
-  supplierLabels: { supplier_1: "包装供应商" },
-  orderMeta: { order_1: { orderNo: "ORD-001", channelLabel: "平台店" } },
-  records: [{ id: "record_1", workspaceId: "workspace", industryId: "ecommerce", templateVersion: 2, occurredAt: "2026-08-24", date: "2026-08-24", type: "expense", eventType: "expense", ledgerRole: "opex", cashDirection: "outflow", amountFen: 12345, amount: 123.45, categoryKey: "packaging", merchant: "=SUM(1,1)", note: "外箱,气泡膜", status: "accounted", hasAttachment: true, supplierId: "supplier_1", orderId: "order_1", createdAt: "2026-08-24T12:00:00.000Z", updatedAt: "2026-08-24T12:00:00.000Z" }],
-};
+const records: CostRecord[] = [
+  { id: "income-1", workspaceId: "w", industryId: "retail", templateVersion: 2, occurredAt: "2026-08-14", date: "2026-08-14", eventType: "sale", ledgerRole: "revenue", cashDirection: "inflow", amountFen: 125050, amount: 1250.5, categoryKey: "sales", merchant: "晴空,严选\"旗舰店\"", note: "平台日结", status: "accounted", hasAttachment: true, orderId: "o-1", createdAt: "2026-08-14T00:00:00.000Z", updatedAt: "2026-08-14T00:00:00.000Z", type: "income" },
+  { id: "expense-1", workspaceId: "w", industryId: "retail", templateVersion: 2, occurredAt: "2026-08-13", date: "2026-08-13", eventType: "expense", ledgerRole: "cogs", cashDirection: "outflow", amountFen: 48000, amount: 480, categoryKey: "goods", merchant: "=SUM(1,1)", note: "补货,含税", status: "pending", hasAttachment: false, supplierId: "s-1", createdAt: "2026-08-13T00:00:00.000Z", updatedAt: "2026-08-13T00:00:00.000Z", type: "expense" },
+];
 
 describe("账单导出", () => {
-  it("保留当前筛选的流水字段，并保护电子表格公式文本", () => {
+  const model = buildBillExportModel({
+    records,
+    storeName: "橙子优选店",
+    industryLabel: "零售",
+    filters: { month: "2026-08", type: "all", query: "补货", channelLabel: "平台", supplierName: "供货商 A" },
+    categoryLabel: (key) => key === "sales" ? "销售收入" : "商品采购",
+    channelLabel: (record) => record.orderId ? "平台" : "",
+    supplierName: (id) => id === "s-1" ? "供货商 A" : "",
+    orderNo: (id) => id === "o-1" ? "ORD-001" : "",
+  });
+
+  it("保留筛选范围、关联维度和正负金额语义", () => {
+    expect(model.rows).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "收入", amount: 1250.5, channel: "平台", orderNo: "ORD-001" }),
+      expect.objectContaining({ type: "成本", amount: -480, supplier: "供货商 A", status: "待确认" }),
+    ]));
+  });
+
+  it("为 CSV 输出 BOM、中文转义、公式文本保护和安全文件名", () => {
+    const csv = buildBillCsv(model);
     expect(protectSpreadsheetText("=SUM(1,1)")).toBe("'=SUM(1,1)");
-    expect(buildBillRows(input)[0]).toMatchObject({ 日期: "2026-08-24", 分类: "包装,耗材", 金额: 123.45, 商户: "'=SUM(1,1)", 供应商: "包装供应商", 渠道: "平台店", 凭证: "有" });
-  });
-
-  it("输出带 BOM、元数据与转义中文字段的 CSV", () => {
-    const csv = buildBillCsv(input);
     expect(csv.startsWith("\uFEFF")).toBe(true);
-    expect(csv).toContain('"筛选范围","2026年8月 · 成本 · 搜索：包装"');
     expect(csv).toContain('"晴空,严选""旗舰店"""');
-    expect(csv).toContain('"外箱,气泡膜"');
-  });
-
-  it("生成可读取的 XLSX 账单明细工作表与金额格式", () => {
-    const workbook = buildBillWorkbook(input);
-    const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const parsed = XLSX.read(bytes, { type: "array" });
-    const sheet = parsed.Sheets["账单明细"];
-    expect(parsed.SheetNames).toEqual(["账单明细"]);
-    expect(sheet["A1"]?.v).toBe("算得清账单明细");
-    expect(sheet["E8"]?.v).toBe(123.45);
-    expect(workbook.Sheets["账单明细"]?.["E8"]?.z).toContain("¥");
-    expect(billExportFilename(input, "xlsx")).toBe("晴空,严选-旗舰店--账单-2026-08-25.xlsx");
+    expect(csv).toContain('"\'=SUM(1,1)"');
+    expect(csv).toContain('"补货,含税"');
+    expect(csv).toContain('"-480.00"');
+    expect(csv).toContain("关键词：补货");
+    expect(billExportFilename(model, "xlsx")).toBe("橙子优选店-2026-08-经营流水.xlsx");
   });
 });

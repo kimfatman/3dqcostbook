@@ -1,114 +1,149 @@
-import * as XLSX from "xlsx";
-import type { CostRecord } from "./cost-book";
+import type { CostRecord, RecordType } from "./cost-book";
 
 export type BillExportFormat = "csv" | "xlsx";
 
-export type BillExportInput = {
+export type BillExportFilters = {
+  month: string;
+  type: RecordType | "all";
+  query: string;
+  channelLabel?: string;
+  supplierName?: string;
+};
+
+export type BillExportRow = {
+  date: string;
+  type: string;
+  category: string;
+  merchant: string;
+  amount: number;
+  status: string;
+  channel: string;
+  supplier: string;
+  orderNo: string;
+  attachment: string;
+  note: string;
+};
+
+export type BillExportModel = {
+  title: string;
   storeName: string;
   industryLabel: string;
-  generatedAt: string;
-  filterSummary: string;
+  filters: BillExportFilters;
+  rows: BillExportRow[];
+};
+
+type BillExportModelInput = {
   records: CostRecord[];
-  categoryLabels: Record<string, string>;
-  supplierLabels: Record<string, string>;
-  orderMeta: Record<string, { orderNo: string; channelLabel: string }>;
+  storeName: string;
+  industryLabel: string;
+  filters: BillExportFilters;
+  categoryLabel: (categoryKey: string) => string;
+  channelLabel: (record: CostRecord) => string;
+  supplierName: (supplierId?: string) => string;
+  orderNo: (orderId?: string) => string;
 };
 
-type BillRow = {
-  日期: string;
-  类型: string;
-  分类: string;
-  商户: string;
-  金额: number;
-  供应商: string;
-  渠道: string;
-  订单号: string;
-  备注: string;
-  凭证: string;
-  状态: string;
-  流水编号: string;
-};
-
-const typeLabel = (type: CostRecord["type"]) => type === "income" ? "收入" : type === "refund" ? "退款" : "支出";
-const statusLabel = (status: CostRecord["status"]) => status === "accounted" ? "已核算" : status === "pending" ? "待核算" : "异常";
+const typeLabel: Record<RecordType, string> = { expense: "成本", income: "收入", refund: "退款" };
+const statusLabel = (status: CostRecord["status"]) => status === "accounted" ? "已入账" : status === "pending" ? "待确认" : "异常";
 const csvCell = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
 
-/** 防止账单中的商户、备注等文本被电子表格程序当作公式执行。 */
+/** 防止商户、备注和订单号被桌面表格软件解释为公式。 */
 export function protectSpreadsheetText(value: string) {
   return /^[=+\-@]/.test(value) ? `'${value}` : value;
 }
 
-export function buildBillRows(input: BillExportInput): BillRow[] {
-  return input.records.map((record) => {
-    const order = record.orderId ? input.orderMeta[record.orderId] : undefined;
-    return {
-      日期: record.date,
-      类型: typeLabel(record.type),
-      分类: input.categoryLabels[record.categoryKey] || "未分类",
-      商户: protectSpreadsheetText(record.merchant || "未填写"),
-      金额: Number(record.amount.toFixed(2)),
-      供应商: record.supplierId ? protectSpreadsheetText(input.supplierLabels[record.supplierId] || "未关联") : "",
-      渠道: order?.channelLabel || "",
-      订单号: order ? protectSpreadsheetText(order.orderNo) : "",
-      备注: protectSpreadsheetText(record.note || ""),
-      凭证: record.hasAttachment ? "有" : "无",
-      状态: statusLabel(record.status),
-      流水编号: protectSpreadsheetText(record.id),
-    };
-  });
+function filterSummary(filters: BillExportFilters) {
+  const values = [
+    filters.month === "all" ? "全部月份" : `${filters.month} 月`,
+    filters.type === "all" ? "全部类型" : typeLabel[filters.type],
+    filters.channelLabel || "",
+    filters.supplierName || "",
+    filters.query.trim() ? `关键词：${filters.query.trim()}` : "",
+  ].filter(Boolean);
+  return values.join(" · ");
 }
 
-function metadataRows(input: BillExportInput) {
-  return [
-    ["算得清账单明细"],
-    ["店铺", input.storeName],
-    ["行业", input.industryLabel],
-    ["筛选范围", input.filterSummary],
-    ["导出时间", input.generatedAt],
+export function buildBillExportModel(input: BillExportModelInput): BillExportModel {
+  return {
+    title: "算得清经营流水",
+    storeName: protectSpreadsheetText(input.storeName),
+    industryLabel: protectSpreadsheetText(input.industryLabel),
+    filters: input.filters,
+    rows: input.records.map((record) => ({
+      date: record.date,
+      type: typeLabel[record.type],
+      category: protectSpreadsheetText(input.categoryLabel(record.categoryKey) || "未分类"),
+      merchant: protectSpreadsheetText(record.merchant || "未填写"),
+      amount: record.type === "income" ? record.amount : -record.amount,
+      status: statusLabel(record.status),
+      channel: protectSpreadsheetText(input.channelLabel(record)),
+      supplier: protectSpreadsheetText(input.supplierName(record.supplierId)),
+      orderNo: protectSpreadsheetText(input.orderNo(record.orderId)),
+      attachment: record.hasAttachment ? "有" : "无",
+      note: protectSpreadsheetText(record.note || ""),
+    })),
+  };
+}
+
+export function buildBillCsv(model: BillExportModel) {
+  const rows: (string | number)[][] = [
+    [model.title],
+    ["店铺", model.storeName],
+    ["行业", model.industryLabel],
+    ["筛选范围", filterSummary(model.filters)],
+    ["导出笔数", model.rows.length],
     [],
+    ["日期", "收支类型", "分类", "商户", "金额（元）", "状态", "渠道", "供应商", "订单号", "是否有凭证", "备注"],
+    ...model.rows.map((row) => [row.date, row.type, row.category, row.merchant, row.amount.toFixed(2), row.status, row.channel, row.supplier, row.orderNo, row.attachment, row.note]),
+  ];
+  return `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`;
+}
+
+export function billExportFilename(model: BillExportModel, format: BillExportFormat) {
+  const safeStore = model.storeName.replace(/[\\/:*?"<>|]/g, "-") || "账单";
+  const month = model.filters.month === "all" ? "全部月份" : model.filters.month;
+  return `${safeStore}-${month}-经营流水.${format === "xlsx" ? "xlsx" : "csv"}`;
+}
+
+function buildWorksheetRows(model: BillExportModel): (string | number)[][] {
+  return [
+    [model.title],
+    ["店铺", model.storeName],
+    ["行业", model.industryLabel],
+    ["筛选范围", filterSummary(model.filters)],
+    ["导出笔数", model.rows.length],
+    [],
+    ["日期", "收支类型", "分类", "商户", "金额（元）", "状态", "渠道", "供应商", "订单号", "是否有凭证", "备注"],
+    ...model.rows.map((row) => [row.date, row.type, row.category, row.merchant, row.amount, row.status, row.channel, row.supplier, row.orderNo, row.attachment, row.note]),
   ];
 }
 
-const headers = ["日期", "类型", "分类", "商户", "金额", "供应商", "渠道", "订单号", "备注", "凭证", "状态", "流水编号"] as const;
-
-export function buildBillCsv(input: BillExportInput) {
-  const rows = [
-    ...metadataRows(input),
-    [...headers],
-    ...buildBillRows(input).map((row) => headers.map((header) => row[header])),
-  ];
-  return `\uFEFF${rows.map((row) => row.map((cell) => csvCell(cell ?? "")).join(",")).join("\r\n")}\r\n`;
+function downloadBlob(blob: Blob, filename: string) {
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
-export function buildBillWorkbook(input: BillExportInput) {
-  const rows = buildBillRows(input);
-  const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.aoa_to_sheet(metadataRows(input));
-  XLSX.utils.sheet_add_aoa(worksheet, [[...headers]], { origin: "A7" });
-  XLSX.utils.sheet_add_json(worksheet, rows, { origin: "A8", skipHeader: true, header: [...headers] });
-  worksheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
-  worksheet["!cols"] = [
-    { wch: 13 }, { wch: 10 }, { wch: 16 }, { wch: 24 }, { wch: 14 }, { wch: 18 },
-    { wch: 12 }, { wch: 18 }, { wch: 34 }, { wch: 10 }, { wch: 12 }, { wch: 22 },
-  ];
-  worksheet["!freeze"] = { xSplit: 0, ySplit: 7 };
-  worksheet["!autofilter"] = { ref: `A7:L${Math.max(8, rows.length + 7)}` };
-  for (let row = 8; row < rows.length + 8; row += 1) {
-    const amount = worksheet[`E${row}`];
-    if (amount) amount.z = "¥#,##0.00;[Red]-¥#,##0.00";
+export async function downloadBillExport(model: BillExportModel, format: BillExportFormat) {
+  const filename = billExportFilename(model, format);
+  if (format === "csv") {
+    downloadBlob(new Blob([buildBillCsv(model)], { type: "text/csv;charset=utf-8" }), filename);
+    return;
   }
-  XLSX.utils.book_append_sheet(workbook, worksheet, "账单明细");
-  return workbook;
-}
 
-export function buildBillExportBlob(input: BillExportInput, format: BillExportFormat) {
-  if (format === "csv") return new Blob([buildBillCsv(input)], { type: "text/csv;charset=utf-8" });
-  const bytes = XLSX.write(buildBillWorkbook(input), { bookType: "xlsx", type: "array" });
-  return new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-}
-
-export function billExportFilename(input: Pick<BillExportInput, "storeName" | "generatedAt">, format: BillExportFormat) {
-  const safeStore = input.storeName.replace(/[\\/:*?"<>|]/g, "-") || "账单";
-  const date = input.generatedAt.slice(0, 10);
-  return `${safeStore}-账单-${date}.${format}`;
+  const XLSX = await import("xlsx");
+  const worksheet = XLSX.utils.aoa_to_sheet(buildWorksheetRows(model));
+  worksheet["!cols"] = [12, 10, 14, 20, 14, 10, 12, 16, 16, 12, 28].map((wch) => ({ wch }));
+  worksheet["!freeze"] = { xSplit: 0, ySplit: 7 };
+  worksheet["!autofilter"] = { ref: `A7:K${Math.max(8, model.rows.length + 7)}` };
+  for (let rowIndex = 8; rowIndex < 8 + model.rows.length; rowIndex += 1) {
+    const cell = worksheet[`E${rowIndex}`];
+    if (cell) cell.z = "¥#,##0.00;[Red]-¥#,##0.00";
+  }
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "经营流水");
+  XLSX.writeFile(workbook, filename, { compression: true });
 }
