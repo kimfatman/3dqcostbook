@@ -11,3 +11,20 @@ export function costCardDisplayCopy(template: Pick<IndustryTemplate, "entityLabe
     imageManagementCopy: `${template.entityLabel}图片仅在${template.entityLabel}成本详情中管理。`,
   };
 }
+
+/**
+ * 汇集各一级业务页面应从模板读取的显示数据，供回归测试和逐页审计共用。
+ * 页面中仍保留的 SKU 是技术标识；业务实体名称由 entityLabel 提供。
+ */
+export function templatePageDisplayAudit(template: IndustryTemplate) {
+  const costCard = costCardDisplayCopy(template);
+  return {
+    home: { industryLabel: template.label, cardsTabLabel: costCard.tabLabel },
+    order: { entityLabel: template.entityLabel, unitLabel: template.unitLabel, skuTechnicalLabel: "SKU" },
+    cards: { ...costCard, formulaLabel: template.formulaLabel },
+    sku: { title: `SKU ${costCard.title}`, unitLabel: template.unitLabel },
+    profile: { imageLabel: `${template.entityLabel}图片` },
+    budget: { industryLabel: template.label, categoryLabels: template.categories.map(category => category.label) },
+    analysis: { industryLabel: template.label, categoryLabels: template.categories.map(category => category.label) },
+  };
+}
