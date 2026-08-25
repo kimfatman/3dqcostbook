@@ -1,4 +1,5 @@
 import type { PriceSliderRange } from "./pricing-slider";
+import { buildSmoothLinePoints, type SmoothChartPoint } from "./smooth-chart";
 
 export type PricingProfitPoint = {
   price: number;
@@ -12,10 +13,7 @@ export type PricingProfitTrend = {
   current: PricingProfitPoint | null;
 };
 
-export type PricingProfitCurveCoordinate = {
-  x: number;
-  y: number;
-};
+export type PricingProfitCurveCoordinate = SmoothChartPoint;
 
 const money = (value: number) => {
   const sign = value < 0 ? -1 : 1;
@@ -72,30 +70,5 @@ export function buildPricingProfitTrend(input: {
  * 仅将视觉连线从折角收敛为柔和曲线。
  */
 export function buildSmoothPricingProfitPolyline(points: PricingProfitCurveCoordinate[], stepsPerSegment = 7): string {
-  if (points.length === 0) return "";
-  if (points.length === 1) return `${points[0].x},${points[0].y}`;
-
-  const coordinates = [{ ...points[0] }];
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const previous = points[index - 1] || points[index];
-    const start = points[index];
-    const end = points[index + 1];
-    const following = points[index + 2] || end;
-    for (let step = 1; step <= stepsPerSegment; step += 1) {
-      const t = step / stepsPerSegment;
-      const t2 = t * t;
-      const t3 = t2 * t;
-      const interpolate = (before: number, from: number, to: number, after: number) => 0.5 * (
-        2 * from
-        + (-before + to) * t
-        + (2 * before - 5 * from + 4 * to - after) * t2
-        + (-before + 3 * from - 3 * to + after) * t3
-      );
-      coordinates.push({
-        x: Number(interpolate(previous.x, start.x, end.x, following.x).toFixed(3)),
-        y: Number(interpolate(previous.y, start.y, end.y, following.y).toFixed(3)),
-      });
-    }
-  }
-  return coordinates.map((point) => `${point.x},${point.y}`).join(" ");
+  return buildSmoothLinePoints(points, stepsPerSegment);
 }
