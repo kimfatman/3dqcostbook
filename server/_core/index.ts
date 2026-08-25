@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { registerMediaRoutes } from "../media-routes";
+import { registerPublicRequestBodyParsers } from "../http-security";
 import { serveStatic, setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -33,9 +34,9 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   const isSelfHosted = process.env.VITE_SELF_HOSTED === "true";
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // 应用端口仅对 Caddy 所在内部网络开放；仅信任一层反向代理以让 req.ip 参与认证限流。
+  app.set("trust proxy", 1);
+  registerPublicRequestBodyParsers(app);
   app.get("/healthz", (_req, res) => res.status(200).json({ status: "ok" }));
   if (!isSelfHosted) {
     registerStorageProxy(app);

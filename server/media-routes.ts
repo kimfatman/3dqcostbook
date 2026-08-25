@@ -4,6 +4,7 @@ import { createMediaAsset, getMediaAssetForUser, getWorkspaceAccess } from "./db
 import { getLocalUserFromRequest } from "./_core/context";
 import { buildCosMediaKey, getCosMediaUrl, putCosMedia } from "./cos-media";
 import { type MediaKind, validateMediaUpload } from "./media-validation";
+import { MEDIA_REQUEST_BODY_LIMIT } from "./http-security";
 
 function header(req: Request, name: string) {
   const value = req.headers[name];
@@ -11,7 +12,7 @@ function header(req: Request, name: string) {
 }
 
 export function registerMediaRoutes(app: Express) {
-  app.post("/api/media/upload", express.raw({ type: () => true, limit: "5mb" }), async (req, res) => {
+  app.post("/api/media/upload", express.raw({ type: () => true, limit: MEDIA_REQUEST_BODY_LIMIT }), async (req, res) => {
     try {
       const user = await getLocalUserFromRequest(req);
       if (!user) return res.status(401).json({ error: "请先登录" });

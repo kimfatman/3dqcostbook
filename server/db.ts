@@ -173,6 +173,12 @@ export async function getWorkspaceBook(workspaceId: string, userId: string) {
   return rows[0];
 }
 
+/** mysql2 经 Drizzle 返回 [ResultSetHeader, FieldPacket[]]；只接受精确的一行条件更新。 */
+export function isExactlyOneAffectedRow(result: unknown) {
+  const header = Array.isArray(result) ? result[0] : result;
+  return Boolean(header && typeof header === "object" && "affectedRows" in header && (header as { affectedRows?: unknown }).affectedRows === 1);
+}
+
 export async function saveWorkspaceBook(input: { workspaceId: string; userId: string; expectedRevision: number; schemaVersion: number; state: Record<string, unknown> }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
@@ -181,11 +187,20 @@ export async function saveWorkspaceBook(input: { workspaceId: string; userId: st
   if (accessible.role === "viewer") throw new Error("Viewer cannot modify this workspace");
   if (accessible.book.revision !== input.expectedRevision) return { conflict: true as const, revision: accessible.book.revision, updatedAt: accessible.book.updatedAt };
   const nextRevision = input.expectedRevision + 1;
-  await db.transaction(async tx => {
-    await tx.update(workspaceBooks).set({ state: input.state, schemaVersion: input.schemaVersion, revision: nextRevision, updatedByUserId: input.userId, updatedAt: new Date() }).where(and(eq(workspaceBooks.workspaceId, input.workspaceId), eq(workspaceBooks.revision, input.expectedRevision)));
-    await tx.update(workspaces).set({ updatedAt: new Date() }).where(eq(workspaces.id, input.workspaceId));
-    await tx.insert(auditEvents).values({ id: randomUUID(), workspaceId: input.workspaceId, actorUserId: input.userId, action: "book.save", targetType: "workspace_book", targetId: input.workspaceId, details: { revision: nextRevision, schemaVersion: input.schemaVersion } });
-  });
+  const revisionConflict = Symbol("workspace-book-revision-conflict");
+  try {
+    await db.transaction(async tx => {
+      const updateResult = await tx.update(workspaceBooks).set({ state: input.state, schemaVersion: input.schemaVersion, revision: nextRevision, updatedByUserId: input.userId, updatedAt: new Date() }).where(and(eq(workspaceBooks.workspaceId, input.workspaceId), eq(workspaceBooks.revision, input.expectedRevision)));
+      if (!isExactlyOneAffectedRow(updateResult)) throw revisionConflict;
+      await tx.update(workspaces).set({ updatedAt: new Date() }).where(eq(workspaces.id, input.workspaceId));
+      await tx.insert(auditEvents).values({ id: randomUUID(), workspaceId: input.workspaceId, actorUserId: input.userId, action: "book.save", targetType: "workspace_book", targetId: input.workspaceId, details: { revision: nextRevision, schemaVersion: input.schemaVersion } });
+    });
+  } catch (error) {
+    if (error !== revisionConflict) throw error;
+    const current = await getWorkspaceBook(input.workspaceId, input.userId);
+    if (!current) throw new Error("Workspace not found or access denied");
+    return { conflict: true as const, revision: current.book.revision, updatedAt: current.book.updatedAt };
+  }
   return { conflict: false as const, revision: nextRevision };
 }
 

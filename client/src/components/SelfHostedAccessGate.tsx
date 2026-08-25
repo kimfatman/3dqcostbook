@@ -48,7 +48,8 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
         {isBootstrap && <><Field label="初始化令牌" value={bootstrapToken} onChange={setBootstrapToken} type="password" autoComplete="one-time-code" placeholder="部署时生成的令牌" /><Field label="管理员姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="工作区名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：我的商店" /></>}
         {isRegistering && <><Field label="你的姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="店铺名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：小满商店" /><label className="selfhost-field"><span>经营行业</span><select value={industryId} onChange={event => setIndustryId(event.target.value as typeof industryId)}><option value="canteen">餐饮</option><option value="retail">零售</option><option value="ecommerce">电商</option><option value="beauty">美业服务</option><option value="stall">小商贩</option></select></label></>}
         <Field label="邮箱" value={email} onChange={setEmail} type="email" autoComplete="email" placeholder="name@example.com" icon={<Mail size={17} />} />
-        <Field label="密码" value={password} onChange={setPassword} type="password" autoComplete={isBootstrap || isRegistering ? "new-password" : "current-password"} placeholder={isBootstrap || isRegistering ? "至少 12 个字符" : "请输入密码"} icon={<LockKeyhole size={17} />} />
+        <Field label="密码" value={password} onChange={setPassword} type="password" autoComplete={isBootstrap || isRegistering ? "new-password" : "current-password"} placeholder={isBootstrap || isRegistering ? "至少 8 个字符" : "请输入密码"} minLength={isBootstrap || isRegistering ? 8 : undefined} icon={<LockKeyhole size={17} />} />
+        {(isBootstrap || isRegistering) && <p className="selfhost-field-hint">至少 8 位；建议使用长密码短语，并避免常见弱口令。</p>}
         {error && <p role="alert" className="selfhost-access-error">{error}</p>}
         <button type="submit" disabled={isPending} className="selfhost-access-submit"><span>{isPending ? "正在处理…" : isBootstrap ? "创建管理员并进入" : isRegistering ? "创建店铺并进入" : "登录并继续经营"}</span><ArrowRight size={18} /></button>
         {!isBootstrap && <button type="button" className="selfhost-access-switch" onClick={() => { setMode(current => current === "login" ? "register" : "login"); setError(""); }}>{isRegistering ? "已有账号？返回登录" : "还没有账号？创建你的店铺"}</button>}
@@ -58,6 +59,6 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   </main>;
 }
 
-function Field({ label, value, onChange, type = "text", autoComplete, placeholder, icon }: { label: string; value: string; onChange: (value: string) => void; type?: string; autoComplete?: string; placeholder: string; icon?: ReactNode }) {
-  return <label className="selfhost-field"><span>{label}</span><div className="selfhost-input-wrap">{icon}<input value={value} onChange={event => onChange(event.target.value)} type={type} autoComplete={autoComplete} placeholder={placeholder} required /></div></label>;
+function Field({ label, value, onChange, type = "text", autoComplete, placeholder, minLength, icon }: { label: string; value: string; onChange: (value: string) => void; type?: string; autoComplete?: string; placeholder: string; minLength?: number; icon?: ReactNode }) {
+  return <label className="selfhost-field"><span>{label}</span><div className="selfhost-input-wrap">{icon}<input value={value} onChange={event => onChange(event.target.value)} type={type} autoComplete={autoComplete} placeholder={placeholder} minLength={minLength} required /></div></label>;
 }
