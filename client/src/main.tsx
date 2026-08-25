@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { startLogin } from "./const";
 import "./index.css";
+import "./layout-unification.css";
 
 const queryClient = new QueryClient();
 const isSelfHosted = import.meta.env.VITE_SELF_HOSTED === "true";

@@ -287,3 +287,35 @@ describe("图表主题", () => {
     expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 });
+
+describe("间接成本与智能定价的统一布局", () => {
+  it("在间接成本页使用不重复的内容标题，并保留成本录入和摊销控件", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(screen.getByRole("button", { name: /间接成本/ }));
+
+    expect(screen.getByRole("heading", { name: "本期成本设置" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "新增本期成本" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "费用类型" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "一键摊销" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "保存并一键摊销" })).toBeTruthy();
+  });
+
+  it("在智能定价页保留成本、渠道输入、保本价和连续试算结果区", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(mainNavigation().getByRole("button", { name: "商品" }));
+    await user.click(screen.getByRole("button", { name: /轻盈收纳盒/ }));
+    await user.click(screen.getByRole("button", { name: "测算定价" }));
+
+    expect(screen.getByRole("heading", { name: "先算保本，再定售价" })).toBeTruthy();
+    expect(screen.getByText("当前单位完全成本")).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "销售渠道" })).toBeTruthy();
+    expect(screen.getByText("保本售价")).toBeTruthy();
+    expect(screen.getByText(/建议售价 · 目标贡献毛利/)).toBeTruthy();
+    expect(screen.getByRole("slider", { name: "拖动试算售价" })).toBeTruthy();
+  });
+});
