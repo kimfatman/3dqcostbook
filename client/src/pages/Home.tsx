@@ -42,6 +42,7 @@ import {
   UsersRound,
   Utensils,
   WalletCards,
+  Download,
 } from "lucide-react";
 import {
   calcCard,
@@ -64,6 +65,7 @@ import { buildMetrics, entriesForPeriod, fromFen } from "@/lib/ledger-metrics";
 import { isNonNegativeNumber, isPositiveInteger, isPositiveMoney, toEditableNumber, toNumber, type EditableNumber } from "@/lib/editable-number";
 import { businessDate } from "@/lib/business-date";
 import { buildReportCsv } from "@/lib/report-export";
+import { billExportFilename, buildBillExportBlob, type BillExportFormat } from "@/lib/bill-export";
 import { groupSuppliers } from "@/lib/supplier-management";
 import { budgetValidationMessage, shouldConfirmDiscard, shouldShowProfileRecovery } from "@/lib/interaction-guards";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -816,8 +818,50 @@ export default function Home() {
   }
 
   function RecordsPage() {
+    const exportBill = (format: BillExportFormat) => {
+      if (!filteredRecords.length) return notify("当前筛选没有可导出的流水");
+      const filterParts = [
+        recordMonth === "all" ? "全部月份" : monthLabel(recordMonth),
+        recordFilter === "all" ? "全部类型" : recordFilter === "income" ? "收入" : recordFilter === "refund" ? "退款" : "成本",
+        recordChannelFilter === "all" ? "" : channelLabel[recordChannelFilter],
+        recordSupplierFilter ? suppliers.find((supplier) => supplier.id === recordSupplierFilter)?.name || "" : "",
+        recordSearch.trim() ? `搜索：${recordSearch.trim()}` : "",
+      ].filter(Boolean);
+      const blob = buildBillExportBlob({
+        storeName: currentWorkspace?.name || template.storeName,
+        industryLabel: template.label,
+        generatedAt: new Date().toISOString(),
+        filterSummary: filterParts.join(" · "),
+        records: filteredRecords,
+        categoryLabels: Object.fromEntries(categories.map((category) => [category.key, category.label])),
+        supplierLabels: Object.fromEntries(suppliers.map((supplier) => [supplier.id, supplier.name])),
+        orderMeta: Object.fromEntries(orders.map((order) => [order.id, { orderNo: order.orderNo, channelLabel: channelLabel[order.channel] }])),
+      }, format);
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = billExportFilename({ storeName: currentWorkspace?.name || template.storeName, generatedAt: new Date().toISOString() }, format);
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
+      notify(`已导出 ${filteredRecords.length} 笔流水为 ${format === "csv" ? "CSV" : "Excel"}`);
+    };
     const hasFilter = recordMonth !== "all" || recordFilter !== "all" || Boolean(recordSearch.trim()) || recordChannelFilter !== "all" || Boolean(recordSupplierFilter);
     const drillLabels = [recordChannelFilter !== "all" ? channelLabel[recordChannelFilter] : "", recordSupplierFilter ? suppliers.find((supplier) => supplier.id === recordSupplierFilter)?.name || "" : ""].filter(Boolean);
+    return <>
+      <section className="screen-title"><span>经营流水</span><h1>收入、成本，逐笔算清</h1><p>每笔交易都会归入收入、成本或退款，并同步进入经营结果。</p></section>
+      <div className="record-filter"><button className={recordFilter === "all" ? "active" : ""} aria-pressed={recordFilter === "all"} onClick={() => setRecordFilter("all")}>全部</button><button className={recordFilter === "expense" ? "active" : ""} aria-pressed={recordFilter === "expense"} onClick={() => setRecordFilter("expense")}>成本 −</button><button className={recordFilter === "income" ? "active" : ""} aria-pressed={recordFilter === "income"} onClick={() => setRecordFilter("income")}>收入 ＋</button><button className={recordFilter === "refund" ? "active" : ""} aria-pressed={recordFilter === "refund"} onClick={() => setRecordFilter("refund")}>退款</button><label className="month-filter"><CalendarDays size={14} /><select aria-label="筛选流水月份" value={recordMonth} onChange={(event) => setRecordMonth(event.target.value)}><option value="all">全部月份</option>{recordMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}</select></label></div>
+      {drillLabels.length > 0 && <div className="cashflow-drill-context"><span>现金流下钻：{drillLabels.join(" · ")}</span><button onClick={() => { setRecordChannelFilter("all"); setRecordSupplierFilter(""); }}>清除</button></div>}
+      <label className="search-field"><Search size={16} /><input value={recordSearch} onChange={(event) => setRecordSearch(event.target.value)} placeholder="搜索商户、备注或分类" /></label>
+      <div className="result-summary">{hasFilter ? `已找到 ${filteredRecords.length} 笔流水` : `共 ${records.length} 笔流水`}</div>
+      <section className="record-export-panel" aria-label="账单导出">
+        <div><span>导出账单</span><b>{filteredRecords.length} 笔当前结果</b><em>CSV 与 Excel 均遵循当前月份、类型、渠道、供应商和关键词筛选。</em></div>
+        <div className="record-export-actions"><button type="button" onClick={() => exportBill("csv")} disabled={!filteredRecords.length}><Download size={15} />CSV</button><button type="button" onClick={() => exportBill("xlsx")} disabled={!filteredRecords.length}><Download size={15} />Excel</button></div>
+      </section>
+      <section className="record-list">{groupedRecords.length === 0 && <div className="empty-state">{hasFilter ? `没有匹配“${recordSearch || drillLabels.join(" · ") || monthLabel(recordMonth)}”的流水，试试更换月份、类型或关键词。` : "当前行业还没有流水。"}</div>}{groupedRecords.map((group) => <div key={group.date} className="record-group"><h3>{book.dateLabel(group.date)}<span><Highlight value={group.date.replaceAll("-", " / ")} query={recordSearch} /></span></h3>{group.records.map((record) => { const category = categoryByKey.get(record.categoryKey); const isIncome = record.type === "income"; return <button className="record-row" key={record.id} onClick={() => openRecordDetail(record.id)}><span className="record-icon" style={{ color: category?.color, background: `${category?.color || "#087FF5"}18` }}><ReceiptText size={18} /></span><span><b><Highlight value={record.merchant} query={recordSearch} /></b><em><Highlight value={category?.label || "未分类"} query={recordSearch} /> · <Highlight value={record.note || "无备注"} query={recordSearch} />{record.hasAttachment ? " · 有凭证" : ""}</em></span><strong className={isIncome ? "income" : ""}>{isIncome ? "+" : "−"}{yuan(record.amount)}</strong><ChevronRight size={16} /></button>; })}</div>)}</section>
+      <button className="floating-add" onClick={openNewRecord}><Plus size={22} />新增成本</button>
+    </>;
+    // 旧的紧凑流水渲染保留在版本历史中；当前路径已由上述导出增强版替代。
     return <><section className="screen-title"><span>经营流水</span><h1>收入、成本，逐笔算清</h1><p>每笔交易都会归入收入、成本或退款，并同步进入经营结果。</p></section><div className="record-filter"><button className={recordFilter === "all" ? "active" : ""} aria-pressed={recordFilter === "all"} onClick={() => setRecordFilter("all")}>全部</button><button className={recordFilter === "expense" ? "active" : ""} aria-pressed={recordFilter === "expense"} onClick={() => setRecordFilter("expense")}>成本 −</button><button className={recordFilter === "income" ? "active" : ""} aria-pressed={recordFilter === "income"} onClick={() => setRecordFilter("income")}>收入 ＋</button><button className={recordFilter === "refund" ? "active" : ""} aria-pressed={recordFilter === "refund"} onClick={() => setRecordFilter("refund")}>退款</button><label className="month-filter"><CalendarDays size={14} /><select aria-label="筛选流水月份" value={recordMonth} onChange={(event) => setRecordMonth(event.target.value)}><option value="all">全部月份</option>{recordMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}</select></label></div>{drillLabels.length > 0 && <div className="cashflow-drill-context"><span>现金流下钻：{drillLabels.join(" · ")}</span><button onClick={() => { setRecordChannelFilter("all"); setRecordSupplierFilter(""); }}>清除</button></div>}<label className="search-field"><Search size={16} /><input value={recordSearch} onChange={(event) => setRecordSearch(event.target.value)} placeholder="搜索商户、备注或分类" /></label><div className="result-summary">{hasFilter ? `已找到 ${filteredRecords.length} 笔流水` : `共 ${records.length} 笔流水`}</div><section className="record-list">{groupedRecords.length === 0 && <div className="empty-state">{hasFilter ? `没有匹配“${recordSearch || drillLabels.join(" · ") || monthLabel(recordMonth)}”的流水，试试更换月份、类型或关键词。` : "当前行业还没有流水。"}</div>}{groupedRecords.map((group) => <div key={group.date} className="record-group"><h3>{book.dateLabel(group.date)}<span><Highlight value={group.date.replaceAll("-", " / ")} query={recordSearch} /></span></h3>{group.records.map((record) => { const category = categoryByKey.get(record.categoryKey); const isIncome = record.type === "income"; return <button className="record-row" key={record.id} onClick={() => openRecordDetail(record.id)}><span className="record-icon" style={{ color: category?.color, background: `${category?.color || "#087FF5"}18` }}><ReceiptText size={18} /></span><span><b><Highlight value={record.merchant} query={recordSearch} /></b><em><Highlight value={category?.label || "未分类"} query={recordSearch} /> · <Highlight value={record.note || "无备注"} query={recordSearch} />{record.hasAttachment ? " · 有凭证" : ""}</em></span><strong className={isIncome ? "income" : ""}>{isIncome ? "+" : "−"}{yuan(record.amount)}</strong><ChevronRight size={16} /></button>; })}</div>)}</section><button className="floating-add" onClick={openNewRecord}><Plus size={22} />新增成本</button></>;
   }
 
