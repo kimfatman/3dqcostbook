@@ -132,6 +132,43 @@ export function buildCostStructure(items: CategoryAmount[], limit = 5) {
   return prepared.slice(0, limit).map((item) => ({ ...item, share: total > 0 ? Number((item.amount / total * 100).toFixed(1)) : 0 }));
 }
 
+export type SupplierCostRanking = { supplierId: string; label: string; amount: number; share: number; entryCount: number };
+
+/** 供应商排行只归集当前期间已入账、已关联供应商的正向成本分录；未关联数据不会被臆测归属。 */
+export function buildSupplierCostRankings(input: { entries: Pick<LedgerEntry, "industryId" | "occurredAt" | "status" | "ledgerRole" | "amountFen" | "supplierId">[]; suppliers: { id: string; name: string }[]; industryId: string; period: string; limit?: number }): SupplierCostRanking[] {
+  const supplierById = new Map(input.suppliers.map((supplier) => [supplier.id, supplier.name]));
+  const grouped = new Map<string, { amountFen: number; entryCount: number }>();
+  input.entries.filter((entry) => entry.industryId === input.industryId && entry.occurredAt.startsWith(input.period) && entry.status === "posted" && (entry.ledgerRole === "cogs" || entry.ledgerRole === "opex") && entry.amountFen > 0 && Boolean(entry.supplierId) && supplierById.has(entry.supplierId!)).forEach((entry) => {
+    const supplierId = entry.supplierId!;
+    const current = grouped.get(supplierId) || { amountFen: 0, entryCount: 0 };
+    grouped.set(supplierId, { amountFen: current.amountFen + entry.amountFen, entryCount: current.entryCount + 1 });
+  });
+  const totalFen = Array.from(grouped.values()).reduce((sum, item) => sum + item.amountFen, 0);
+  return Array.from(grouped.entries()).map(([supplierId, values]) => ({ supplierId, label: supplierById.get(supplierId)!, amount: Number((values.amountFen / 100).toFixed(2)), share: totalFen > 0 ? Number((values.amountFen / totalFen * 100).toFixed(1)) : 0, entryCount: values.entryCount })).sort((a, b) => b.amount - a.amount || b.entryCount - a.entryCount).slice(0, input.limit ?? 5);
+}
+
+export type CostStructureComparison = { key: string; label: string; amount: number; previousAmount: number; share: number; previousShare: number; delta: number; shareDelta: number };
+
+/** 用本期和上期各自的正向成本作为分母，避免成本回冲或缺失分类制造伪占比变化。 */
+export function buildCostStructureComparison(current: CategoryAmount[], previous: CategoryAmount[], limit = 5): CostStructureComparison[] {
+  const currentItems = current.filter((item) => item.amount > 0);
+  const previousItems = previous.filter((item) => item.amount > 0);
+  const currentTotal = currentItems.reduce((sum, item) => sum + item.amount, 0);
+  const previousTotal = previousItems.reduce((sum, item) => sum + item.amount, 0);
+  const previousByKey = new Map(previousItems.map((item) => [item.key, item]));
+  const currentByKey = new Map(currentItems.map((item) => [item.key, item]));
+  const keys = new Set([...Array.from(currentByKey.keys()), ...Array.from(previousByKey.keys())]);
+  return Array.from(keys).map((key) => {
+    const item = currentByKey.get(key);
+    const prior = previousByKey.get(key);
+    const amount = item?.amount || 0;
+    const previousAmount = prior?.amount || 0;
+    const share = currentTotal > 0 ? Number((amount / currentTotal * 100).toFixed(1)) : 0;
+    const previousShare = previousTotal > 0 ? Number((previousAmount / previousTotal * 100).toFixed(1)) : 0;
+    return { key, label: item?.label || prior?.label || key, amount, previousAmount, share, previousShare, delta: Number((amount - previousAmount).toFixed(2)), shareDelta: Number((share - previousShare).toFixed(1)) };
+  }).sort((a, b) => b.amount - a.amount || b.previousAmount - a.previousAmount).slice(0, limit);
+}
+
 export type MonthlyCostStackCategory = { key: string; label: string };
 export type MonthlyCostStackMonth = { period: string; total: number; values: Record<string, number> };
 

@@ -240,3 +240,29 @@ describe("流水私有凭证图片", () => {
     expect(screen.queryByAltText("已附凭证图片")).toBeNull();
   });
 });
+
+describe("成本分析供应商排行与结构对照", () => {
+  it("将已关联供应商的真实支出展示在排行中，并能下钻到该供应商的当期流水", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await user.clear(screen.getByPlaceholderText("0.00"));
+    await user.type(screen.getByPlaceholderText("0.00"), "66.60");
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "供应商排行回归支出");
+    await user.selectOptions(screen.getByRole("combobox", { name: /关联供应商/ }), "ecommerce-supplier-1");
+    await user.click(screen.getByRole("button", { name: "保存记录" }));
+
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    window.history.replaceState({}, "", "/");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+
+    expect(screen.getByRole("heading", { name: "供应商成本排行" })).toBeTruthy();
+    const supplierButton = screen.getByRole("button", { name: /商品采购供应商.*占已关联成本/ });
+    expect(supplierButton.textContent).toContain("¥66.60");
+    await user.click(supplierButton);
+    expect(screen.getByText("供应商排行回归支出")).toBeTruthy();
+  });
+});

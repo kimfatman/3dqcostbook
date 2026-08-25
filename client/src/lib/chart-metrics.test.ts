@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildDailySalesOrders, buildMonthlyCashFlow, buildMonthlyCostStack, buildPeriodSkuMetrics, buildProfitBridge, buildRefundPareto, buildSalesTargetProgress, buildSkuRankings } from "./chart-metrics";
+import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildCostStructureComparison, buildDailySalesOrders, buildMonthlyCashFlow, buildMonthlyCostStack, buildPeriodSkuMetrics, buildProfitBridge, buildRefundPareto, buildSalesTargetProgress, buildSkuRankings, buildSupplierCostRankings } from "./chart-metrics";
 
 describe("经营图表指标", () => {
   it("利润桥保持净营收、成本、费用与经营利润的统一口径", () => {
@@ -68,6 +68,16 @@ describe("经营图表指标", () => {
   it("成本结构按真实成本金额排序并以全部成本作为占比基数", () => {
     const structure = buildCostStructure([{ key: "ad", label: "广告", amount: 250 }, { key: "goods", label: "采购", amount: 500 }, { key: "rent", label: "租金", amount: 250 }]);
     expect(structure.map((item) => [item.label, item.share])).toEqual([["采购", 50], ["广告", 25], ["租金", 25]]);
+  });
+
+  it("供应商排行只统计当前期间已入账且已关联的正向成本，不把未关联支出伪造归属", () => {
+    const rankings = buildSupplierCostRankings({ industryId: "ecommerce", period: "2026-08", suppliers: [{ id: "s-1", name: "A 供应商" }, { id: "s-2", name: "B 供应商" }], entries: [{ industryId: "ecommerce", occurredAt: "2026-08-02", status: "posted", ledgerRole: "cogs", amountFen: 8000, supplierId: "s-1" }, { industryId: "ecommerce", occurredAt: "2026-08-03", status: "posted", ledgerRole: "opex", amountFen: 4000, supplierId: "s-1" }, { industryId: "ecommerce", occurredAt: "2026-08-04", status: "posted", ledgerRole: "opex", amountFen: 9000, supplierId: "s-2" }, { industryId: "ecommerce", occurredAt: "2026-08-05", status: "posted", ledgerRole: "opex", amountFen: 9999 }, { industryId: "ecommerce", occurredAt: "2026-07-05", status: "posted", ledgerRole: "opex", amountFen: 9999, supplierId: "s-2" }] });
+    expect(rankings).toEqual([{ supplierId: "s-1", label: "A 供应商", amount: 120, share: 57.1, entryCount: 2 }, { supplierId: "s-2", label: "B 供应商", amount: 90, share: 42.9, entryCount: 1 }]);
+  });
+
+  it("结构对照使用本期和上期各自正向成本分母，并保留上期独有项目", () => {
+    const comparison = buildCostStructureComparison([{ key: "goods", label: "采购", amount: 120 }, { key: "ads", label: "投放", amount: 80 }, { key: "credit", label: "回冲", amount: -20 }], [{ key: "goods", label: "采购", amount: 100 }, { key: "rent", label: "租金", amount: 100 }]);
+    expect(comparison).toEqual([{ key: "goods", label: "采购", amount: 120, previousAmount: 100, share: 60, previousShare: 50, delta: 20, shareDelta: 10 }, { key: "ads", label: "投放", amount: 80, previousAmount: 0, share: 40, previousShare: 0, delta: 80, shareDelta: 40 }, { key: "rent", label: "租金", amount: 0, previousAmount: 100, share: 0, previousShare: 50, delta: -100, shareDelta: -50 }]);
   });
 
   it("月成本堆积按分类归集已入账成本，并保持分类合计等于每月总成本", () => {
