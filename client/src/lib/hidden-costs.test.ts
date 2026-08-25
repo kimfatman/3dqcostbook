@@ -13,7 +13,7 @@ describe("行业隐形成本估算", () => {
       categoryAmounts: [{ key: "ad_spend", amount: 1200 }, { key: "goods_purchase", amount: 3000 }],
     });
     expect(estimates.map((item) => [item.key, item.base, item.estimate, item.source])).toEqual([
-      ["refund", 7050, 353, "benchmark"],
+      ["refund", 7050, 352.5, "benchmark"],
       ["ad", 1200, 144, "benchmark"],
       ["mixed", 8250, 825, "benchmark"],
     ]);
@@ -22,5 +22,10 @@ describe("行业隐形成本估算", () => {
   it("没有可用收入或成本基数时返回零估算，而不虚构账务数据", () => {
     const [estimate] = buildHiddenCostEstimates({ rules: [{ key: "inventory", label: "库存占用", rate: .02, basisKeys: ["goods_purchase"], tip: "补录采购" }], revenue: 0, categoryAmounts: [] });
     expect(estimate).toMatchObject({ base: 0, estimate: 0, source: "benchmark" });
+  });
+
+  it("行业基准估算保留两位小数，仅作为复核参考而不替代正式账本", () => {
+    const [estimate] = buildHiddenCostEstimates({ rules: [{ key: "refund", label: "退款漏损", rate: .05, basisKeys: ["revenue"], tip: "核对退款" }], revenue: 7050.25, categoryAmounts: [] });
+    expect(estimate).toMatchObject({ estimate: 352.51, source: "benchmark" });
   });
 });

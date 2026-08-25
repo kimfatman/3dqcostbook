@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMetrics, entriesForPeriod, periodSeries, toFen, type LedgerEntry } from "./ledger-metrics";
+import { buildCostCategoryTotals, buildMetrics, entriesForPeriod, periodSeries, toFen, type LedgerEntry } from "./ledger-metrics";
 
 const entry = (partial: Partial<LedgerEntry>): LedgerEntry => ({
   id: partial.id || crypto.randomUUID(), workspaceId: "w", industryId: "ecommerce", templateVersion: 2,
@@ -42,5 +42,22 @@ describe("账本 P0 指标不变量", () => {
     const metrics = buildMetrics([entry({ eventType: "expense", ledgerRole: "opex", cashDirection: "outflow", amountFen: toFen(130) })], { amountFen: toFen(100), basis: "operating_cost" });
     expect(metrics.budgetUsedRate).toBe(130);
     expect(metrics.budgetRemainingFen).toBe(toFen(-30));
+  });
+
+  it("金额转换在浮点半分边界稳定保留为最小货币单位", () => {
+    expect(toFen(1.005)).toBe(101);
+    expect(toFen(-1.005)).toBe(-101);
+  });
+
+  it("未配置分类的已入账成本不会从成本结构和报表快照中消失", () => {
+    const entries = [
+      entry({ id: "goods", eventType: "expense", ledgerRole: "cogs", amountFen: toFen(100), categoryKey: "goods" }),
+      entry({ id: "refund-fee", eventType: "expense", ledgerRole: "opex", amountFen: toFen(12.5), categoryKey: "returns" }),
+      entry({ id: "recovery", eventType: "inventory_return", ledgerRole: "cogs", amountFen: toFen(-30), categoryKey: "returns" }),
+    ];
+    expect(buildCostCategoryTotals(entries, [{ key: "goods", label: "商品采购" }])).toEqual([
+      { key: "goods", label: "商品采购", amount: 100 },
+      { key: "__unmapped__", label: "未分类成本", amount: -17.5 },
+    ]);
   });
 });

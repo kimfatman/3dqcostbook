@@ -24,4 +24,27 @@ describe("成本分析结论模型", () => {
   it("在无成本数据时返回明确空结论，不虚构处理动作", () => {
     expect(buildCostAnalysisSummary([])).toMatchObject({ totalCost: 0, priority: null, structure: [] });
   });
+
+  it("成本回冲会降低净成本，但不会扭曲正向成本结构占比", () => {
+    const result = buildCostAnalysisSummary([
+      { key: "goods", label: "采购", amount: 100, previousAmount: 90, delta: 10, deltaRate: 11.1 },
+      { key: "ad", label: "投放", amount: 20, previousAmount: 0, delta: 20, deltaRate: null },
+      { key: "returns", label: "成本回冲", amount: -5, previousAmount: 0, delta: -5, deltaRate: null },
+    ]);
+    expect(result).toMatchObject({ totalCost: 115, previousCost: 90, grossCost: 120, costCredits: 5, delta: 25 });
+    expect(result.structure.map((item) => [item.key, item.share])).toEqual([["goods", 83.3], ["ad", 16.7]]);
+  });
+
+  it("即使环比增幅最大的分类不在前五成本项内，也会进入优先处理", () => {
+    const result = buildCostAnalysisSummary([
+      { key: "a", label: "A", amount: 100, previousAmount: 100, delta: 0, deltaRate: 0 },
+      { key: "b", label: "B", amount: 90, previousAmount: 90, delta: 0, deltaRate: 0 },
+      { key: "c", label: "C", amount: 80, previousAmount: 80, delta: 0, deltaRate: 0 },
+      { key: "d", label: "D", amount: 70, previousAmount: 70, delta: 0, deltaRate: 0 },
+      { key: "e", label: "E", amount: 60, previousAmount: 60, delta: 0, deltaRate: 0 },
+      { key: "f", label: "F", amount: 50, previousAmount: 1, delta: 49, deltaRate: 4900 },
+    ]);
+    expect(result.structure).toHaveLength(5);
+    expect(result.priority).toMatchObject({ key: "f", reason: "increase", delta: 49 });
+  });
 });

@@ -34,6 +34,8 @@ export type LedgerEntry = {
 };
 
 export type BudgetConfig = { amountFen: number; basis: BudgetBasis };
+export type CostCategory = { key: string; label: string };
+export type CostCategoryTotal = CostCategory & { amount: number };
 export type LedgerMetrics = {
   grossSalesFen: number;
   otherIncomeFen: number;
@@ -53,7 +55,11 @@ export type LedgerMetrics = {
 
 const sum = (list: LedgerEntry[], predicate: (entry: LedgerEntry) => boolean) => list.filter(predicate).reduce((total, entry) => total + entry.amountFen, 0);
 export const rate = (numerator: number, denominator: number) => denominator > 0 ? Number((numerator / denominator * 100).toFixed(1)) : 0;
-export const toFen = (yuan: number) => Math.round(yuan * 100);
+export const toFen = (yuan: number) => {
+  if (!Number.isFinite(yuan)) return 0;
+  const sign = yuan < 0 ? -1 : 1;
+  return sign * Math.round((Math.abs(yuan) + 1e-9) * 100);
+};
 export const fromFen = (fen: number) => fen / 100;
 export const periodOf = (date: string) => date.slice(0, 7);
 
@@ -75,6 +81,22 @@ export function buildMetrics(entries: LedgerEntry[], budget: BudgetConfig): Ledg
     operatingMarginRate: rate(operatingProfitFen, netRevenueFen), cashOutflowFen, budgetBaseFen,
     budgetUsedRate: rate(budgetBaseFen, budget.amountFen), budgetRemainingFen: budget.amountFen - budgetBaseFen,
   };
+}
+
+/**
+ * 将所有已入账销售成本和经营费用按当前可见分类归集。
+ * 历史分类被删除、退款手续费等未配置分类不会被静默丢弃，而是统一进入“未分类成本”。
+ */
+export function buildCostCategoryTotals(entries: LedgerEntry[], categories: CostCategory[]): CostCategoryTotal[] {
+  const amounts = new Map(categories.map((category) => [category.key, 0]));
+  let unmappedFen = 0;
+  entries.filter((entry) => entry.status === "posted" && (entry.ledgerRole === "cogs" || entry.ledgerRole === "opex")).forEach((entry) => {
+    if (amounts.has(entry.categoryKey)) amounts.set(entry.categoryKey, (amounts.get(entry.categoryKey) || 0) + entry.amountFen);
+    else unmappedFen += entry.amountFen;
+  });
+  const totals = categories.map((category) => ({ ...category, amount: fromFen(amounts.get(category.key) || 0) }));
+  if (unmappedFen !== 0) totals.push({ key: "__unmapped__", label: "未分类成本", amount: fromFen(unmappedFen) });
+  return totals.sort((left, right) => right.amount - left.amount);
 }
 
 export function entriesForPeriod(entries: LedgerEntry[], industryId: string, period: string) {

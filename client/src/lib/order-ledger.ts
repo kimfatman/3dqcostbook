@@ -20,6 +20,8 @@ export type Sku = {
   unit: string;
   unitPriceFen: number;
   unitCostFen: number;
+  /** 项目完全成本中的管理分摊，仅用于成本卡与定价，不写入订单已售成本。 */
+  allocatedUnitCostFen?: number;
   active: boolean;
 };
 

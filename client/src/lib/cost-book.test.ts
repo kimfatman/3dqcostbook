@@ -78,7 +78,7 @@ describe("成本池状态级分摊", () => {
     const result = updateIndirectCostPoolState(state, "pool-1", { name: "更新后的房租", kind: "rent", amount: 180, date: `${period}-02`, categoryKey: "other", source: "planned", allocationMode: "allocated", allocationMethod: "revenue", targets: [{ cardId: "card-1" }] }, `${period}-02T00:00:00.000Z`);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.state.skus.find((sku) => sku.id === "sku-1")?.unitCostFen).toBe(5090);
+    expect(result.state.skus.find((sku) => sku.id === "sku-1")).toMatchObject({ unitCostFen: 3290, allocatedUnitCostFen: 1800 });
     expect(result.state.orders[0].lines[0].unitCostFen).toBe(3290);
     expect(result.state.entries.find((entry) => entry.id === "expense-1")).toBeUndefined();
     expect(result.state.indirectCostPools[0]).toMatchObject({ name: "更新后的房租", source: "planned", allocationMethod: "revenue", amountFen: 18000 });
@@ -91,10 +91,10 @@ describe("成本池状态级分摊", () => {
     const enabled = setIndirectCostPoolAllocationModeState({ ...disabled, indirectCostPools: disabled.indirectCostPools.map((pool) => ({ ...pool, targets: [] })) }, "pool-1", "allocated", `${period}-03T00:00:00.000Z`);
     expect(enabled.indirectCostPools[0].targets).toEqual([{ cardId: "card-1" }]);
     expect(enabled.indirectCostPools[0].allocationMethod).toBe("equal");
-    expect(enabled.skus[0].unitCostFen).toBe(4190);
+    expect(enabled.skus[0]).toMatchObject({ unitCostFen: 3290, allocatedUnitCostFen: 900 });
     const removed = removeIndirectCostPoolState(enabled, "pool-1");
     expect(removed.indirectCostPools).toEqual([]);
-    expect(removed.skus[0].unitCostFen).toBe(3290);
+    expect(removed.skus[0]).toMatchObject({ unitCostFen: 3290, allocatedUnitCostFen: 0 });
     expect(removed.orders[0].lines[0].unitCostFen).toBe(3290);
   });
 });

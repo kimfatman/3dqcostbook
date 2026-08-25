@@ -26,13 +26,16 @@ const ratio = (numerator: number, denominator: number) => denominator > 0 ? Numb
  */
 export function buildCostAnalysisSummary(categories: CostAnalysisCategory[]) {
   const visible = categories.filter((item) => item.amount > 0).sort((a, b) => b.amount - a.amount);
-  const totalCost = money(visible.reduce((sum, item) => sum + item.amount, 0));
-  const previousCost = money(visible.reduce((sum, item) => sum + item.previousAmount, 0));
+  const totalCost = money(categories.reduce((sum, item) => sum + item.amount, 0));
+  const previousCost = money(categories.reduce((sum, item) => sum + item.previousAmount, 0));
+  const grossCost = money(visible.reduce((sum, item) => sum + item.amount, 0));
+  const costCredits = money(categories.filter((item) => item.amount < 0).reduce((sum, item) => sum + Math.abs(item.amount), 0));
   const delta = money(totalCost - previousCost);
   const deltaRate = previousCost > 0 ? ratio(delta, previousCost) : null;
-  const structure = visible.slice(0, 5).map((item) => ({ ...item, share: ratio(item.amount, totalCost) }));
-  const fastestIncrease = [...structure].filter((item) => item.delta > 0).sort((a, b) => b.delta - a.delta)[0];
-  const top = structure[0];
+  const ranked = visible.map((item) => ({ ...item, share: ratio(item.amount, grossCost) }));
+  const structure = ranked.slice(0, 5);
+  const fastestIncrease = [...ranked].filter((item) => item.delta > 0).sort((a, b) => b.delta - a.delta)[0];
+  const top = ranked[0];
   const source = fastestIncrease || top;
   const priority: CostAnalysisPriority | null = source ? {
     ...source,
@@ -42,6 +45,8 @@ export function buildCostAnalysisSummary(categories: CostAnalysisCategory[]) {
   return {
     totalCost,
     previousCost,
+    grossCost,
+    costCredits,
     delta,
     deltaRate,
     structure,

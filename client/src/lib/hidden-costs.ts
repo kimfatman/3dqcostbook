@@ -17,7 +17,7 @@ export function buildHiddenCostEstimates(input: { rules: HiddenCostRule[]; reven
   const revenue = Math.max(0, input.revenue);
   return input.rules.map((rule) => {
     const base = Number(rule.basisKeys.reduce((sum, key) => sum + (key === "revenue" ? revenue : categoryAmountByKey.get(key) || 0), 0).toFixed(2));
-    const estimate = Math.round(base * Math.max(0, rule.rate));
+    const estimate = Number((base * Math.max(0, rule.rate)).toFixed(2));
     const health = estimate / Math.max(revenue, 1) < .04 ? 85 : estimate / Math.max(revenue, 1) < .08 ? 72 : 54;
     return { ...rule, base, estimate, health, source: "benchmark" as const };
   });
