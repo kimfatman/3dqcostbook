@@ -2,7 +2,6 @@ type ChannelTemplateInput = {
   commissionRatePct: number;
   fulfillmentCost: number;
   targetContributionMarginPct: number;
-  roundingStep: number;
 };
 
 type BomAmountInput = { name: string; quantity: string; amount: number };
@@ -22,7 +21,6 @@ export function validateChannelPricingInput(input: ChannelTemplateInput) {
   if (!finite(input.targetContributionMarginPct) || input.targetContributionMarginPct < 0 || input.targetContributionMarginPct > 99.9) return fail("目标贡献毛利率必须在 0–99.9% 之间");
   if (input.commissionRatePct + input.targetContributionMarginPct >= 100) return fail("渠道费率与目标贡献毛利率之和必须小于 100%");
   if (!finite(input.fulfillmentCost) || input.fulfillmentCost < 0) return fail("单件履约费用必须是非负金额");
-  if (!finite(input.roundingStep) || input.roundingStep <= 0) return fail("价格取整步长必须大于 0");
   return ok;
 }
 

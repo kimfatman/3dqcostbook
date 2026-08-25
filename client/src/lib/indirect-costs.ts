@@ -77,7 +77,9 @@ export function allocateIndirectCost(pool: IndirectCostPool, drivers: ProjectAll
   let remainingFen = pool.amountFen;
   return pool.targets.map((target, index) => {
     const isLast = index === pool.targets.length - 1;
-    const amountFen = isLast ? remainingFen : Math.floor(pool.amountFen * weights[index] / totalWeight);
+    // 分是可持久化的最小金额单位：非最后一项采用最近分，最后一项承接余额，避免系统性向下取整并确保总额守恒。
+    const nearestFen = Math.round(pool.amountFen * weights[index] / totalWeight);
+    const amountFen = isLast ? remainingFen : Math.min(remainingFen, nearestFen);
     remainingFen -= amountFen;
     const soldUnits = driverMap.get(target.cardId)?.soldUnits || 0;
     return {

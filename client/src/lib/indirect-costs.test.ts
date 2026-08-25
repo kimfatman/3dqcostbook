@@ -21,10 +21,18 @@ describe("间接成本池分摊", () => {
 
   it("支持项目数均分和人工比例，并只把有销量的分配折算为单件成本", () => {
     const equal = allocateIndirectCost(pool({ allocationMethod: "equal", amountFen: 101 }), [{ cardId: "a", soldUnits: 1, salesFen: 0 }, { cardId: "b", soldUnits: 0, salesFen: 0 }]);
-    expect(equal.map((item) => item.amountFen)).toEqual([50, 51]);
-    expect(indirectCostUnitFenByCard(equal)).toEqual({ a: 50 });
+    expect(equal.map((item) => item.amountFen)).toEqual([51, 50]);
+    expect(indirectCostUnitFenByCard(equal)).toEqual({ a: 51 });
     expect(validateManualWeights([{ cardId: "a", manualWeight: 65 }, { cardId: "b", manualWeight: 35 }])).toBe(true);
     expect(validateManualWeights([{ cardId: "a", manualWeight: 60 }, { cardId: "b", manualWeight: 35 }])).toBe(false);
+  });
+
+  it("按最近分分配边界金额，既不系统性向下取整也不超出成本池总额", () => {
+    const targets = ["a", "b", "c", "d", "e"].map(cardId => ({ cardId }));
+    const allocations = allocateIndirectCost(pool({ amountFen: 3, allocationMethod: "equal", targets }), targets.map(target => ({ cardId: target.cardId, soldUnits: 0, salesFen: 0 })));
+    expect(allocations.map(item => item.amountFen)).toEqual([1, 1, 1, 0, 0]);
+    expect(allocations.reduce((sum, item) => sum + item.amountFen, 0)).toBe(3);
+    expect(allocations.every(item => item.amountFen >= 0)).toBe(true);
   });
 
   it("编辑金额和规则后会用新口径重新计算项目单位分摊，不影响既有订单快照", () => {

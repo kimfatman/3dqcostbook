@@ -6,7 +6,7 @@ import { fromFen, toFen, type LedgerEntry } from "./ledger-metrics";
 
 export type OrderChannel = "platform" | "live" | "store" | "private" | "other";
 export type OrderStatus = "paid" | "partially_refunded" | "refunded";
-export type ChannelPricingSnapshot = { commissionRatePct: number; fulfillmentCost: number; targetContributionMarginPct: number; roundingStep: number };
+export type ChannelPricingSnapshot = { commissionRatePct: number; fulfillmentCost: number; targetContributionMarginPct: number };
 export type RefundReason = "quality_issue" | "wrong_item" | "customer_cancelled" | "logistics_delay" | "duplicate_order" | "other";
 export type ReturnRecoveryStatus = "not_returned" | "in_transit" | "sellable_restocked" | "damaged_disposed";
 

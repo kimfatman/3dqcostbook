@@ -10,9 +10,9 @@ describe("P1 输入边界", () => {
   });
 
   it("拒绝使智能定价分母失效的渠道模板", () => {
-    expect(validateChannelPricingInput({ commissionRatePct: 5, fulfillmentCost: 3.5, targetContributionMarginPct: 40, roundingStep: 1 }).ok).toBe(true);
-    expect(validateChannelPricingInput({ commissionRatePct: 60, fulfillmentCost: 3.5, targetContributionMarginPct: 40, roundingStep: 1 }).ok).toBe(false);
-    expect(validateChannelPricingInput({ commissionRatePct: 101, fulfillmentCost: 3.5, targetContributionMarginPct: 0, roundingStep: 1 }).ok).toBe(false);
+    expect(validateChannelPricingInput({ commissionRatePct: 5, fulfillmentCost: 3.5, targetContributionMarginPct: 40 }).ok).toBe(true);
+    expect(validateChannelPricingInput({ commissionRatePct: 60, fulfillmentCost: 3.5, targetContributionMarginPct: 40 }).ok).toBe(false);
+    expect(validateChannelPricingInput({ commissionRatePct: 101, fulfillmentCost: 3.5, targetContributionMarginPct: 0 }).ok).toBe(false);
   });
 
   it("拒绝零、负数和非有限 BOM 金额", () => {
