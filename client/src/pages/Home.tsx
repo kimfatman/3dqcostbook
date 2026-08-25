@@ -4,7 +4,7 @@
  * 视觉规范：Digital Blue #087FF5、深海军蓝 #0B1836、冷白背景与紧凑圆角卡片。
  * 首页中产品宣传 Banner 只服务产品/广告，经营提醒只在 Logo 旁以文字轮播呈现，避免挤占利润—趋势—预算主线。
  */
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
