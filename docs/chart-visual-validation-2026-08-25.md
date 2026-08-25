@@ -38,3 +38,7 @@
 | `/home/ubuntu/chart-visual-effects/pricing-profit-chart-upgrade.png` | 智能定价 | 预期利润曲线、关键价格点、当前试算提示和滑块联动。 |
 
 最终门禁：`pnpm check`、`pnpm test`、`pnpm build` 均通过，共 **45 个测试文件、160 项测试**。构建仅保留既有主 JavaScript chunk 大于 500 kB 的提示。
+
+## 冲突装饰残留审计
+
+对 `index.css` 与 `cashflow-filter.css` 的运行时规则复查未发现用于页面背景或图表承载面的网格、点线或装饰性虚线。`stroke-dasharray` 仅存在于曲线“从无到全”绘制动画和销售目标环的进度偏移；两者最终呈现均为连续实线，不构成传统 ERP/BI 式虚线分隔。定价曲线的零贡献线和价格参考线已明确覆盖为低对比实线。
