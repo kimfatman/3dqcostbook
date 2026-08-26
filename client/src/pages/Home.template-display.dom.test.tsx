@@ -153,9 +153,20 @@ describe("统一账本的真实页面路径", () => {
 
     expect(screen.getByRole("heading", { name: "收入、成本，逐笔算清" })).toBeTruthy();
     expect(screen.getByText("DOM 回归供应商")).toBeTruthy();
+    expect(screen.getAllByText("经营流水")).toHaveLength(1);
+    expect(screen.getAllByLabelText("导出当前筛选账单")).toHaveLength(1);
     const recordSearch = screen.getByPlaceholderText("搜索商户、备注或分类");
     await user.type(recordSearch, "DOM 回归供应商");
     expect(screen.getByText("已找到 1 笔流水")).toBeTruthy();
+    expect(screen.getAllByLabelText("导出当前筛选账单")).toHaveLength(1);
+
+    await user.clear(recordSearch);
+    await user.type(recordSearch, "不存在的流水");
+    expect(screen.getByText("没有匹配的流水")).toBeTruthy();
+    expect(screen.queryByLabelText("导出当前筛选账单")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "清除筛选" }));
+    expect(screen.getByText("DOM 回归供应商")).toBeTruthy();
+    expect(screen.getAllByLabelText("导出当前筛选账单")).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: /DOM 回归供应商/ }));
     expect(screen.getByRole("heading", { name: "DOM 回归供应商" })).toBeTruthy();

@@ -826,7 +826,7 @@ export default function Home() {
 
   function renderHeader() {
     const titles: Record<Exclude<SubPage, null>, string> = { notifications: "消息中心", industry: "切换行业", records: "经营流水", record: recordId ? "编辑记录" : "记一笔", recordDetail: "流水详情", cards: `${template.entityLabel}成本卡`, cardDetail: `${template.entityLabel}成本详情`, cardForm: activeCard ? `编辑${template.entityLabel}` : `添加${template.entityLabel}`, bomForm: activeBomItem ? `编辑${template.formulaLabel}项` : `添加${template.formulaLabel}项`, pricing: "智能测算定价", budget: "预算管理", healthSettings: "健康度评分阈值", salesTargets: "销售目标历史", reports: "成本报表", reportDetail: "报表详情", suppliers: "供应商", supplierForm: "新增供应商", categories: "分类管理", categoryForm: "新增分类", orders: "订单账本", orderForm: "记录订单", orderDetail: "订单详情", refundForm: "登记退款", skus: `SKU ${cardCopy.title}`, indirectCosts: "间接成本分摊", profileSettings: "个人与店铺资料", avatarStyle: "个人头像", storeBrand: "店铺品牌" };
-    if (isSub) return <header className="page-header sub-header"><button className="back-button" onClick={goBack} aria-label="返回"><ArrowLeft size={21} /></button><strong>{titles[subPage]}</strong>{subPage === "records" ? <button className="sub-header-export" type="button" onClick={() => exportFilteredRecords("xlsx")} aria-label="导出当前筛选账单"><FileText size={17} />导出</button> : <span />}</header>;
+    if (isSub) return <header className="page-header sub-header"><button className="back-button" onClick={goBack} aria-label="返回"><ArrowLeft size={21} /></button><strong>{titles[subPage]}</strong><span /></header>;
     return <header className={`page-header ${tab === "orders" ? "orders-prototype-header" : ""}`}><div className="brand-mini"><span className="brand-seal-stack"><img className="brand-seal" src="/manus-storage/suandeqing-logo-3d_b82ea984.png" alt="算得清印章" /><BrandStoreLogo assetId={currentWorkspace?.logoAssetId} preset={currentWorkspace?.logoPreset} alt={`${currentWorkspace?.name || template.storeName}店铺标识`} size="header" /></span><span><strong>{currentWorkspace?.name || template.storeName}<ChevronDown size={13} /></strong><em>{template.label} · {currentPeriod.replace("-", " 年 ")} 月</em></span></div>{tab === "cards" ? <button className="header-primary-action" onClick={openNewCard}><Plus size={16} />新增{template.entityLabel}成本卡</button> : tab === "analysis" ? <button className="header-primary-action" onClick={() => goSub("indirectCosts")}><Settings2 size={16} />间接成本</button> : tab === "orders" ? <span /> : <button className="header-icon" onClick={() => goSub("notifications")} aria-label="经营提醒"><Bell size={20} />{unreadNotificationCount > 0 && <i />}</button>}</header>;
   }
 
@@ -890,48 +890,22 @@ export default function Home() {
   }
 
   function RecordsPage() {
-    const exportBill = async (format: BillExportFormat) => {
-      if (!filteredRecords.length) return notify("当前筛选没有可导出的流水");
-      try {
-        const model = buildBillExportModel({
-          records: filteredRecords,
-          storeName: currentWorkspace?.name || template.storeName,
-          industryLabel: template.label,
-          filters: {
-            month: recordMonth,
-            type: recordFilter,
-            query: recordSearch,
-            channelLabel: recordChannelFilter === "all" ? "" : channelLabel[recordChannelFilter],
-            supplierName: recordSupplierFilter ? suppliers.find((supplier) => supplier.id === recordSupplierFilter)?.name || "" : "",
-          },
-          categoryLabel: (categoryKey) => categories.find((category) => category.key === categoryKey)?.label || "未分类",
-          channelLabel: (record) => record.orderId ? channelLabel[orders.find((order) => order.id === record.orderId)?.channel || "other"] : "",
-          supplierName: (supplierId) => supplierId ? suppliers.find((supplier) => supplier.id === supplierId)?.name || "未关联" : "",
-          orderNo: (orderId) => orderId ? orders.find((order) => order.id === orderId)?.orderNo || "" : "",
-        });
-        await downloadBillExport(model, format);
-        notify(`已导出 ${filteredRecords.length} 笔流水为 ${format === "csv" ? "CSV" : "Excel"}`);
-      } catch {
-        notify("账单导出失败，请稍后重试");
-      }
-    };
     const hasFilter = recordMonth !== "all" || recordFilter !== "all" || Boolean(recordSearch.trim()) || recordChannelFilter !== "all" || Boolean(recordSupplierFilter);
     const drillLabels = [recordChannelFilter !== "all" ? channelLabel[recordChannelFilter] : "", recordSupplierFilter ? suppliers.find((supplier) => supplier.id === recordSupplierFilter)?.name || "" : ""].filter(Boolean);
+    const clearRecordFilters = () => { setRecordFilter("all"); setRecordMonth("all"); setRecordSearch(""); setRecordChannelFilter("all"); setRecordSupplierFilter(""); };
     return <>
-      <section className="screen-title"><span>经营流水</span><h1>收入、成本，逐笔算清</h1><p>每笔交易都会归入收入、成本或退款，并同步进入经营结果。</p></section>
+      <section className="record-page-heading"><h1>收入、成本，逐笔算清</h1></section>
       <div className="record-filter"><button className={recordFilter === "all" ? "active" : ""} aria-pressed={recordFilter === "all"} onClick={() => setRecordFilter("all")}>全部</button><button className={recordFilter === "expense" ? "active" : ""} aria-pressed={recordFilter === "expense"} onClick={() => setRecordFilter("expense")}>成本 −</button><button className={recordFilter === "income" ? "active" : ""} aria-pressed={recordFilter === "income"} onClick={() => setRecordFilter("income")}>收入 ＋</button><button className={recordFilter === "refund" ? "active" : ""} aria-pressed={recordFilter === "refund"} onClick={() => setRecordFilter("refund")}>退款</button><label className="month-filter"><CalendarDays size={14} /><select aria-label="筛选流水月份" value={recordMonth} onChange={(event) => setRecordMonth(event.target.value)}><option value="all">全部月份</option>{recordMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}</select></label></div>
       {drillLabels.length > 0 && <div className="cashflow-drill-context"><span>现金流下钻：{drillLabels.join(" · ")}</span><button onClick={() => { setRecordChannelFilter("all"); setRecordSupplierFilter(""); }}>清除</button></div>}
       <label className="search-field"><Search size={16} /><input value={recordSearch} onChange={(event) => setRecordSearch(event.target.value)} placeholder="搜索商户、备注或分类" /></label>
       <div className="result-summary">{hasFilter ? `已找到 ${filteredRecords.length} 笔流水` : `共 ${records.length} 笔流水`}</div>
-      <section className="record-export-panel" aria-label="账单导出">
-        <div><span>导出账单</span><b>当前筛选</b><em>CSV 与 Excel 均遵循当前月份、类型、渠道、供应商和关键词筛选。</em></div>
-        <div className="record-export-actions"><button type="button" onClick={() => exportBill("csv")} disabled={!filteredRecords.length}><Download size={15} />CSV</button><button type="button" onClick={() => exportBill("xlsx")} disabled={!filteredRecords.length}><Download size={15} />Excel</button></div>
-      </section>
-      <section className="record-list">{groupedRecords.length === 0 && <div className="empty-state">{hasFilter ? `没有匹配“${recordSearch || drillLabels.join(" · ") || monthLabel(recordMonth)}”的流水，试试更换月份、类型或关键词。` : "当前行业还没有流水。"}</div>}{groupedRecords.map((group) => <div key={group.date} className="record-group"><h3>{book.dateLabel(group.date)}<span><Highlight value={group.date.replaceAll("-", " / ")} query={recordSearch} /></span></h3>{group.records.map((record) => { const category = categoryByKey.get(record.categoryKey); const isIncome = record.type === "income"; return <button className="record-row" key={record.id} onClick={() => openRecordDetail(record.id)}><span className="record-icon" style={{ color: category?.color, background: `${category?.color || "#087FF5"}18` }}><ReceiptText size={18} /></span><span><b><Highlight value={record.merchant} query={recordSearch} /></b><em><Highlight value={category?.label || "未分类"} query={recordSearch} /> · <Highlight value={record.note || "无备注"} query={recordSearch} />{record.hasAttachment ? " · 有凭证" : ""}</em></span><strong className={isIncome ? "income" : ""}>{isIncome ? "+" : "−"}{yuan(record.amount)}</strong><ChevronRight size={16} /></button>; })}</div>)}</section>
+      {filteredRecords.length > 0 && <section className="record-export-panel" aria-label="导出当前筛选账单">
+        <div><span>当前筛选</span><strong>{filteredRecords.length} 笔流水</strong><em>导出内容与列表一致</em></div>
+        <div className="record-export-actions"><button type="button" onClick={() => exportFilteredRecords("csv")} disabled={!filteredRecords.length}><Download size={15} />CSV</button><button type="button" onClick={() => exportFilteredRecords("xlsx")} disabled={!filteredRecords.length}><Download size={15} />Excel</button></div>
+      </section>}
+      <section className="record-list">{groupedRecords.length === 0 && <div className="empty-state record-empty-state">{hasFilter ? <><b>没有匹配的流水</b><p>试试更换月份、类型或关键词。</p><button type="button" onClick={clearRecordFilters}>清除筛选</button></> : <><b>当前还没有流水</b><p>从一笔收入或成本开始记录。</p></>}</div>}{groupedRecords.map((group) => <div key={group.date} className="record-group"><h3>{book.dateLabel(group.date)}<span><Highlight value={group.date.replaceAll("-", " / ")} query={recordSearch} /></span></h3>{group.records.map((record) => { const category = categoryByKey.get(record.categoryKey); const isIncome = record.type === "income"; return <button className="record-row" key={record.id} onClick={() => openRecordDetail(record.id)}><span className="record-icon" style={{ color: category?.color, background: `${category?.color || "#087FF5"}18` }}><ReceiptText size={18} /></span><span><b><Highlight value={record.merchant} query={recordSearch} /></b><em><Highlight value={category?.label || "未分类"} query={recordSearch} /> · <Highlight value={record.note || "无备注"} query={recordSearch} />{record.hasAttachment ? " · 有凭证" : ""}</em></span><strong className={isIncome ? "income" : ""}>{isIncome ? "+" : "−"}{yuan(record.amount)}</strong><ChevronRight size={16} /></button>; })}</div>)}</section>
       <button className="floating-add" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={22} aria-hidden="true" />记一笔</button>
     </>;
-    // 旧的紧凑流水渲染保留在版本历史中；当前路径已由上述导出增强版替代。
-    return <><section className="screen-title"><span>经营流水</span><h1>收入、成本，逐笔算清</h1><p>每笔交易都会归入收入、成本或退款，并同步进入经营结果。</p></section><div className="record-filter"><button className={recordFilter === "all" ? "active" : ""} aria-pressed={recordFilter === "all"} onClick={() => setRecordFilter("all")}>全部</button><button className={recordFilter === "expense" ? "active" : ""} aria-pressed={recordFilter === "expense"} onClick={() => setRecordFilter("expense")}>成本 −</button><button className={recordFilter === "income" ? "active" : ""} aria-pressed={recordFilter === "income"} onClick={() => setRecordFilter("income")}>收入 ＋</button><button className={recordFilter === "refund" ? "active" : ""} aria-pressed={recordFilter === "refund"} onClick={() => setRecordFilter("refund")}>退款</button><label className="month-filter"><CalendarDays size={14} /><select aria-label="筛选流水月份" value={recordMonth} onChange={(event) => setRecordMonth(event.target.value)}><option value="all">全部月份</option>{recordMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}</select></label></div>{drillLabels.length > 0 && <div className="cashflow-drill-context"><span>现金流下钻：{drillLabels.join(" · ")}</span><button onClick={() => { setRecordChannelFilter("all"); setRecordSupplierFilter(""); }}>清除</button></div>}<label className="search-field"><Search size={16} /><input value={recordSearch} onChange={(event) => setRecordSearch(event.target.value)} placeholder="搜索商户、备注或分类" /></label><div className="result-summary">{hasFilter ? `已找到 ${filteredRecords.length} 笔流水` : `共 ${records.length} 笔流水`}</div><section className="record-list">{groupedRecords.length === 0 && <div className="empty-state">{hasFilter ? `没有匹配“${recordSearch || drillLabels.join(" · ") || monthLabel(recordMonth)}”的流水，试试更换月份、类型或关键词。` : "当前行业还没有流水。"}</div>}{groupedRecords.map((group) => <div key={group.date} className="record-group"><h3>{book.dateLabel(group.date)}<span><Highlight value={group.date.replaceAll("-", " / ")} query={recordSearch} /></span></h3>{group.records.map((record) => { const category = categoryByKey.get(record.categoryKey); const isIncome = record.type === "income"; return <button className="record-row" key={record.id} onClick={() => openRecordDetail(record.id)}><span className="record-icon" style={{ color: category?.color, background: `${category?.color || "#087FF5"}18` }}><ReceiptText size={18} /></span><span><b><Highlight value={record.merchant} query={recordSearch} /></b><em><Highlight value={category?.label || "未分类"} query={recordSearch} /> · <Highlight value={record.note || "无备注"} query={recordSearch} />{record.hasAttachment ? " · 有凭证" : ""}</em></span><strong className={isIncome ? "income" : ""}>{isIncome ? "+" : "−"}{yuan(record.amount)}</strong><ChevronRight size={16} /></button>; })}</div>)}</section><button className="floating-add" onClick={openNewRecord}><Plus size={22} />新增成本</button></>;
   }
 
   function AnalysisPageContent() {
@@ -1222,10 +1196,6 @@ export default function Home() {
     notify(`已导出 ${filteredRecords.length} 笔经营流水（${format === "csv" ? "CSV" : "Excel"}）`);
   }
 
-  function RecordExportActions() {
-    return <section className="record-export-panel" aria-label="导出当前筛选账单"><div><span>导出当前账单</span><strong>{filteredRecords.length} 笔流水</strong><em>将保留当前的月份、类型、关键词、渠道与供应商筛选。</em></div><div className="record-export-actions"><button type="button" onClick={() => exportFilteredRecords("csv")}>导出 CSV</button><button type="button" onClick={() => exportFilteredRecords("xlsx")}><FileText size={15} />导出 Excel</button></div></section>;
-  }
-
   function ReportDetailPage() {
     if (!activeReport) return <div className="empty-state">报表不存在。</div>;
     const reportOrders = orders.filter((order) => order.occurredAt.slice(0, 7) === activeReport.month);
@@ -1288,7 +1258,7 @@ export default function Home() {
   function renderContent() {
     if (subPage === "notifications") return NotificationsPage();
     if (subPage === "industry") return IndustryPage();
-    if (subPage === "records") return <><RecordsPage /><RecordExportActions /></>;
+    if (subPage === "records") return RecordsPage();
     if (subPage === "record") return RecordPage();
     if (subPage === "recordDetail") return RecordDetailPage();
     if (subPage === "cards") return CardsPage();
