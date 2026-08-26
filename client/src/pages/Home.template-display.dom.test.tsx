@@ -123,7 +123,7 @@ describe("五行业模板的真实页面显示", () => {
       await user.click(screen.getByRole("button", { name: "返回" }));
 
       await user.click(mainNavigation().getByRole("button", { name: "分析" }));
-      expect(screen.getByRole("heading", { name: /成本分析/ })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: /成本诊断/ })).toBeTruthy();
       expect(screen.getAllByText(scenario.category).length).toBeGreaterThan(0);
       const detailsTrigger = screen.getByRole("button", { name: /趋势与风险复核/ });
       if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
@@ -292,9 +292,9 @@ describe("成本分析供应商排行与结构对照", () => {
     renderHome();
 
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
-    expect(screen.getByText("暂无已关联供应商成本")).toBeTruthy();
+    expect(screen.getByText("尚未关联供应商支出")).toBeTruthy();
     expect(document.querySelector(".supplier-lollipop")).toBeNull();
-    expect(screen.getByRole("button", { name: /记录支出时关联供应商/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /在成本记录里关联供应商/ })).toBeTruthy();
   });
 
   it("上期无成本基线时保留饼形结构、分组对比零柱和分类下钻，不伪造上期占比", async () => {
@@ -337,7 +337,7 @@ describe("成本分析供应商排行与结构对照", () => {
     window.dispatchEvent(new PopStateEvent("popstate"));
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
 
-    expect(screen.getByRole("heading", { name: "供应商成本排行" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "成本归属 · 供应商" })).toBeTruthy();
     expect(document.querySelector(".template-cost-pie .analysis-cost-pie")).toBeTruthy();
     expect(document.querySelector(".template-grouped-structure .analysis-grouped-bars")).toBeTruthy();
     const supplierButton = screen.getByRole("button", { name: /商品采购供应商.*占已关联成本/ });
@@ -413,9 +413,28 @@ describe("全站信息精简", () => {
     expect(screen.getByPlaceholderText("搜索商品名称或类型")).toBeTruthy();
 
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
-    expect(screen.getByRole("heading", { name: /成本分析/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /成本诊断/ })).toBeTruthy();
     expect(screen.queryByText("先看结论，再核对最需要处理的一项成本。")).toBeNull();
     expect(screen.getByRole("heading", { name: "本期成本结论" })).toBeTruthy();
+  });
+});
+
+describe("成本诊断主题", () => {
+  it("将净成本、最大驱动与真实流水下钻收束为首屏行动链", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+
+    expect(screen.getByText("优先核对")).toBeTruthy();
+    expect(screen.getByText(/商品采购.*占正向成本最多/)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "本期钱花在哪里" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "成本结构变化" })).toBeTruthy();
+    expect(screen.getAllByText("持平").length).toBeGreaterThan(0);
+    expect(screen.getByText("尚未关联供应商支出")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /优先核对.*商品采购/ }));
+    expect(screen.getByRole("heading", { name: "收入、成本，逐笔算清" })).toBeTruthy();
   });
 });
 
@@ -455,7 +474,7 @@ describe("Dycharts 模板化图表信息层级", () => {
     expect(document.querySelector('[data-chart-template="pie"]')).toBeTruthy();
     expect(document.querySelector('[data-chart-template="grouped-bars"]')).toBeTruthy();
     expect(document.querySelector('.template-grouped-structure .analysis-grouped-bars')).toBeTruthy();
-    expect(screen.getByText("暂无已关联供应商成本")).toBeTruthy();
+    expect(screen.getByText("尚未关联供应商支出")).toBeTruthy();
   });
 
   it("以真实订单与退款数据呈现退款帕累托模板，并保持原因下钻", async () => {
