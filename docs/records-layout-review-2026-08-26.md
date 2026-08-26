@@ -13,6 +13,10 @@
 
 随后在 430px 有数据状态和 390px 无匹配状态补充复核。430px 下导出栏仍与结果数保持同一行节奏；390px 无匹配状态仅显示短标题、单句恢复提示和“清除筛选”，不显示禁用导出按钮或第二张导出卡。截图级结论与真实 DOM 回归一致。
 
+## 生产验收
+
+重排版本已发布至腾讯云，源码提交为 `be4452d9bb61adc99792fb8eed0aeeb79bebdd06`。实际运行目录已核验包含 `record-page-heading`，且不再包含重复的 `RecordExportActions` 组件。`https://api.3dq.site/healthz` 返回 `{"status":"ok"}`，`https://app.3dq.site/` 返回 HTTP 200，应用容器进程 UID 为 `10001`。
+
 [1]: https://support.lili.co/hc/en-us/articles/7003715263642-How-do-I-export-my-account-s-transaction-history
 [2]: https://skwad.app/blog/export-transactions-mobile-skwad
 [3]: https://contentdesign.intuit.com/product-and-ui/empty-states/
