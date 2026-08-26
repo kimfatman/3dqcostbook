@@ -80,6 +80,12 @@ describe("经营图表指标", () => {
     expect(comparison).toEqual([{ key: "goods", label: "采购", amount: 120, previousAmount: 100, share: 60, previousShare: 50, delta: 20, shareDelta: 10 }, { key: "ads", label: "投放", amount: 80, previousAmount: 0, share: 40, previousShare: 0, delta: 80, shareDelta: 40 }, { key: "rent", label: "租金", amount: 0, previousAmount: 100, share: 0, previousShare: 50, delta: -100, shareDelta: -50 }]);
   });
 
+  it("没有上期基线或已关联支出时不伪造结构比较和供应商排行", () => {
+    const noBaseline = buildCostStructureComparison([{ key: "goods", label: "采购", amount: 120 }], []);
+    expect(noBaseline).toEqual([{ key: "goods", label: "采购", amount: 120, previousAmount: 0, share: 100, previousShare: 0, delta: 120, shareDelta: 100 }]);
+    expect(buildSupplierCostRankings({ industryId: "ecommerce", period: "2026-08", suppliers: [{ id: "s-1", name: "A 供应商" }], entries: [{ industryId: "ecommerce", occurredAt: "2026-08-02", status: "posted", ledgerRole: "opex", amountFen: 8000 }] })).toEqual([]);
+  });
+
   it("月成本堆积按分类归集已入账成本，并保持分类合计等于每月总成本", () => {
     const entries = [
       { industryId: "ecommerce", occurredAt: "2026-06-05", status: "posted", ledgerRole: "cogs", categoryKey: "goods", amountFen: 30000 },

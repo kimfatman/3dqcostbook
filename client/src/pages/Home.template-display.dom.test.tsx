@@ -247,6 +247,38 @@ describe("流水私有凭证图片", () => {
 });
 
 describe("成本分析供应商排行与结构对照", () => {
+  it("无已关联支出时保留行动空态，不伪造供应商棒棒糖排行", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    expect(screen.getByText("暂无已关联供应商成本")).toBeTruthy();
+    expect(document.querySelector(".supplier-lollipop")).toBeNull();
+    expect(screen.getByRole("button", { name: /记录支出时关联供应商/ })).toBeTruthy();
+  });
+
+  it("上期无成本基线时保留当前结构轨道、零点标记和分类下钻，不伪造上期占比", async () => {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    const currentPeriod = new Date().toISOString().slice(0, 7);
+    saved.entries = saved.entries.filter((entry: { industryId: string; occurredAt: string }) => entry.industryId !== "ecommerce" || entry.occurredAt.startsWith(currentPeriod));
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+
+    const comparison = document.querySelector(".template-structure-dumbbell");
+    expect(comparison).toBeTruthy();
+    const priorMarker = comparison?.querySelector(".structure-dumbbell > em") as HTMLElement;
+    expect(priorMarker.style.left).toBe("0%");
+    const firstCategory = within(comparison as HTMLElement).getAllByRole("button")[0];
+    expect(firstCategory.textContent).toContain("上期 0%");
+    await user.click(firstCategory);
+    expect((screen.getByPlaceholderText("搜索商户、备注或分类") as HTMLInputElement).value).toContain("商品采购");
+  });
+
   it("将已关联供应商的真实支出展示在排行中，并能下钻到该供应商的当期流水", async () => {
     const user = userEvent.setup();
     renderHome();
@@ -265,7 +297,9 @@ describe("成本分析供应商排行与结构对照", () => {
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
 
     expect(screen.getByRole("heading", { name: "供应商成本排行" })).toBeTruthy();
+    expect(document.querySelector(".template-structure-dumbbell .structure-dumbbell")).toBeTruthy();
     const supplierButton = screen.getByRole("button", { name: /商品采购供应商.*占已关联成本/ });
+    expect(supplierButton.querySelector(".supplier-lollipop")).toBeTruthy();
     expect(supplierButton.textContent).toContain("¥66.60");
     await user.click(supplierButton);
     expect(screen.getByText("供应商排行回归支出")).toBeTruthy();
@@ -340,5 +374,72 @@ describe("全站信息精简", () => {
     expect(screen.getByRole("heading", { name: /成本分析/ })).toBeTruthy();
     expect(screen.queryByText("先看结论，再核对最需要处理的一项成本。")).toBeNull();
     expect(screen.getByRole("heading", { name: "本期成本结论" })).toBeTruthy();
+  });
+});
+
+describe("Dycharts 模板化图表信息层级", () => {
+  it("保留原有业务入口，并展示定价关键价格点和利润桥比较读数", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(mainNavigation().getByRole("button", { name: "商品" }));
+    await user.click(screen.getByRole("button", { name: /轻盈收纳盒/ }));
+    await user.click(screen.getByRole("button", { name: "测算定价" }));
+    expect(screen.getByText("当前")).toBeTruthy();
+    expect(screen.getByText("保本")).toBeTruthy();
+    expect(screen.getByText("建议")).toBeTruthy();
+    expect(screen.getByRole("slider", { name: "拖动试算售价" })).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    const detailsTrigger = screen.getByRole("button", { name: /趋势与风险复核/ });
+    if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
+    expect(screen.getByText("毛利率")).toBeTruthy();
+    expect(screen.getByText("费用率")).toBeTruthy();
+  });
+
+  it("在排行、结构、目标和供应商场景复用受控模板，并保留各自真实空态", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await openProfile(user);
+    await user.click(screen.getByRole("button", { name: /经营预算/ }));
+    expect(document.querySelector('[data-chart-template="bullet-goal"]')).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "返回" }));
+
+    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    expect(document.querySelector('[data-chart-template="rank"]')).toBeTruthy();
+    expect(document.querySelector('[data-chart-template="structure-dumbbell"]')).toBeTruthy();
+    expect(document.querySelector('.template-structure-dumbbell .structure-dumbbell')).toBeTruthy();
+    expect(screen.getByText("暂无已关联供应商成本")).toBeTruthy();
+  });
+
+  it("以真实订单与退款数据呈现退款帕累托模板，并保持原因下钻", async () => {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    const period = new Date().toISOString().slice(0, 7);
+    const sku = saved.skus.find((item: { id: string }) => item.id === "ecommerce-sku-1");
+    const pricing = saved.workspace.channelPricing.platform;
+    const createdAt = `${period}-12T12:00:00.000Z`;
+    saved.orders = [
+      { id: "template-order-1", workspaceId: "workspace-main", industryId: "ecommerce", orderNo: "TPL-001", channel: "platform", buyer: "模板回归客户 A", occurredAt: `${period}-12`, status: "partially_refunded", lines: [{ id: "template-line-1", skuId: sku.id, skuCode: sku.code, skuName: sku.name, unit: sku.unit, quantity: 2, refundedQuantity: 1, unitPriceFen: 6800, unitCostFen: sku.unitCostFen }], pricing, saleEntryId: "", createdAt, updatedAt: createdAt },
+      { id: "template-order-2", workspaceId: "workspace-main", industryId: "ecommerce", orderNo: "TPL-002", channel: "platform", buyer: "模板回归客户 B", occurredAt: `${period}-13`, status: "partially_refunded", lines: [{ id: "template-line-2", skuId: sku.id, skuCode: sku.code, skuName: sku.name, unit: sku.unit, quantity: 2, refundedQuantity: 1, unitPriceFen: 6800, unitCostFen: sku.unitCostFen }], pricing, saleEntryId: "", createdAt, updatedAt: createdAt },
+    ];
+    saved.refunds = [
+      { id: "template-refund-1", workspaceId: "workspace-main", industryId: "ecommerce", orderId: "template-order-1", orderLineId: "template-line-1", skuId: sku.id, quantity: 1, refundFen: 6800, refundFeeFen: 0, reason: "quality_issue", recoveryStatus: "not_returned", recoveredCostFen: 0, occurredAt: `${period}-14`, refundEntryId: "", createdAt },
+      { id: "template-refund-2", workspaceId: "workspace-main", industryId: "ecommerce", orderId: "template-order-2", orderLineId: "template-line-2", skuId: sku.id, quantity: 1, refundFen: 6800, refundFeeFen: 0, reason: "wrong_item", recoveryStatus: "not_returned", recoveredCostFen: 0, occurredAt: `${period}-15`, refundEntryId: "", createdAt },
+    ];
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
+    const user = userEvent.setup();
+    renderHome();
+    expect(document.querySelectorAll('[data-chart-template="rank"]').length).toBe(2);
+    await user.click(mainNavigation().getByRole("button", { name: "订单" }));
+    expect(document.querySelector('[data-chart-template="pareto-rank"]')).toBeTruthy();
+    const refundReason = screen.getByRole("button", { name: /质量问题.*累计/ });
+    await user.click(refundReason);
+    expect((screen.getByPlaceholderText("搜索订单号、客户或 SKU") as HTMLInputElement).value).toBe("质量问题");
   });
 });
