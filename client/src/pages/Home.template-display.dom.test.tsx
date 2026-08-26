@@ -268,7 +268,7 @@ describe("成本分析供应商排行与结构对照", () => {
     expect(screen.getByRole("button", { name: /记录支出时关联供应商/ })).toBeTruthy();
   });
 
-  it("上期无成本基线时保留当前结构轨道、零点标记和分类下钻，不伪造上期占比", async () => {
+  it("上期无成本基线时保留饼形结构、分组对比零柱和分类下钻，不伪造上期占比", async () => {
     const initial = renderHome();
     initial.unmount();
     const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
@@ -280,10 +280,11 @@ describe("成本分析供应商排行与结构对照", () => {
     renderHome();
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
 
-    const comparison = document.querySelector(".template-structure-dumbbell");
+    expect(document.querySelector(".template-cost-pie .analysis-cost-pie")).toBeTruthy();
+    const comparison = document.querySelector(".template-grouped-structure");
     expect(comparison).toBeTruthy();
-    const priorMarker = comparison?.querySelector(".structure-dumbbell > em") as HTMLElement;
-    expect(priorMarker.style.left).toBe("0%");
+    const priorBar = comparison?.querySelector(".analysis-grouped-bars > i.previous") as HTMLElement;
+    expect(priorBar.style.height).toBe("0%");
     const firstCategory = within(comparison as HTMLElement).getAllByRole("button")[0];
     expect(firstCategory.textContent).toContain("上期 0%");
     await user.click(firstCategory);
@@ -308,7 +309,8 @@ describe("成本分析供应商排行与结构对照", () => {
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
 
     expect(screen.getByRole("heading", { name: "供应商成本排行" })).toBeTruthy();
-    expect(document.querySelector(".template-structure-dumbbell .structure-dumbbell")).toBeTruthy();
+    expect(document.querySelector(".template-cost-pie .analysis-cost-pie")).toBeTruthy();
+    expect(document.querySelector(".template-grouped-structure .analysis-grouped-bars")).toBeTruthy();
     const supplierButton = screen.getByRole("button", { name: /商品采购供应商.*占已关联成本/ });
     expect(supplierButton.querySelector(".supplier-lollipop")).toBeTruthy();
     expect(supplierButton.textContent).toContain("¥66.60");
@@ -421,8 +423,9 @@ describe("Dycharts 模板化图表信息层级", () => {
 
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
     expect(document.querySelector('[data-chart-template="rank"]')).toBeTruthy();
-    expect(document.querySelector('[data-chart-template="structure-dumbbell"]')).toBeTruthy();
-    expect(document.querySelector('.template-structure-dumbbell .structure-dumbbell')).toBeTruthy();
+    expect(document.querySelector('[data-chart-template="pie"]')).toBeTruthy();
+    expect(document.querySelector('[data-chart-template="grouped-bars"]')).toBeTruthy();
+    expect(document.querySelector('.template-grouped-structure .analysis-grouped-bars')).toBeTruthy();
     expect(screen.getByText("暂无已关联供应商成本")).toBeTruthy();
   });
 
