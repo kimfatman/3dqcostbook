@@ -26,3 +26,7 @@
 | 375px、390px | 首页、订单、商品、分析、我的的主标题、指标、筛选和主操作均无裁切；订单空态不再出现公式式装饰。 |
 | 768px | 五个一级页保持紧凑的结果优先结构，不因辅助文字减少产生空白断层。 |
 | 自动化回归 | `pnpm check`、45 个测试文件/163 项测试、`pnpm build` 均通过。新增 DOM 回归覆盖展示精简；构建仅保留既有主 JavaScript chunk 大于 500kB 提示。 |
+
+## GitHub 同步
+
+已在非强制同步前获取远程 `main`，确认其为 `2d9449b849e84ebcf0c7febb73a46d03712e930f`。信息精简检查点 `b1bf4e1132554b45d9c015364f62da66c778db6d` 已成功推送至 `https://github.com/kimfatman/3dqcostbook.git` 的 `main` 分支；推送后本地 HEAD 与远程 `main` 均为 `b1bf4e1132554b45d9c015364f62da66c778db6d`。
