@@ -133,6 +133,35 @@ describe("五行业模板的真实页面显示", () => {
 });
 
 describe("统一账本的真实页面路径", () => {
+  it("切换收入、支出与退款时刷新可用标签，并允许在记一笔中新增可复用的自定义标签", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    const recordTypeButtons = Array.from(document.querySelectorAll(".record-form .type-switch > button")) as HTMLButtonElement[];
+    expect(screen.getByText("支出标签")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "平台佣金" })).toBeTruthy();
+
+    await user.click(recordTypeButtons[1]);
+    expect(screen.getByText("收入标签")).toBeTruthy();
+    expect(screen.getByText("其他收入")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "平台佣金" })).toBeNull();
+
+    const incomeTagField = screen.getByText("收入标签").closest("label") as HTMLElement;
+    await user.click(incomeTagField.querySelector(".category-custom-trigger") as HTMLButtonElement);
+    await user.type(screen.getByLabelText("自定义收入标签"), "押金收入");
+    await user.click(screen.getByRole("button", { name: "添加" }));
+    expect(screen.getByRole("button", { name: "押金收入" })).toBeTruthy();
+
+    await user.click(recordTypeButtons[0]);
+    expect(screen.getByText("支出标签")).toBeTruthy();
+    await user.click(recordTypeButtons[1]);
+    expect(screen.getByRole("button", { name: "押金收入" })).toBeTruthy();
+
+    await user.click(recordTypeButtons[2]);
+    expect(screen.getByText("退款标签")).toBeTruthy();
+  });
+
   it("在真实 Home 中完成流水筛选、记一笔新增/编辑/删除、成本卡搜索与成本结构下钻", async () => {
     const user = userEvent.setup();
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);

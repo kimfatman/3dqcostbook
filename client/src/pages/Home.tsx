@@ -378,6 +378,8 @@ export default function Home() {
   const [recordSupplierFilter, setRecordSupplierFilter] = useState("");
   const [selectedCategoryKey, setSelectedCategoryKey] = useState("");
   const [recordType, setRecordType] = useState<RecordType>("expense");
+  const [customRecordCategoryOpen, setCustomRecordCategoryOpen] = useState(false);
+  const [customRecordCategoryLabel, setCustomRecordCategoryLabel] = useState("");
   const [recordId, setRecordId] = useState<string | null>(null);
   const [formAmount, setFormAmount] = useState("");
   const [formDate, setFormDate] = useState(today);
@@ -497,7 +499,21 @@ export default function Home() {
   const activeCardIndirectCost = activeCard ? (indirectCostUnitFenByCard[activeCard.id] || 0) / 100 : 0;
   const cardCost = directCardCost ? { ...directCardCost, cost: Number((directCardCost.cost + activeCardIndirectCost).toFixed(2)), marginRate: activeCard?.salePrice ? Number(((activeCard.salePrice - (directCardCost.cost + activeCardIndirectCost)) / activeCard.salePrice * 100).toFixed(1)) : 0 } : null;
   const editingIndirectPool = indirectCostPools.find((pool) => pool.id === indirectCostEditId) ?? null;
-  const currentCategoryKey = selectedCategoryKey || categories[0]?.key || "";
+  const recordCategoryOptions = useMemo(() => {
+    const scoped = recordType === "income"
+      ? categories.filter((category) => category.ledgerRole === "other_income")
+      : recordType === "refund"
+        ? categories.filter((category) => category.key === "returns" || category.key === "refund")
+        : categories.filter((category) => category.ledgerRole === "cogs" || category.ledgerRole === "opex");
+    const fallback = recordType === "refund" ? categories.filter((category) => category.ledgerRole === "other_income") : categories;
+    const options = scoped.length ? scoped : fallback.length ? fallback : categories;
+    const selected = categories.find((category) => category.key === selectedCategoryKey);
+    return activeRecord && activeRecord.type === recordType && selected && !options.some((category) => category.key === selected.key) ? [selected, ...options] : options;
+  }, [activeRecord, categories, recordType, selectedCategoryKey]);
+  const currentCategoryKey = recordCategoryOptions.some((category) => category.key === selectedCategoryKey) ? selectedCategoryKey : recordCategoryOptions[0]?.key || "";
+  const recordCategoryTitle = recordType === "income" ? "收入标签" : recordType === "refund" ? "退款标签" : "支出标签";
+  const recordMerchantLabel = recordType === "income" ? "收款对象" : recordType === "refund" ? "退款对象" : "付款对象";
+  const recordMerchantPlaceholder = recordType === "income" ? "例如：到店服务 / 客户" : recordType === "refund" ? "例如：退款客户 / 平台订单" : "例如：平台服务商";
   const recordMonths = useMemo(() => availableMonths(records.map((record) => record.date)), [records]);
   const orderMonths = useMemo(() => availableMonths(orders.map((order) => order.occurredAt)), [orders]);
   const [periodYear, periodMonth] = currentPeriod.split("-").map(Number);
@@ -713,6 +729,33 @@ export default function Home() {
     replaceSubPage("records");
   }
 
+  function changeRecordType(nextType: RecordType) {
+    const options = nextType === "income"
+      ? categories.filter((category) => category.ledgerRole === "other_income")
+      : nextType === "refund"
+        ? categories.filter((category) => category.key === "returns" || category.key === "refund")
+        : categories.filter((category) => category.ledgerRole === "cogs" || category.ledgerRole === "opex");
+    const fallback = nextType === "refund" ? categories.filter((category) => category.ledgerRole === "other_income") : categories;
+    const nextOptions = options.length ? options : fallback;
+    setRecordType(nextType);
+    setSelectedCategoryKey((current) => nextOptions.some((category) => category.key === current) ? current : nextOptions[0]?.key || "");
+    if (nextType !== "expense") setSelectedSupplierId("");
+    setCustomRecordCategoryOpen(false);
+    setCustomRecordCategoryLabel("");
+  }
+
+  function addCustomRecordCategory() {
+    const label = customRecordCategoryLabel.trim();
+    if (!label) return notify("请输入自定义标签名称");
+    const key = `custom_${recordType}_${Date.now()}`;
+    const ledgerRole = recordType === "income" ? "other_income" : "opex";
+    book.addCategory({ key, label, color: recordType === "income" ? "#0F9D72" : recordType === "refund" ? "#F04438" : "#1677FF", hint: `自定义${recordCategoryTitle}`, ledgerRole });
+    setSelectedCategoryKey(key);
+    setCustomRecordCategoryLabel("");
+    setCustomRecordCategoryOpen(false);
+    notify(`已添加“${label}”标签`);
+  }
+
   function editRecord() {
     if (!activeRecord) return;
     setRecordType(activeRecord.type);
@@ -868,7 +911,7 @@ export default function Home() {
       <OperatingSnapshot decision={homeDecision} industryRisk={homeProfile.insight.title} costRate={costRate} profitMarginRate={profitMarginRate} profitDelta={totals.operatingProfit - previousProfit} onOpenPriority={openHomeDecision} />
       <SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} />
       <HomeReminderList items={notificationItems} onOpen={openNotificationTarget} onOpenAll={() => goSub("notifications")} />
-      <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传"><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 100}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" style={{ backgroundImage: `linear-gradient(90deg, rgba(2, 42, 113, .92) 0%, rgba(5, 91, 191, .78) 43%, rgba(8, 127, 245, .12) 68%, rgba(8, 127, 245, .02) 100%), url(${banner.asset})` }} onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}</div></section>
+      <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传"><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 20}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><img className="promotion-3d-asset" src={banner.asset} alt="" aria-hidden="true" /><span className="promotion-overlay" aria-hidden="true" /><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}</div></section>
       <HomeAnalysisPreview sales={salesOrdersTrend} costs={dailyCosts} onOpen={() => openRootTab("analysis")} />
       <section className="home-sku-template-grid" aria-label="商品销量与利润排行"><SkuTopBars title="商品销量 Top 5" type="sales" items={skuRankings.sales} onSelect={() => goSub("skus")} onEmpty={() => openRootTab("cards")} /><SkuTopBars title="商品利润 Top 5" type="profit" items={skuRankings.profit} onSelect={() => goSub("skus")} onEmpty={() => openRootTab("cards")} /></section>
       <section className="home-quick-entry home-chart-card"><div className="home-chart-head"><span>快捷入口</span><b>常用功能</b></div><div>{quickEntries.map(({ label, Icon, tone, action }) => <button key={label} className={tone} onClick={action}><i><Icon size={20} /></i><span>{label}</span></button>)}</div></section>
@@ -1043,7 +1086,7 @@ export default function Home() {
   function RecordPage() {
     const editing = activeRecord;
     const hasImageVoucher = Boolean(attachmentAssetId);
-    return <><section className="sub-intro compact"><span>{template.label} · 经营交易</span><h1>{editing ? "编辑一笔记录" : "记录一笔收支"}</h1><p>收入、退款、销售成本和经营费用会按不同口径归集；退款不会直接计作成本。</p></section><form className="record-form" onSubmit={saveRecord}><label>交易类型<div className="type-switch"><button type="button" className={recordType === "expense" ? "selected" : ""} onClick={() => setRecordType("expense")}>支出</button><button type="button" className={recordType === "income" ? "selected" : ""} onClick={() => setRecordType("income")}>销售收入</button><button type="button" className={recordType === "refund" ? "selected" : ""} onClick={() => setRecordType("refund")}>客户退款</button></div></label><label>{recordType === "refund" ? "退款金额" : "金额"}<div className="amount-input"><span>¥</span><input name="amount" type="number" min="0.01" step="0.01" value={formAmount} onChange={(event) => setFormAmount(event.target.value)} placeholder="0.00" autoFocus /></div></label>{recordType === "refund" && <><label>退款手续费（可选）<div className="amount-input"><span>¥</span><input name="refundFee" type="number" min="0" step="0.01" defaultValue="0" /></div></label><label>退货可回收成本（可选）<div className="amount-input"><span>¥</span><input name="recovery" type="number" min="0" step="0.01" defaultValue="0" /></div></label></>}<label>日期<input name="date" type="date" value={formDate} onChange={(event) => setFormDate(event.target.value)} /></label><label>成本分类<div className="category-chips">{categories.map((item) => <button type="button" key={item.key} className={currentCategoryKey === item.key ? "selected" : ""} onClick={() => setSelectedCategoryKey(item.key)}>{item.label}</button>)}</div></label><label>商户 / 对方<input name="merchant" value={formMerchant} onChange={(event) => setFormMerchant(event.target.value)} placeholder="例如：平台服务商" /></label>{recordType === "expense" && suppliers.length > 0 && <label>关联供应商（可选）<select value={selectedSupplierId} onChange={(event) => setSelectedSupplierId(event.target.value)}><option value="">未关联供应商</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select><small>关联后可在现金流图按供应商筛选与下钻。</small></label>}<label>备注<input name="note" value={formNote} onChange={(event) => setFormNote(event.target.value)} placeholder={`例如：${categories[0]?.hint || "本次交易"}`} /></label><fieldset className="record-voucher-field"><legend><Upload size={16} />凭证图片</legend>{hasImageVoucher ? <div className="record-voucher-attached"><img src={`/api/media/${attachmentAssetId}`} alt="已附凭证图片" /><span><b>已附私有图片凭证</b><small>仅当前店铺成员可查看；保存记录后关联生效。</small><button type="button" onClick={() => { setAttachmentAssetId(null); setHasAttachment(false); setVoucherUploadError(""); }}>移除图片</button></span></div> : <label className="record-voucher-picker"><input aria-label="上传凭证图片" type="file" accept="image/jpeg,image/png,image/webp" disabled={isUploadingVoucher} onChange={(event) => void uploadRecordVoucher(event.currentTarget.files?.[0])} /><span>{isUploadingVoucher ? "正在上传凭证图片…" : "选择凭证图片"}</span><em>JPEG、PNG 或 WebP，最大 5MB</em></label>}{voucherUploadError && <small className="record-voucher-error" role="alert">{voucherUploadError}</small>}{!hasImageVoucher && <label className="record-voucher-legacy"><input type="checkbox" checked={hasAttachment} onChange={(event) => setHasAttachment(event.currentTarget.checked)} />此笔已有线下凭证（仅标记）</label>}</fieldset><button type="submit" className="fixed-primary form-save" disabled={isUploadingVoucher}><Plus size={18} />{editing ? "保存修改" : "保存记录"}</button></form></>;
+    return <><section className="sub-intro compact"><span>{template.label} · 经营交易</span><h1>{editing ? "编辑一笔记录" : "记录一笔收支"}</h1><p>切换类型会同步更换可用标签；自定义标签只影响本笔及后续归类，不改写既有流水。</p></section><form className="record-form" onSubmit={saveRecord}><label>交易类型<div className="type-switch"><button type="button" className={recordType === "expense" ? "selected" : ""} onClick={() => changeRecordType("expense")}>支出</button><button type="button" className={recordType === "income" ? "selected" : ""} onClick={() => changeRecordType("income")}>销售收入</button><button type="button" className={recordType === "refund" ? "selected" : ""} onClick={() => changeRecordType("refund")}>客户退款</button></div></label><label>{recordType === "refund" ? "退款金额" : "金额"}<div className="amount-input"><span>¥</span><input name="amount" type="number" min="0.01" step="0.01" value={formAmount} onChange={(event) => setFormAmount(event.target.value)} placeholder="0.00" autoFocus /></div></label>{recordType === "refund" && <><label>退款手续费（可选）<div className="amount-input"><span>¥</span><input name="refundFee" type="number" min="0" step="0.01" defaultValue="0" /></div></label><label>退货可回收成本（可选）<div className="amount-input"><span>¥</span><input name="recovery" type="number" min="0" step="0.01" defaultValue="0" /></div></label></>}<label>日期<input name="date" type="date" value={formDate} onChange={(event) => setFormDate(event.target.value)} /></label><label>{recordCategoryTitle}<div className="category-chips">{recordCategoryOptions.map((item) => <button type="button" key={item.key} className={currentCategoryKey === item.key ? "selected" : ""} onClick={() => setSelectedCategoryKey(item.key)}>{item.label}</button>)}<button type="button" className="category-custom-trigger" onClick={() => setCustomRecordCategoryOpen((open) => !open)}><Plus size={13} />自定义</button></div>{customRecordCategoryOpen && <div className="record-custom-category"><input aria-label={`自定义${recordCategoryTitle}`} value={customRecordCategoryLabel} onChange={(event) => setCustomRecordCategoryLabel(event.target.value)} placeholder={`例如：${recordType === "income" ? "押金收入" : recordType === "refund" ? "活动退款" : "临时支出"}`} /><button type="button" onClick={addCustomRecordCategory}>添加</button></div>}<small>{recordType === "income" ? "手工收入归为其他收入，不替代订单销售。" : recordType === "refund" ? "退款会冲减营收；可回收成本请单独填写。" : "支出标签会决定成本或费用归类。"}</small></label><label>{recordMerchantLabel}<input name="merchant" value={formMerchant} onChange={(event) => setFormMerchant(event.target.value)} placeholder={recordMerchantPlaceholder} /></label>{recordType === "expense" && suppliers.length > 0 && <label>关联供应商（可选）<select value={selectedSupplierId} onChange={(event) => setSelectedSupplierId(event.target.value)}><option value="">未关联供应商</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select><small>关联后可在现金流图按供应商筛选与下钻。</small></label>}<label>备注<input name="note" value={formNote} onChange={(event) => setFormNote(event.target.value)} placeholder={`例如：${recordCategoryOptions[0]?.hint || "本次交易"}`} /></label><fieldset className="record-voucher-field"><legend><Upload size={16} />凭证图片</legend>{hasImageVoucher ? <div className="record-voucher-attached"><img src={`/api/media/${attachmentAssetId}`} alt="已附凭证图片" /><span><b>已附私有图片凭证</b><small>仅当前店铺成员可查看；保存记录后关联生效。</small><button type="button" onClick={() => { setAttachmentAssetId(null); setHasAttachment(false); setVoucherUploadError(""); }}>移除图片</button></span></div> : <label className="record-voucher-picker"><input aria-label="上传凭证图片" type="file" accept="image/jpeg,image/png,image/webp" disabled={isUploadingVoucher} onChange={(event) => void uploadRecordVoucher(event.currentTarget.files?.[0])} /><span>{isUploadingVoucher ? "正在上传凭证图片…" : "选择凭证图片"}</span><em>JPEG、PNG 或 WebP，最大 5MB</em></label>}{voucherUploadError && <small className="record-voucher-error" role="alert">{voucherUploadError}</small>}{!hasImageVoucher && <label className="record-voucher-legacy"><input type="checkbox" checked={hasAttachment} onChange={(event) => setHasAttachment(event.currentTarget.checked)} />此笔已有线下凭证（仅标记）</label>}</fieldset><button type="submit" className="fixed-primary form-save" disabled={isUploadingVoucher}><Plus size={18} />{editing ? "保存修改" : "保存记录"}</button></form></>;
   }
 
   function RecordDetailPage() {

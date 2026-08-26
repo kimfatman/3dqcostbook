@@ -56,6 +56,14 @@ describe("历史本地状态兼容", () => {
     expect(state.workspace.salesTargets.ecommerce).toBe(0);
   });
 
+  it("载入旧分类目录时为各行业补齐一次其他收入标签，供手工收入切换使用", () => {
+    const state = normalizeState({ schemaVersion: 4, workspace: { id: "legacy", activeIndustryId: "ecommerce" }, categories: [{ id: "legacy-cost", workspaceId: "legacy", industryId: "ecommerce", key: "goods_purchase", label: "商品采购", color: "#1677FF", hint: "进货", ledgerRole: "cogs" }] });
+    const incomeCategories = state.categories.filter((category) => category.industryId === "ecommerce" && category.ledgerRole === "other_income");
+
+    expect(incomeCategories).toHaveLength(1);
+    expect(incomeCategories[0]).toMatchObject({ key: "other_income", label: "其他收入" });
+  });
+
   it("会为历史演示状态中被持久化为 null 的当前账期金额恢复可推导的种子金额", () => {
     const state = normalizeState({ schemaVersion: 3, workspace: { id: "demo", activeIndustryId: "ecommerce", dataMode: "demo" }, entries: [{ id: "seed-sale", workspaceId: "demo", industryId: "ecommerce", occurredAt: "2026-08-14", eventType: "sale", ledgerRole: "revenue", cashDirection: "inflow", amountFen: null, categoryKey: "sales", merchant: "蓝鲸电商店日结", note: "演示销售日结", status: "posted", hasAttachment: true, createdAt: "2026-08-14T12:00:00.000Z", updatedAt: "2026-08-14T12:00:00.000Z" }] });
     expect(state.entries[0]?.amountFen).toBeGreaterThan(0);
