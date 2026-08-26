@@ -30,5 +30,9 @@ NN/g 指出比较值时应将需要比较的对象并置，并将 paired/grouped
 
 在 375px 和 430px 补充复核中，饼图与五项图例均未横向溢出；分组柱中的两期柱体、两期占比文本和百分点变化能在同一行读取；430px 下图例与数字拥有更充裕间距，375px 下仍不遮挡右侧下钻箭头。两种宽度均保留供应商空态及底部安全区。
 
+## 生产验收
+
+版本 `b1c69e73ccfd63f1af34e6821719461b50f338b8` 已发布到腾讯云实际运行目录。线上源码已核验包含 `template-cost-pie` 和 `template-grouped-structure`；`https://api.3dq.site/healthz` 返回 `{"status":"ok"}`，`https://app.3dq.site/` 返回 HTTP 200，应用容器进程 UID 为 `10001`。
+
 [1]: https://www.fusioncharts.com/blog/bar-graph-vs-pie-chart-select-the-proper-type-for-your-data/
 [2]: https://www.nngroup.com/articles/choosing-chart-types/
