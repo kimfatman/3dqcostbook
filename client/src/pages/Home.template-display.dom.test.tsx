@@ -319,3 +319,26 @@ describe("间接成本与智能定价的统一布局", () => {
     expect(screen.getByRole("slider", { name: "拖动试算售价" })).toBeTruthy();
   });
 });
+
+describe("全站信息精简", () => {
+  it("移除泛化重复标签，同时保留首页、商品和成本分析的主信息层级", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    expect(screen.getByText("本期经营")).toBeTruthy();
+    expect(screen.queryByText("核心经营结果")).toBeNull();
+    expect(screen.queryByText("本月实时核算")).toBeNull();
+    expect(screen.queryByText("未设目标")).toBeNull();
+    expect(screen.getByRole("button", { name: /设置月销售目标/ })).toBeTruthy();
+
+    await user.click(mainNavigation().getByRole("button", { name: "商品" }));
+    expect(screen.getByRole("heading", { name: "商品成本" })).toBeTruthy();
+    expect(screen.queryByText("清晰管理商品成本变化，提升单件利润")).toBeNull();
+    expect(screen.getByPlaceholderText("搜索商品名称或类型")).toBeTruthy();
+
+    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    expect(screen.getByRole("heading", { name: /成本分析/ })).toBeTruthy();
+    expect(screen.queryByText("先看结论，再核对最需要处理的一项成本。")).toBeNull();
+    expect(screen.getByRole("heading", { name: "本期成本结论" })).toBeTruthy();
+  });
+});
