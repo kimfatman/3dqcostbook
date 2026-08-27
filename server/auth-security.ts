@@ -125,7 +125,7 @@ export function getRequestClientAddress(req: { ip?: unknown; socket?: { remoteAd
   return candidate.slice(0, 128);
 }
 
-export function createAuthRateLimitKeys(scope: "bootstrap" | "login" | "register", req: { ip?: unknown; socket?: { remoteAddress?: unknown } }, identity: string) {
+export function createAuthRateLimitKeys(scope: "bootstrap" | "login" | "register" | "cloudbase", req: { ip?: unknown; socket?: { remoteAddress?: unknown } }, identity: string) {
   return [
     `auth:${scope}:ip:${getRequestClientAddress(req)}`,
     `auth:${scope}:identity:${stableIdentity(identity.trim().toLocaleLowerCase())}`,

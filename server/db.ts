@@ -53,6 +53,37 @@ export async function getAppUserByEmail(email: string) {
   return rows[0];
 }
 
+export async function getAppUserByPhoneNumber(phoneNumber: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(appUsers).where(eq(appUsers.phoneNumber, phoneNumber)).limit(1);
+  return rows[0];
+}
+
+export async function getAppUserByCloudbaseSubject(cloudbaseSubject: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(appUsers).where(eq(appUsers.cloudbaseSubject, cloudbaseSubject)).limit(1);
+  return rows[0];
+}
+
+export type CloudbaseIdentity = { subject: string; email?: string; phoneNumber?: string };
+
+/** 将已由 CloudBase 验证的身份绑定到本站既有用户；唯一索引同时阻止身份跨账号迁移。 */
+export async function linkCloudbaseIdentity(userId: string, identity: CloudbaseIdentity) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const linked = await getAppUserByCloudbaseSubject(identity.subject);
+  if (linked && linked.id !== userId) throw new Error("该验证方式已关联其他账号");
+  await db.update(appUsers).set({
+    cloudbaseSubject: identity.subject,
+    email: identity.email,
+    phoneNumber: identity.phoneNumber,
+    lastSignedInAt: new Date(),
+  }).where(eq(appUsers.id, userId));
+  return getAppUserById(userId);
+}
+
 export async function hasAnyAppUsers() {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
@@ -105,10 +136,48 @@ export async function registerAndCreateWorkspace(input: { email: string; name: s
   return { userId: registration.userId, workspaceId: registration.workspaceId };
 }
 
+export async function registerCloudbaseUserAndCreateWorkspace(input: CloudbaseIdentity & { name: string; passwordHash: string; workspaceName: string; industryId: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const userId = randomUUID();
+  const workspaceId = randomUUID();
+  await db.transaction(async tx => {
+    await tx.insert(appUsers).values({
+      id: userId,
+      email: input.email,
+      phoneNumber: input.phoneNumber,
+      cloudbaseSubject: input.subject,
+      name: input.name,
+      passwordHash: input.passwordHash,
+      role: "member",
+      lastSignedInAt: new Date(),
+    });
+    await tx.insert(workspaces).values({ id: workspaceId, name: input.workspaceName, ownerId: userId, industryId: input.industryId, contactName: input.name });
+    await tx.insert(workspaceMembers).values({ workspaceId, userId, role: "owner" });
+    await tx.insert(workspaceBooks).values({ workspaceId, state: {}, updatedByUserId: userId });
+    await tx.insert(auditEvents).values({
+      id: randomUUID(),
+      workspaceId,
+      actorUserId: userId,
+      action: "workspace.register",
+      targetType: "workspace",
+      targetId: workspaceId,
+      details: { source: "cloudbase_verification", industryId: input.industryId },
+    });
+  });
+  return { userId, workspaceId };
+}
+
 export async function markSignedIn(userId: string) {
   const db = await getDb();
   if (!db) return;
   await db.update(appUsers).set({ lastSignedInAt: new Date() }).where(eq(appUsers.id, userId));
+}
+
+export async function updateAppUserPassword(userId: string, passwordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await db.update(appUsers).set({ passwordHash, lastSignedInAt: new Date() }).where(eq(appUsers.id, userId));
 }
 
 export async function listWorkspacesForUser(userId: string) {

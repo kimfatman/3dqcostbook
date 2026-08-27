@@ -6,7 +6,9 @@ import { bigint, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, time
  */
 export const appUsers = mysqlTable("app_users", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  email: varchar("email", { length: 320 }).notNull(),
+  email: varchar("email", { length: 320 }),
+  phoneNumber: varchar("phoneNumber", { length: 24 }),
+  cloudbaseSubject: varchar("cloudbaseSubject", { length: 128 }),
   name: varchar("name", { length: 120 }).notNull(),
   avatarAssetId: varchar("avatarAssetId", { length: 36 }),
   avatarPreset: varchar("avatarPreset", { length: 32 }),
@@ -15,7 +17,11 @@ export const appUsers = mysqlTable("app_users", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
   lastSignedInAt: timestamp("lastSignedInAt"),
-}, table => [uniqueIndex("app_users_email_unique").on(table.email)]);
+}, table => [
+  uniqueIndex("app_users_email_unique").on(table.email),
+  uniqueIndex("app_users_phone_unique").on(table.phoneNumber),
+  uniqueIndex("app_users_cloudbase_subject_unique").on(table.cloudbaseSubject),
+]);
 
 /** 兼容托管开发环境 SDK 的 OAuth 用户表；自建部署的主身份使用 appUsers。 */
 export const users = mysqlTable("users", {
