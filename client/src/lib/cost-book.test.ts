@@ -73,7 +73,7 @@ describe("历史本地状态兼容", () => {
     const entry = { id: "voucher-1", workspaceId: "legacy", industryId: "ecommerce", templateVersion: 4, occurredAt: "2026-08-14", eventType: "expense", ledgerRole: "opex", cashDirection: "outflow", amountFen: 12800, categoryKey: "ad_spend", merchant: "投放平台", note: "活动投放", status: "posted", hasAttachment: true, attachmentAssetId: "asset-1", createdAt: "2026-08-14T12:00:00.000Z", updatedAt: "2026-08-14T12:00:00.000Z" };
     const state = normalizeState({ schemaVersion: 4, workspace: { id: "legacy", activeIndustryId: "ecommerce" }, entries: [entry, { ...entry, id: "legacy-boolean", attachmentAssetId: 42 }] });
 
-    expect(state.schemaVersion).toBe(5);
+    expect(state.schemaVersion).toBe(6);
     expect(state.entries.find(item => item.id === "voucher-1")).toMatchObject({ hasAttachment: true, attachmentAssetId: "asset-1" });
     expect(state.entries.find(item => item.id === "legacy-boolean")).toMatchObject({ hasAttachment: true, attachmentAssetId: undefined });
   });

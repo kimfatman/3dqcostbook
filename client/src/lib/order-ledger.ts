@@ -51,6 +51,8 @@ export type Order = {
   saleEntryId: string;
   createdAt: string;
   updatedAt: string;
+  /** 仅用于经营复核，不参与成交金额、退款、成本或利润计算。 */
+  reviewedAt?: string;
 };
 
 export type RefundCase = {

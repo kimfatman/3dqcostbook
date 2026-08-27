@@ -95,7 +95,7 @@ describe("五行业模板的真实页面显示", () => {
       await user.click(screen.getByRole("button", { name: `使用${scenario.label}模板` }));
 
       expect(screen.getByText((text) => text.includes(`${scenario.label}经营者`))).toBeTruthy();
-      await user.click(mainNavigation().getByRole("button", { name: "经营" }));
+      await user.click(mainNavigation().getByRole("button", { name: "工作台" }));
       expect(screen.getAllByText(new RegExp(`${scenario.label} ·`)).length).toBeGreaterThan(0);
       expect(screen.queryByRole("button", { name: `添加${scenario.entity}` })).toBeNull();
 
@@ -122,7 +122,7 @@ describe("五行业模板的真实页面显示", () => {
       expect((screen.getByRole("spinbutton", { name: "调整后的月度预算金额" }) as HTMLInputElement).value).toBe(scenario.budget);
       await user.click(screen.getByRole("button", { name: "返回" }));
 
-      await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+      await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
       expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
       expect(screen.getAllByText(scenario.category).length).toBeGreaterThan(0);
       const detailsTrigger = screen.getByRole("button", { name: /行业参考估算/ });
@@ -212,7 +212,7 @@ describe("首页第一期经营总览", () => {
     await user.click(within(trend).getByRole("button", { name: /订单明细/ }));
     expect(screen.getByRole("heading", { name: "订单" })).toBeTruthy();
 
-    await user.click(mainNavigation().getByRole("button", { name: "经营" }));
+    await user.click(mainNavigation().getByRole("button", { name: "工作台" }));
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
     await user.clear(screen.getByPlaceholderText("0.00"));
     await user.type(screen.getByPlaceholderText("0.00"), "66.60");
@@ -337,7 +337,7 @@ describe("统一账本的真实页面路径", () => {
     await user.clear(cardSearch);
     expect(screen.getByText("轻盈收纳盒")).toBeTruthy();
 
-    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
     expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "经营利润" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "利润构成" })).toBeTruthy();
@@ -411,7 +411,7 @@ describe("成本分析供应商排行与结构对照", () => {
     const user = userEvent.setup();
     renderHome();
 
-    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
     expect(screen.getByText("尚未关联供应商支出")).toBeTruthy();
     expect(document.querySelector(".supplier-lollipop")).toBeNull();
     expect(screen.getByRole("button", { name: /在成本记录里关联供应商/ })).toBeTruthy();
@@ -427,7 +427,7 @@ describe("成本分析供应商排行与结构对照", () => {
 
     const user = userEvent.setup();
     renderHome();
-    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
 
     expect(document.querySelector(".template-cost-pie .analysis-cost-pie")).toBeTruthy();
     const comparison = document.querySelector(".template-grouped-structure");
@@ -455,7 +455,7 @@ describe("成本分析供应商排行与结构对照", () => {
     await user.click(screen.getByRole("button", { name: "返回" }));
     window.history.replaceState({}, "", "/");
     window.dispatchEvent(new PopStateEvent("popstate"));
-    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
 
     expect(screen.getByRole("heading", { name: "成本归属 · 供应商" })).toBeTruthy();
     expect(document.querySelector(".template-cost-pie .analysis-cost-pie")).toBeTruthy();
@@ -469,11 +469,12 @@ describe("成本分析供应商排行与结构对照", () => {
 });
 
 describe("图表主题", () => {
-  it("允许用户在个性化区切换图表深色模式", async () => {
+  it("允许用户在外观设置中切换图表深色模式", async () => {
     const user = userEvent.setup();
     renderHome();
 
     await openProfile(user);
+    await user.click(screen.getByRole("button", { name: /外观设置/ }));
     const toggle = screen.getByRole("button", { name: /图表深色模式/ });
     await user.click(toggle);
     expect(document.documentElement.classList.contains("dark")).toBe(true);
@@ -489,7 +490,7 @@ describe("间接成本与智能定价的统一布局", () => {
     const user = userEvent.setup();
     renderHome();
 
-    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
     await user.click(screen.getByRole("button", { name: /间接成本/ }));
 
     expect(screen.getByRole("heading", { name: "本期成本设置" })).toBeTruthy();
@@ -532,7 +533,7 @@ describe("全站信息精简", () => {
     expect(screen.queryByText("清晰管理商品成本变化，提升单件利润")).toBeNull();
     expect(screen.getByPlaceholderText("搜索商品名称或类型")).toBeTruthy();
 
-    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
     expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
     expect(screen.queryByText("先看结论，再核对最需要处理的一项成本。")).toBeNull();
     expect(screen.getByRole("heading", { name: "经营利润" })).toBeTruthy();
@@ -545,7 +546,7 @@ describe("成本诊断主题", () => {
     const user = userEvent.setup();
     renderHome();
 
-    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
 
     expect(screen.getByText("优先核对")).toBeTruthy();
     expect(screen.getByText(/商品采购.*占正向成本最多/)).toBeTruthy();
@@ -574,7 +575,7 @@ describe("Dycharts 模板化图表信息层级", () => {
 
     await user.click(screen.getByRole("button", { name: "返回" }));
     await user.click(screen.getByRole("button", { name: "返回" }));
-    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
     expect(screen.getByText("毛利率")).toBeTruthy();
     expect(screen.getByText("费用率")).toBeTruthy();
   });
@@ -588,7 +589,7 @@ describe("Dycharts 模板化图表信息层级", () => {
     expect(document.querySelector('[data-chart-template="bullet-goal"]')).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "返回" }));
 
-    await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
     expect(document.querySelector('[data-chart-template="rank"]')).toBeTruthy();
     expect(document.querySelector('[data-chart-template="pie"]')).toBeTruthy();
     expect(document.querySelector('[data-chart-template="grouped-bars"]')).toBeTruthy();
@@ -689,5 +690,71 @@ describe("第一批范围、待办与成本快照表达", () => {
     expect(screen.getByText("当前单位成本")).toBeTruthy();
     expect(screen.getByText("暂无历史成交成本快照")).toBeTruthy();
     expect(screen.getByText(/尚无关联 SKU 的成交订单/)).toBeTruthy();
+  });
+});
+
+describe("第二批导航、列表效率与真实事件", () => {
+  it("将工作台和洞察作为清晰的一级入口，并将皮肤与深色模式收进我的外观设置", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    expect(mainNavigation().getByRole("button", { name: "工作台" })).toBeTruthy();
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
+
+    await openProfile(user);
+    await user.click(screen.getByRole("button", { name: /外观设置/ }));
+    expect(screen.getByRole("heading", { name: "外观设置" })).toBeTruthy();
+    const toggle = screen.getByRole("button", { name: /图表深色模式/ });
+    await user.click(toggle);
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("允许仅对选中订单批量标记复核并按待复核筛选，不改写订单业务数据", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await user.click(screen.getByRole("button", { name: "商品销售" }));
+    await user.type(screen.getByPlaceholderText("例如：PDD-20260714-001"), "BATCH-REVIEW-001");
+    await user.click(screen.getByRole("button", { name: "确认订单并入账" }));
+    expect(screen.getByText("BATCH-REVIEW-001")).toBeTruthy();
+
+    const selection = screen.getByRole("checkbox", { name: /选择订单 BATCH-REVIEW-001/ });
+    await user.click(selection);
+    await user.click(screen.getByRole("button", { name: "标记复核" }));
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("1 笔已选订单标记为已复核"));
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("仅更新复核状态"));
+    expect(screen.getByText("已复核")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "待复核" }));
+    expect(screen.queryByText("BATCH-REVIEW-001")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "全部" }));
+    await user.click(screen.getByRole("checkbox", { name: /选择订单 BATCH-REVIEW-001/ }));
+    confirmSpy.mockReturnValueOnce(false);
+    await user.click(screen.getByRole("button", { name: "导出" }));
+    expect(confirmSpy).toHaveBeenLastCalledWith(expect.stringContaining("1 笔已选订单的账务流水"));
+    expect(confirmSpy).toHaveBeenLastCalledWith(expect.stringContaining("只读 CSV"));
+    expect(screen.getByText("已选 1 笔")).toBeTruthy();
+    confirmSpy.mockRestore();
+  });
+
+  it("利润趋势仅展示可追溯的真实成交、退款或独立成本事件", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await user.click(screen.getByRole("button", { name: "商品销售" }));
+    await user.type(screen.getByPlaceholderText("例如：PDD-20260714-001"), "EVENT-ORDER-001");
+    await user.click(screen.getByRole("button", { name: "确认订单并入账" }));
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+
+    expect(document.querySelector(".profit-trend-events")).toBeTruthy();
+    expect(screen.getByText(/订单成交/)).toBeTruthy();
+    expect(screen.queryByText(/促销日/)).toBeNull();
+    expect(screen.queryByText(/食材涨价日/)).toBeNull();
   });
 });
