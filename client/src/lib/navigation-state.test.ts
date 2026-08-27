@@ -6,6 +6,8 @@ describe("移动端页面导航状态", () => {
     expect(readNavigationState("?screen=orders")).toEqual({ tab: "orders", subPage: null });
     expect(readNavigationState("?screen=budget")).toEqual({ tab: "profile", subPage: "budget" });
     expect(readNavigationState("?screen=indirectCosts")).toEqual({ tab: "analysis", subPage: "indirectCosts" });
+    expect(readNavigationState("?screen=reports")).toEqual({ tab: "analysis", subPage: "reports" });
+    expect(readNavigationState("?screen=reportDetail")).toEqual({ tab: "analysis", subPage: "reportDetail" });
     expect(readNavigationState("?screen=profileSettings")).toEqual({ tab: "profile", subPage: "profileSettings" });
   });
 

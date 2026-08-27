@@ -30,6 +30,13 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
+    if (isBootstrap && !bootstrapToken.trim()) return setError("请输入初始化令牌");
+    if ((isBootstrap || isRegistering) && !name.trim()) return setError("请输入您的姓名");
+    if ((isBootstrap || isRegistering) && !workspaceName.trim()) return setError("请输入店铺名称");
+    if (!email.trim()) return setError("请输入邮箱地址");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError("请输入正确的邮箱地址");
+    if (!password) return setError("请输入密码");
+    if ((isBootstrap || isRegistering) && password.length < 8) return setError("密码至少需要 8 个字符");
     try {
       if (isBootstrap) await bootstrap.mutateAsync({ token: bootstrapToken, email, password, name, workspaceName });
       else if (mode === "register") await register.mutateAsync({ email, password, name, workspaceName, industryId });
@@ -44,7 +51,7 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
     <section className="selfhost-access-card">
       <div className="selfhost-card-head"><div className="selfhost-brand"><div className="selfhost-brand-mark"><ShieldCheck size={20} /></div><div><p>算得清</p><small>商家成本管家</small></div></div><span className="selfhost-security"><LockKeyhole size={13} />安全登录</span></div>
       <div className="selfhost-title"><h1>{title}</h1><p>{intro}</p></div>
-      <form className="selfhost-access-form" onSubmit={submit}>
+      <form className="selfhost-access-form" onSubmit={submit} noValidate>
         {isBootstrap && <><Field label="初始化令牌" value={bootstrapToken} onChange={setBootstrapToken} type="password" autoComplete="one-time-code" placeholder="部署时生成的令牌" /><Field label="管理员姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="工作区名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：我的商店" /></>}
         {isRegistering && <><Field label="你的姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="店铺名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：小满商店" /><label className="selfhost-field"><span>经营行业</span><select value={industryId} onChange={event => setIndustryId(event.target.value as typeof industryId)}><option value="canteen">餐饮</option><option value="retail">零售</option><option value="ecommerce">电商</option><option value="beauty">美业服务</option><option value="stall">小商贩</option></select></label></>}
         <Field label="邮箱" value={email} onChange={setEmail} type="email" autoComplete="email" placeholder="name@example.com" icon={<Mail size={17} />} />

@@ -1,14 +1,16 @@
 import type { IndustryTemplate } from "./cost-book";
 
 const tabLabelByEntity: Record<string, string> = { 菜品: "菜品", 商品: "商品", 服务项目: "项目", 货品: "货品" };
+const costCardTitleByEntity: Record<string, string> = { 菜品: "菜品成本卡", 商品: "商品成本卡", 服务项目: "服务项目成本卡", 货品: "货品成本卡" };
 
 export function costCardDisplayCopy(template: Pick<IndustryTemplate, "entityLabel" | "tabLabel" | "unitLabel">) {
+  const title = costCardTitleByEntity[template.entityLabel] || `${template.entityLabel}成本卡`;
   return {
     tabLabel: template.tabLabel || tabLabelByEntity[template.entityLabel] || "成本",
-    title: `${template.entityLabel}成本`,
-    description: `清晰掌握${template.entityLabel}成本变化，提升单${template.unitLabel}利润`,
+    title,
+    description: `管理${title}的成本与定价，提升单${template.unitLabel}利润`,
     unitProfitLabel: `单${template.unitLabel}利润`,
-    imageManagementCopy: `${template.entityLabel}图片仅在${template.entityLabel}成本详情中管理。`,
+    imageManagementCopy: `${template.entityLabel}图片仅在${title}详情中管理。`,
   };
 }
 

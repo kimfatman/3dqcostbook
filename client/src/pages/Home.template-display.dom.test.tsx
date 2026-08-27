@@ -36,6 +36,7 @@ type IndustryScenario = {
   label: string;
   cardsTab: string;
   entity: string;
+  costCardTitle: string;
   templateUnit: string;
   cardUnit: string;
   cardName: string;
@@ -44,11 +45,11 @@ type IndustryScenario = {
 };
 
 const scenarios: IndustryScenario[] = [
-  { label: "餐饮", cardsTab: "菜品", entity: "菜品", templateUnit: "份", cardUnit: "份", cardName: "水煮鱼", category: "食材采购", budget: "160000" },
-  { label: "零售", cardsTab: "商品", entity: "商品", templateUnit: "件", cardUnit: "件", cardName: "云朵枕套", category: "商品采购", budget: "150000" },
-  { label: "电商", cardsTab: "商品", entity: "商品", templateUnit: "件", cardUnit: "件", cardName: "轻盈收纳盒", category: "平台佣金", budget: "150000" },
-  { label: "美业服务", cardsTab: "项目", entity: "服务项目", templateUnit: "次", cardUnit: "次", cardName: "轻氧小气泡", category: "产品耗材", budget: "125000" },
-  { label: "小商贩", cardsTab: "货品", entity: "货品", templateUnit: "件", cardUnit: "份", cardName: "夜市烤肠", category: "进货成本", budget: "68000" },
+  { label: "餐饮", cardsTab: "菜品", entity: "菜品", costCardTitle: "菜品成本卡", templateUnit: "份", cardUnit: "份", cardName: "水煮鱼", category: "食材采购", budget: "160000" },
+  { label: "零售", cardsTab: "商品", entity: "商品", costCardTitle: "商品成本卡", templateUnit: "件", cardUnit: "件", cardName: "云朵枕套", category: "商品采购", budget: "150000" },
+  { label: "电商", cardsTab: "商品", entity: "商品", costCardTitle: "商品成本卡", templateUnit: "件", cardUnit: "件", cardName: "轻盈收纳盒", category: "平台佣金", budget: "150000" },
+  { label: "美业服务", cardsTab: "项目", entity: "服务项目", costCardTitle: "服务项目成本卡", templateUnit: "次", cardUnit: "次", cardName: "轻氧小气泡", category: "产品耗材", budget: "125000" },
+  { label: "小商贩", cardsTab: "货品", entity: "货品", costCardTitle: "货品成本卡", templateUnit: "件", cardUnit: "份", cardName: "夜市烤肠", category: "进货成本", budget: "68000" },
 ];
 
 beforeAll(() => {
@@ -103,7 +104,7 @@ describe("五行业模板的真实页面显示", () => {
       expect(cardsTab.getAttribute("aria-current")).toBeNull();
       await user.click(cardsTab);
       expect(mainNavigation().getByRole("button", { name: scenario.cardsTab }).getAttribute("aria-current")).toBe("page");
-      expect(screen.getByRole("heading", { name: `${scenario.entity}成本` })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: scenario.costCardTitle })).toBeTruthy();
       const addCardButtons = screen.getAllByRole("button", { name: `新增${scenario.entity}成本卡` });
       await user.click(addCardButtons.at(-1)!);
       expect((screen.getByRole("textbox", { name: "计量单位" }) as HTMLInputElement).value).toBe(scenario.templateUnit);
@@ -111,7 +112,7 @@ describe("五行业模板的真实页面显示", () => {
       await user.click(screen.getByRole("button", { name: new RegExp(scenario.cardName) }));
       expect(screen.getByText((_, element) => element?.tagName === "STRONG" && element.textContent?.includes(`/ ${scenario.cardUnit}`) === true)).toBeTruthy();
       await user.click(screen.getByRole("button", { name: /查看 SKU 经营/ }));
-      expect(screen.getByRole("heading", { name: `SKU ${scenario.entity}成本` })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: `SKU ${scenario.costCardTitle}` })).toBeTruthy();
       expect(screen.getByText(new RegExp(`售 0${scenario.cardUnit}`))).toBeTruthy();
       await user.click(screen.getByRole("button", { name: "返回" }));
       await user.click(screen.getByRole("button", { name: "返回" }));
@@ -123,7 +124,7 @@ describe("五行业模板的真实页面显示", () => {
       await user.click(screen.getByRole("button", { name: "返回" }));
 
       await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
-      expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
       expect(screen.getAllByText(scenario.category).length).toBeGreaterThan(0);
       const detailsTrigger = screen.getByRole("button", { name: /行业参考估算/ });
       if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
@@ -133,7 +134,7 @@ describe("五行业模板的真实页面显示", () => {
 });
 
 describe("首页第一期经营总览", () => {
-  it("按店铺期间、经营结论、真实补充指标、销售趋势、四项操作、动态和次级内容组织首页", async () => {
+  it("按店铺期间、经营结论和真实补充指标组织轻量工作台，并将消息收敛到顶栏入口", async () => {
     const user = userEvent.setup();
     renderHome();
 
@@ -142,9 +143,7 @@ describe("首页第一期经营总览", () => {
     expect(directSections[0]).toContain("home-identity-context");
     expect(directSections[1]).toContain("home-decision");
     expect(directSections[2]).toContain("home-operational-metrics");
-    expect(directSections[3]).toContain("home-sales-orders");
-    expect(directSections[4]).toContain("home-recent-activity");
-    expect(directSections[5]).toContain("home-secondary-content");
+    expect(directSections).toHaveLength(3);
 
     const metricStrip = screen.getByTestId("home-operational-metrics");
     expect(within(metricStrip).getByText("订单数")).toBeTruthy();
@@ -166,11 +165,12 @@ describe("首页第一期经营总览", () => {
     expect(screen.queryByTestId("home-quick-entry")).toBeNull();
     expect(screen.getByRole("button", { name: "新增记一笔" })).toBeTruthy();
 
-    expect(screen.getByText("销售额 / 订单数")).toBeTruthy();
-    expect(screen.getByText("暂无商品销量")).toBeTruthy();
-    const recent = screen.getByTestId("home-recent-activity");
-    await user.click(within(recent).getByRole("button", { name: /全部流水/ }));
-    expect(screen.getByRole("heading", { name: "收入、成本，逐笔算清" })).toBeTruthy();
+    expect(screen.queryByText("销售额 / 订单数")).toBeNull();
+    expect(screen.queryByTestId("home-recent-activity")).toBeNull();
+    expect(screen.queryByText("本月经营提醒")).toBeNull();
+    expect(screen.getByRole("button", { name: /消息中心/ })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /消息中心/ }));
+    expect(screen.getAllByText("消息中心").length).toBeGreaterThan(0);
   });
 
   it("当天只有成本时显式显示亏损与不可计算的净营收比率，不误显示为盈利或零比率", async () => {
@@ -195,37 +195,23 @@ describe("首页第一期经营总览", () => {
     expect(screen.queryByText("优先处理")).toBeNull();
   });
 
-  it("录入真实订单与流水后展示销售订单双序列趋势，并允许从最近动态回到对应流水详情", async () => {
+  it("录入真实订单后保留订单账本与洞察中的利润趋势入口，工作台不重复承载趋势和动态", async () => {
     const user = userEvent.setup();
     renderHome();
 
-    const salesOrderEmpty = screen.getByText("销售额 / 订单数").closest(".home-sales-orders") as HTMLElement;
-    await user.click(within(salesOrderEmpty).getByRole("button", { name: /记录订单/ }));
+    await user.click(mainNavigation().getByRole("button", { name: "订单" }));
+    await user.click(screen.getByRole("button", { name: "记录订单" }));
     await user.click(screen.getByRole("button", { name: "确认订单并入账" }));
     await user.click(screen.getByRole("button", { name: "返回" }));
     await screen.findByRole("navigation", { name: "主导航" });
 
-    const trend = screen.getByTestId("home-sales-orders-trend");
-    expect(within(trend).getByText("成交额")).toBeTruthy();
-    expect(within(trend).getByText("订单数")).toBeTruthy();
-    expect(within(trend).getByRole("button", { name: /查看销售额与订单数说明/ })).toBeTruthy();
-    await user.click(within(trend).getByRole("button", { name: /订单明细/ }));
     expect(screen.getByRole("heading", { name: "订单" })).toBeTruthy();
-
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "利润趋势" })).toBeTruthy();
     await user.click(mainNavigation().getByRole("button", { name: "工作台" }));
-    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
-    await user.clear(screen.getByPlaceholderText("0.00"));
-    await user.type(screen.getByPlaceholderText("0.00"), "66.60");
-    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
-    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "首页动态回归支出");
-    await user.click(screen.getByRole("button", { name: "平台佣金" }));
-    await user.click(screen.getByRole("button", { name: "保存记录" }));
-    await user.click(screen.getByRole("button", { name: "返回" }));
-    await screen.findByRole("navigation", { name: "主导航" });
-
-    const recent = screen.getByTestId("home-recent-activity");
-    await user.click(within(recent).getByRole("button", { name: /首页动态回归支出/ }));
-    expect(screen.getByRole("heading", { name: "首页动态回归支出" })).toBeTruthy();
+    expect(screen.queryByTestId("home-sales-orders-trend")).toBeNull();
+    expect(screen.queryByTestId("home-recent-activity")).toBeNull();
   });
 });
 
@@ -338,7 +324,7 @@ describe("统一账本的真实页面路径", () => {
     expect(screen.getByText("轻盈收纳盒")).toBeTruthy();
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
-    expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "经营利润" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "利润构成" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "利润趋势" })).toBeTruthy();
@@ -485,16 +471,16 @@ describe("图表主题", () => {
   });
 });
 
-describe("间接成本与智能定价的统一布局", () => {
-  it("在间接成本页使用不重复的内容标题，并保留成本录入和摊销控件", async () => {
+describe("间接费用项与智能定价的统一布局", () => {
+  it("在间接费用项页使用不重复的内容标题，并保留费用录入和摊销控件", async () => {
     const user = userEvent.setup();
     renderHome();
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
-    await user.click(screen.getByRole("button", { name: /间接成本/ }));
+    await user.click(screen.getByRole("button", { name: /间接费用项/ }));
 
-    expect(screen.getByRole("heading", { name: "本期成本设置" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "新增本期成本" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "间接费用项" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "新增间接费用项" })).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "费用类型" })).toBeTruthy();
     expect(screen.getByRole("radio", { name: "一键摊销" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "保存并一键摊销" })).toBeTruthy();
@@ -526,15 +512,16 @@ describe("全站信息精简", () => {
     expect(screen.queryByText("核心经营结果")).toBeNull();
     expect(screen.queryByText("本月实时核算")).toBeNull();
     expect(screen.queryByText("未设目标")).toBeNull();
-    expect(screen.getByRole("button", { name: /设置本月销售目标/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /设置本月销售目标/ })).toBeNull();
 
     await user.click(mainNavigation().getByRole("button", { name: "商品" }));
-    expect(screen.getByRole("heading", { name: "商品成本" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "商品成本卡" })).toBeTruthy();
     expect(screen.queryByText("清晰管理商品成本变化，提升单件利润")).toBeNull();
     expect(screen.getByPlaceholderText("搜索商品名称或类型")).toBeTruthy();
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
-    expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /设置本月销售目标/ })).toBeTruthy();
     expect(screen.queryByText("先看结论，再核对最需要处理的一项成本。")).toBeNull();
     expect(screen.getByRole("heading", { name: "经营利润" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "成本诊断" })).toBeTruthy();
@@ -576,7 +563,7 @@ describe("Dycharts 模板化图表信息层级", () => {
     await user.click(screen.getByRole("button", { name: "返回" }));
     await user.click(screen.getByRole("button", { name: "返回" }));
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
-    expect(screen.getByText("毛利率")).toBeTruthy();
+    expect(screen.getAllByText("毛利率").length).toBeGreaterThan(0);
     expect(screen.getByText("费用率")).toBeTruthy();
   });
 
@@ -617,7 +604,7 @@ describe("Dycharts 模板化图表信息层级", () => {
 
     const user = userEvent.setup();
     renderHome();
-    expect(document.querySelectorAll('[data-chart-template="rank"]').length).toBe(2);
+    expect(document.querySelectorAll('[data-chart-template="rank"]').length).toBe(0);
     await user.click(mainNavigation().getByRole("button", { name: "订单" }));
     expect(document.querySelector('[data-chart-template="pareto-rank"]')).toBeTruthy();
     const refundReason = screen.getByRole("button", { name: /质量问题.*累计/ });
@@ -627,18 +614,18 @@ describe("Dycharts 模板化图表信息层级", () => {
 });
 
 describe("第一批范围、待办与成本快照表达", () => {
-  it("将首页与我的页收束到同一份本月待办，并在首页保留清晰的范围与月度提醒标签", async () => {
+  it("将月度待办收敛到全局消息中心，并从工作台和个人页移除平行入口", async () => {
     const user = userEvent.setup();
     renderHome();
 
-    expect(screen.getByRole("button", { name: /查看本月提醒/ })).toBeTruthy();
-    expect(screen.getByText("本月经营提醒")).toBeTruthy();
-    expect(screen.getByText("本月待办")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /消息中心/ })).toBeTruthy();
+    expect(screen.queryByText("本月经营提醒")).toBeNull();
+    expect(screen.queryByText("本月待办")).toBeNull();
     expect(screen.queryByText("优先处理")).toBeNull();
 
     await openProfile(user);
-    expect(screen.getByText("本月待办")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /本月经营提醒/ })).toBeTruthy();
+    expect(screen.queryByText("本月待办")).toBeNull();
+    expect(screen.queryByRole("button", { name: /本月经营提醒/ })).toBeNull();
   });
 
   it("在完成率高于120%时提示复核本月目标，并复用既有目标编辑入口", async () => {
@@ -651,6 +638,7 @@ describe("第一批范围、待办与成本快照表达", () => {
     const user = userEvent.setup();
     renderHome();
 
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
     expect(screen.getByText(/本月目标可能偏低/)).toBeTruthy();
     const review = screen.getByRole("button", { name: /复核目标/ });
     await user.click(review);
@@ -700,7 +688,7 @@ describe("第二批导航、列表效率与真实事件", () => {
 
     expect(mainNavigation().getByRole("button", { name: "工作台" })).toBeTruthy();
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
-    expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
 
     await openProfile(user);
     await user.click(screen.getByRole("button", { name: /外观设置/ }));
@@ -756,5 +744,65 @@ describe("第二批导航、列表效率与真实事件", () => {
     expect(screen.getByText(/订单成交/)).toBeTruthy();
     expect(screen.queryByText(/促销日/)).toBeNull();
     expect(screen.queryByText(/食材涨价日/)).toBeNull();
+  });
+});
+
+describe("信息架构与入口收口", () => {
+  it("将消息和正式经营报表分别收敛到顶栏铃铛与洞察，并从个人页移除重复入口", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    expect(screen.getByRole("heading", { name: "经营报表" })).toBeTruthy();
+    const allReportsButton = document.querySelector<HTMLButtonElement>(".analysis-report-hub .analysis-card-head > button");
+    expect(allReportsButton).toBeTruthy();
+    await user.click(allReportsButton!);
+    expect(screen.getByRole("heading", { name: "经营报表" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "返回" }));
+
+    await openProfile(user);
+    expect(screen.queryByRole("button", { name: /经营提醒|经营报表|成本报表/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /消息中心/ })).toBeTruthy();
+    await user.click(mainNavigation().getByRole("button", { name: "工作台" }));
+    await user.click(screen.getByRole("button", { name: /消息中心/ }));
+    expect(screen.getAllByText("消息中心").length).toBeGreaterThan(0);
+  });
+
+  it("无商品成本卡时，记录订单直接进入订单前置引导并在原路径提供新建入口", async () => {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    saved.cards = [];
+    saved.skus = [];
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(mainNavigation().getByRole("button", { name: "订单" }));
+    await user.click(screen.getByRole("button", { name: "记录订单" }));
+
+    expect(screen.getByRole("heading", { name: "记录订单" })).toBeTruthy();
+    expect(screen.getByText("请先建商品成本卡")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "新建商品成本卡" })).toBeTruthy();
+    expect(screen.queryByRole("navigation", { name: "主导航" })).toBeNull();
+  });
+});
+
+describe("全站排版舒展感与本地化", () => {
+  it("在没有经营数据时以带标点的短句呈现利润构成空状态", async () => {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    saved.entries = [];
+    saved.orders = [];
+    saved.refunds = [];
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+
+    expect(screen.getByText("利润构成待生成")).toBeTruthy();
+    expect(screen.getByText("记录商品销售后，将自动归集销售收入与已售成本。")).toBeTruthy();
   });
 });
