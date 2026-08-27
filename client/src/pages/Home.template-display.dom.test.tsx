@@ -123,9 +123,9 @@ describe("五行业模板的真实页面显示", () => {
       await user.click(screen.getByRole("button", { name: "返回" }));
 
       await user.click(mainNavigation().getByRole("button", { name: "分析" }));
-      expect(screen.getByRole("heading", { name: /成本诊断/ })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
       expect(screen.getAllByText(scenario.category).length).toBeGreaterThan(0);
-      const detailsTrigger = screen.getByRole("button", { name: /趋势与风险复核/ });
+      const detailsTrigger = screen.getByRole("button", { name: /行业参考估算/ });
       if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
       expect(screen.getByRole("heading", { name: `${scenario.label}潜在漏损` })).toBeTruthy();
     }
@@ -241,7 +241,7 @@ describe("统一账本的真实页面路径", () => {
 
     await user.click(recordTypeButtons[1]);
     expect(screen.getByText("收入标签")).toBeTruthy();
-    expect(screen.getByText("其他收入")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "其他收入" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "平台佣金" })).toBeNull();
 
     const incomeTagField = screen.getByText("收入标签").closest("label") as HTMLElement;
@@ -255,8 +255,25 @@ describe("统一账本的真实页面路径", () => {
     await user.click(recordTypeButtons[1]);
     expect(screen.getByRole("button", { name: "押金收入" })).toBeTruthy();
 
-    await user.click(recordTypeButtons[2]);
+    await user.click(recordTypeButtons[3]);
     expect(screen.getByText("退款标签")).toBeTruthy();
+  });
+
+  it("将记一笔中的商品销售转入订单入账，其他收入不伪装为 SKU 销售", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    expect(screen.getByRole("button", { name: "商品销售" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "其他收入" }));
+    expect(screen.getByText(/其他收入不生成订单、SKU 销量、客单价或商品利润/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "商品销售" }));
+    expect(screen.getByRole("heading", { name: "记录订单" })).toBeTruthy();
+    expect(screen.getByText(/订单会冻结当前渠道佣金、履约费用/)).toBeTruthy();
+    await user.type(screen.getByPlaceholderText("例如：PDD-20260714-001"), "MANUAL-SKU-001");
+    await user.click(screen.getByRole("button", { name: "确认订单并入账" }));
+    expect(screen.getByRole("heading", { name: "订单" })).toBeTruthy();
+    expect(screen.getByText("MANUAL-SKU-001")).toBeTruthy();
   });
 
   it("在真实 Home 中完成流水筛选、记一笔新增/编辑/删除、成本卡搜索与成本结构下钻", async () => {
@@ -321,10 +338,16 @@ describe("统一账本的真实页面路径", () => {
     expect(screen.getByText("轻盈收纳盒")).toBeTruthy();
 
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
+    expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "经营利润" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "利润构成" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "利润趋势" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "商品毛利排行" })).toBeTruthy();
     const categoryDrilldown = screen.getAllByRole("button", { name: /平台佣金/ }).find((button) => button.textContent?.includes("查看流水"))
       ?? screen.getAllByRole("button", { name: /平台佣金/ })[0];
     await user.click(categoryDrilldown);
-    expect((screen.getByPlaceholderText("搜索商户、备注或分类") as HTMLInputElement).value).toBe("平台佣金");
+    expect(screen.getByText(/数据下钻：平台佣金/)).toBeTruthy();
+    expect((screen.getByPlaceholderText("搜索商户、备注或分类") as HTMLInputElement).value).toBe("");
     confirmSpy.mockRestore();
   });
 });
@@ -414,7 +437,7 @@ describe("成本分析供应商排行与结构对照", () => {
     const firstCategory = within(comparison as HTMLElement).getAllByRole("button")[0];
     expect(firstCategory.textContent).toContain("上期 0%");
     await user.click(firstCategory);
-    expect((screen.getByPlaceholderText("搜索商户、备注或分类") as HTMLInputElement).value).toContain("商品采购");
+    expect(screen.getByText(/数据下钻：商品采购/)).toBeTruthy();
   });
 
   it("将已关联供应商的真实支出展示在排行中，并能下钻到该供应商的当期流水", async () => {
@@ -510,9 +533,10 @@ describe("全站信息精简", () => {
     expect(screen.getByPlaceholderText("搜索商品名称或类型")).toBeTruthy();
 
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
-    expect(screen.getByRole("heading", { name: /成本诊断/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /经营分析/ })).toBeTruthy();
     expect(screen.queryByText("先看结论，再核对最需要处理的一项成本。")).toBeNull();
-    expect(screen.getByRole("heading", { name: "本期成本结论" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "经营利润" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "成本诊断" })).toBeTruthy();
   });
 });
 
@@ -551,8 +575,6 @@ describe("Dycharts 模板化图表信息层级", () => {
     await user.click(screen.getByRole("button", { name: "返回" }));
     await user.click(screen.getByRole("button", { name: "返回" }));
     await user.click(mainNavigation().getByRole("button", { name: "分析" }));
-    const detailsTrigger = screen.getByRole("button", { name: /趋势与风险复核/ });
-    if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
     expect(screen.getByText("毛利率")).toBeTruthy();
     expect(screen.getByText("费用率")).toBeTruthy();
   });

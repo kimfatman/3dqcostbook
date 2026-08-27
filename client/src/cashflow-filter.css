@@ -775,3 +775,51 @@
 .skin-deep .home-range-switcher { background: rgba(136,205,255,.1); border-color: rgba(171,224,255,.22); }.skin-deep .home-range-switcher button[aria-pressed="true"] { color: #0b4d8f; background: #d8f1ff; }
 @media (max-width: 360px) { .home-range-switcher { flex-basis: 135px; }.home-range-switcher button { font-size: 9px; }.home-redesign .home-decision-empty b { font-size: 17px; }.home-redesign .home-decision-empty .profit-sculpture { width: 76px; transform: scale(.82); transform-origin: right center; } }
 @media (prefers-reduced-motion: reduce) { .home-range-switcher button { transition: none; } }
+
+/* 记一笔：SKU 销售必须走订单入账，其他收入保留为独立账务；蓝色选中标签使用白色前景以保障可读性。 */
+.record-form .record-type-switch { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.record-type-switch button { min-width: 0; padding-inline: 5px; white-space: nowrap; }
+.record-type-switch .record-product-sale { display: inline-flex; gap: 3px; align-items: center; justify-content: center; color: #087ff5; background: rgba(8,127,245,.06); border: 1px solid rgba(8,127,245,.18); }
+.record-type-switch .record-product-sale:focus-visible { outline: 3px solid rgba(8,127,245,.24); outline-offset: 2px; }
+.category-chips button.selected { color: #fff; }
+.category-chips button.selected:focus-visible { outline: 3px solid rgba(8,127,245,.28); outline-offset: 2px; }
+.skin-deep .record-type-switch .record-product-sale { color: #8fd4ff; background: rgba(118,203,255,.1); border-color: rgba(143,212,255,.24); }
+@media (max-width: 375px) { .record-form .record-type-switch { grid-template-columns: repeat(2, minmax(0, 1fr)); }.record-type-switch button { min-height: 36px; } }
+
+/* 利润分析：先呈现经营结果，再拆解收入、成本和费用；商品毛利保持与经营利润不同的语义。 */
+.analysis-profit-page { gap: 12px; }
+.analysis-profit-page .prototype-analysis-title { display: flex; align-items: end; justify-content: space-between; gap: 10px; }
+.analysis-profit-page .prototype-analysis-title > div:first-child { min-width: 0; }
+.analysis-profit-page .prototype-analysis-title .segment-control { flex: 0 0 auto; }
+.analysis-profit-overview, .analysis-profit-trend, .analysis-profit-sku { margin: 0; padding: 14px; }
+.analysis-profit-overview .analysis-card-head, .analysis-profit-trend .analysis-card-head, .analysis-profit-sku .analysis-card-head { margin-bottom: 12px; }
+.analysis-profit-total { display: grid; gap: 4px; padding-bottom: 13px; border-bottom: 1px solid #e7eef5; }
+.analysis-profit-total > span { color: #526b86; font-size: 11px; font-weight: 700; }
+.analysis-profit-total > strong { color: #0b1836; font-family: var(--financial-numeric-font); font-size: clamp(28px, 8.4vw, 38px); font-variant-numeric: tabular-nums; letter-spacing: -.065em; line-height: .98; }
+.analysis-profit-total > em { color: #4a6b8e; font-size: 11px; font-style: normal; }
+.analysis-profit-total.is-loss > strong, .analysis-profit-sku strong.is-loss { color: #c6545b; }
+.analysis-profit-total.is-loss > em { color: #b0515a; }
+.analysis-profit-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding-top: 12px; }
+.analysis-profit-kpis span { display: grid; gap: 4px; min-width: 0; }
+.analysis-profit-kpis em { overflow: hidden; color: #647d96; font-size: 10px; font-style: normal; white-space: nowrap; text-overflow: ellipsis; }
+.analysis-profit-kpis b { overflow: hidden; color: #193e69; font-family: var(--financial-numeric-font); font-size: 13px; font-variant-numeric: tabular-nums; letter-spacing: -.05em; white-space: nowrap; text-overflow: ellipsis; }
+.analysis-profit-trend { display: grid; gap: 10px; }
+.profit-trend-plot { position: relative; min-height: 150px; padding: 3px 1px 0; }
+.profit-trend-plot svg { display: block; width: 100%; height: 120px; overflow: visible; }
+.profit-trend-zero { stroke: #dbe7f0; stroke-width: .85; stroke-dasharray: 2.5 2.5; vector-effect: non-scaling-stroke; }
+.profit-trend-area { opacity: .9; }
+.profit-trend-line { fill: none; stroke: #087ff5; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.profit-trend-point { fill: #fff; stroke: #087ff5; stroke-width: 1.7; vector-effect: non-scaling-stroke; }
+.profit-trend-point.is-current { fill: #087ff5; stroke: #fff; stroke-width: 2; }
+.profit-trend-point.is-best { fill: #46a77b; stroke: #fff; }.profit-trend-point.is-low { fill: #cf6870; stroke: #fff; }
+.profit-trend-labels { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: -1px; }
+.profit-trend-labels button { min-height: 28px; padding: 0; color: #72889e; font-size: 10px; font-weight: 650; text-align: center; background: transparent; border: 0; border-radius: 6px; }
+.profit-trend-labels button:focus-visible { color: #087ff5; outline: 3px solid rgba(8,127,245,.2); outline-offset: 1px; }
+.profit-trend-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding-top: 10px; border-top: 1px solid #edf2f6; }
+.profit-trend-summary span { display: grid; gap: 3px; min-width: 0; }.profit-trend-summary em { color: #74899f; font-size: 10px; font-style: normal; }.profit-trend-summary b { overflow: hidden; color: #183e68; font-family: var(--financial-numeric-font); font-size: 11px; font-variant-numeric: tabular-nums; letter-spacing: -.045em; white-space: nowrap; text-overflow: ellipsis; }
+.analysis-profit-sku-list { display: grid; }.analysis-profit-sku-list > button { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto 14px; gap: 8px; align-items: center; min-height: 62px; padding: 8px 0; color: #0b1836; text-align: left; background: transparent; border: 0; border-top: 1px solid #ebf1f5; }.analysis-profit-sku-list > button:first-child { border-top: 0; padding-top: 0; }
+.analysis-profit-sku-list > button > i:first-child { display: grid; place-items: center; width: 19px; height: 19px; color: #537493; font-size: 10px; font-style: normal; font-weight: 800; background: #eff5f9; border-radius: 50%; }.analysis-profit-sku-list > button > span { display: grid; gap: 3px; min-width: 0; }.analysis-profit-sku-list b { overflow: hidden; color: inherit; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }.analysis-profit-sku-list span > em { overflow: hidden; color: #6b8197; font-size: 10px; font-style: normal; white-space: nowrap; text-overflow: ellipsis; }.analysis-profit-sku-list > button > strong { min-width: 56px; color: #187052; font-family: var(--financial-numeric-font); font-size: 12px; font-variant-numeric: tabular-nums; letter-spacing: -.045em; text-align: right; white-space: nowrap; }.analysis-profit-sku-list > button > svg { color: #8093a6; }
+.analysis-profit-sku-track { display: block; width: 100%; height: 3px; overflow: hidden; background: #e8f0f5; border-radius: 99px; }.analysis-profit-sku-track > em { display: block; height: 100%; background: linear-gradient(90deg, #48b18a, #0d966d); border-radius: inherit; }.analysis-profit-sku-track > em.is-loss { background: linear-gradient(90deg, #efa8ad, #c75d67); }
+.skin-deep .analysis-profit-total { border-color: rgba(152,213,255,.14); }.skin-deep .analysis-profit-total > span, .skin-deep .analysis-profit-total > em, .skin-deep .analysis-profit-kpis em, .skin-deep .profit-trend-summary em, .skin-deep .profit-trend-labels button, .skin-deep .analysis-profit-sku-list span > em { color: #a4c0d8; }.skin-deep .analysis-profit-total > strong, .skin-deep .analysis-profit-kpis b, .skin-deep .profit-trend-summary b, .skin-deep .analysis-profit-sku-list b { color: #edf7ff; }.skin-deep .analysis-profit-total.is-loss > strong, .skin-deep .analysis-profit-sku strong.is-loss { color: #ffb5bd; }.skin-deep .analysis-profit-sku-list > button, .skin-deep .profit-trend-summary { border-color: rgba(152,213,255,.12); }.skin-deep .analysis-profit-sku-list > button > i:first-child { color: #bee5ff; background: rgba(150,214,255,.12); }.skin-deep .analysis-profit-sku-track { background: rgba(152,213,255,.14); }.skin-deep .profit-trend-zero { stroke: rgba(174,222,255,.3); }.skin-deep .profit-trend-point { fill: #102d52; stroke: #70c9ff; }.skin-deep .profit-trend-point.is-current { fill: #70c9ff; stroke: #102d52; }
+@media (min-width: 768px) { .analysis-profit-page { grid-template-columns: repeat(2, minmax(0, 1fr)); }.analysis-profit-page .prototype-analysis-title, .analysis-profit-page .analysis-profit-overview, .analysis-profit-page .analysis-profit-trend, .analysis-profit-page .analysis-cost-overview, .analysis-profit-page > .analysis-more { grid-column: 1 / -1; }.analysis-profit-page .analysis-waterfall-card, .analysis-profit-page .analysis-profit-sku { margin: 0; }.analysis-profit-kpis b { font-size: 15px; } }
+@media (prefers-reduced-motion: reduce) { .profit-trend-line, .profit-trend-point { transition: none; animation: none; } }

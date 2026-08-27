@@ -13,11 +13,11 @@ describe("移动端页面导航状态", () => {
     expect(navigationSearch({ tab: "home", subPage: null })).toBe("");
     expect(navigationSearch({ tab: "profile", subPage: "profileSettings" })).toBe("?screen=profileSettings");
     expect(navigationSearch({ tab: "analysis", subPage: "indirectCosts" })).toBe("?screen=indirectCosts");
-    expect(navigationSearch({ tab: "home", subPage: "records", recordContext: { filter: "expense", month: "2026-08", query: "包装" } })).toBe("?screen=records&filter=expense&month=2026-08&q=%E5%8C%85%E8%A3%85");
+    expect(navigationSearch({ tab: "home", subPage: "records", recordContext: { filter: "expense", month: "2026-08", query: "包装", categoryKey: "packaging", skuId: "ecommerce-sku-1" } })).toBe("?screen=records&filter=expense&month=2026-08&q=%E5%8C%85%E8%A3%85&category=packaging&sku=ecommerce-sku-1");
   });
 
   it("恢复经营流水的筛选、月份和搜索上下文", () => {
-    expect(readNavigationState("?screen=record&filter=expense&month=2026-08&q=%E5%8C%85%E8%A3%85")).toMatchObject({ tab: "home", subPage: "record", recordContext: { filter: "expense", month: "2026-08", query: "包装" } });
+    expect(readNavigationState("?screen=record&filter=expense&month=2026-08&q=%E5%8C%85%E8%A3%85&category=packaging&sku=ecommerce-sku-1")).toMatchObject({ tab: "home", subPage: "record", recordContext: { filter: "expense", month: "2026-08", query: "包装", categoryKey: "packaging", skuId: "ecommerce-sku-1" } });
   });
 
   it("浏览器回退仅弹出当前层级，保留上一级来源", () => {
