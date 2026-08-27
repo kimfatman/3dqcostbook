@@ -67,6 +67,7 @@ import { buildBudgetBurn, buildCategoryDeltas, buildCostStructure, buildCostStru
 import { buildHiddenCostEstimates } from "@/lib/hidden-costs";
 import { buildCostAnalysisSummary } from "@/lib/cost-analysis-summary";
 import { buildHomeDecision, type HomeDecision, type HomeDecisionNotification, type HomeDecisionTarget } from "@/lib/home-decision";
+import { buildHomeTimeRange, filterByHomeTimeRange, homeTimeRangeOptions, type HomeTimeRange, type HomeTimeRangeWindow } from "@/lib/home-time-range";
 import { buildBusinessHealth, buildSalesTargetHistory } from "@/lib/health-metrics";
 import { buildMetrics, entriesForPeriod, fromFen } from "@/lib/ledger-metrics";
 import { isNonNegativeNumber, isPositiveInteger, isPositiveMoney, toEditableNumber, toNumber, type EditableNumber } from "@/lib/editable-number";
@@ -139,11 +140,13 @@ function Highlight({ value, query }: { value: string; query: string }) {
 function EquationResult({ firstLabel, firstValue, secondLabel, secondValue, resultLabel, resultValue, detail }: { firstLabel: string; firstValue: string; secondLabel: string; secondValue: string; resultLabel: string; resultValue: string; detail: string }) {
   return <section className="equation-result"><span>本期核算</span><div><label><em>{firstLabel}</em><b>{firstValue}</b></label><i>−</i><label><em>{secondLabel}</em><b>{secondValue}</b></label><i>＝</i><label className="equation-outcome"><em>{resultLabel}</em><b>{resultValue}</b></label></div><p>{detail}</p></section>;
 }
-function OperatingSnapshot({ decision, industryRisk, costRate, profitMarginRate, profitDelta, onOpenPriority }: { decision: HomeDecision; industryRisk: string; costRate: number; profitMarginRate: number; profitDelta: number; onOpenPriority: (priority: HomeDecisionNotification) => void }) {
+function OperatingSnapshot({ decision, range, hasData, costRate, profitMarginRate, profitDelta, onSelectRange, onOpenPriority }: { decision: HomeDecision; range: HomeTimeRangeWindow; hasData: boolean; costRate: number | null; profitMarginRate: number | null; profitDelta: number; onSelectRange: (range: HomeTimeRange) => void; onOpenPriority: (priority: HomeDecisionNotification) => void }) {
   const priority = decision.priority;
   const revenue = decision.metrics.find(metric => metric.key === "revenue");
   const cost = decision.metrics.find(metric => metric.key === "cost");
-  return <section className="operating-snapshot home-decision" aria-labelledby="home-decision-title"><div className="home-decision-topline"><span>本期经营</span></div><div className="home-decision-result"><div><em>本月经营利润</em><strong><b id="home-decision-title" className="financial-amount financial-amount-primary" title={yuan(decision.result.amount)} aria-label={`本月经营利润 ${yuan(decision.result.amount)}`}>{formatMoneyCompact(decision.result.amount)}</b><small>{decision.result.label}</small></strong><p><TrendingUp size={14} />{industryRisk}</p></div><i className="profit-sculpture" aria-hidden="true"><span /><span /><span /><em /></i></div><div className="home-decision-equation"><label><em>净营收</em><b className="financial-amount" title={yuan(revenue?.amount || 0)}>{formatMoneyCompact(revenue?.amount || 0)}</b></label><i>−</i><label><em>总成本</em><b className="financial-amount" title={yuan(cost?.amount || 0)}>{formatMoneyCompact(cost?.amount || 0)}</b></label><i>＝</i><label className="outcome"><em>经营利润</em><b className="financial-amount" title={yuan(decision.result.amount)}>{formatMoneyCompact(decision.result.amount)}</b></label></div><dl className="home-decision-metrics"><div><dt>成本率</dt><dd>{costRate}%</dd></div><div><dt>利润率</dt><dd>{profitMarginRate}%</dd></div><div><dt>较上月</dt><dd title={yuan(profitDelta)}>{profitDelta >= 0 ? "+" : ""}{formatMoneyCompact(profitDelta)}</dd></div></dl>{priority && <button className="home-decision-risk" data-tone={priority.tone} onClick={() => onOpenPriority(priority)}><CircleAlert size={16} aria-hidden="true" /><span><em>优先处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} aria-hidden="true" /></button>}</section>;
+  const isLoss = decision.result.label === "经营亏损";
+  const resultAmount = `${isLoss ? "−" : ""}${formatMoneyCompact(decision.result.amount)}`;
+  return <section className={`operating-snapshot home-decision ${hasData ? "" : "is-empty"}`} aria-labelledby="home-decision-title"><div className="home-decision-topline"><span><b>经营概览</b><em>{range.dateLabel}</em></span><div className="home-range-switcher" role="group" aria-label="经营概览时间范围">{homeTimeRangeOptions.map((option) => <button key={option.value} type="button" aria-pressed={option.value === range.value} onClick={() => onSelectRange(option.value)}>{option.label}</button>)}</div></div>{hasData ? <><div className="home-decision-result"><div><em>{range.label}经营结果</em><strong><b id="home-decision-title" className={`financial-amount financial-amount-primary${isLoss ? " is-loss" : ""}`} title={`${decision.result.label} ${yuan(decision.result.amount)}`} aria-label={`${decision.result.label} ${yuan(decision.result.amount)}`}>{resultAmount}</b><small>{decision.result.label}</small></strong></div><i className="profit-sculpture" aria-hidden="true"><span /><span /><span /><em /></i></div><div className="home-decision-equation"><label><em>净营收</em><b className="financial-amount" title={yuan(revenue?.amount || 0)}>{formatMoneyCompact(revenue?.amount || 0)}</b></label><i>−</i><label><em>总成本</em><b className="financial-amount" title={yuan(cost?.amount || 0)}>{formatMoneyCompact(cost?.amount || 0)}</b></label><i>＝</i><label className="outcome"><em>{decision.result.label}</em><b className={`financial-amount${isLoss ? " is-loss" : ""}`} title={`${decision.result.label} ${yuan(decision.result.amount)}`}>{resultAmount}</b></label></div><dl className="home-decision-metrics"><div><dt>成本 / 净营收</dt><dd>{costRate === null ? "—" : `${costRate}%`}</dd></div><div><dt>利润 / 净营收</dt><dd>{profitMarginRate === null ? "—" : `${profitMarginRate}%`}</dd></div><div className={profitDelta < 0 ? "is-negative" : ""}><dt>{range.comparisonLabel}</dt><dd title={yuan(profitDelta)}>{profitDelta >= 0 ? "+" : ""}{formatMoneyCompact(profitDelta)}</dd></div></dl>{priority && <button className="home-decision-risk" data-tone={priority.tone} onClick={() => onOpenPriority(priority)}><CircleAlert size={16} aria-hidden="true" /><span><em>优先处理</em><b>{priority.title}</b></span><small>{priority.action}</small><ChevronRight size={17} aria-hidden="true" /></button>}</> : <div className="home-decision-empty"><div><em>{range.label}尚无已入账数据</em><b id="home-decision-title">从一笔流水或订单开始</b><p>录入后会在这里显示净营收、成本与经营结果。</p></div><i className="profit-sculpture" aria-hidden="true"><span /><span /><span /><em /></i></div>}</section>;
 }
 
 function HomeReminderList({ items, onOpen, onOpenAll }: { items: NotificationItem[]; onOpen: (item: NotificationItem) => void; onOpenAll: () => void }) {
@@ -151,11 +154,11 @@ function HomeReminderList({ items, onOpen, onOpenAll }: { items: NotificationIte
   return <section className="home-reminders home-chart-card"><div className="home-chart-head"><span>经营提醒</span><button onClick={onOpenAll}>全部 <ChevronRight size={14} /></button></div><div className="home-reminder-list">{items.slice(0, 3).map(item => <button key={item.id} data-tone={item.tone} onClick={() => onOpen(item)}><i>{iconFor(item.tone)}</i><span><b>{item.title}</b><em>{item.copy}</em></span><small>{item.action}<ChevronRight size={15} /></small></button>)}</div></section>;
 }
 
-function HomeOperationalMetrics({ orderCount, averageOrderValue, refundAmount, refundCount }: { orderCount: number; averageOrderValue: number; refundAmount: number; refundCount: number }) {
-  return <section className="home-operational-metrics" aria-label="本期经营补充指标" data-testid="home-operational-metrics">
+function HomeOperationalMetrics({ rangeLabel, orderCount, averageOrderValue, refundAmount, refundCount }: { rangeLabel: string; orderCount: number; averageOrderValue: number; refundAmount: number; refundCount: number }) {
+  return <section className="home-operational-metrics" aria-label={`${rangeLabel}经营补充指标`} data-testid="home-operational-metrics">
     <div><em>订单数</em><b>{orderCount}<small>笔</small></b><span>{orderCount > 0 ? "已录入订单" : "待记录订单"}</span></div>
     <div><em>客单价</em><b>{orderCount > 0 ? yuan(averageOrderValue) : "—"}</b><span>{orderCount > 0 ? "按订单成交额" : "暂无订单基数"}</span></div>
-    <div className={refundAmount > 0 ? "has-refund" : ""}><em>退款影响</em><b>{refundAmount > 0 ? `−${yuan(refundAmount)}` : yuan(0)}</b><span>{refundCount > 0 ? `${refundCount} 笔已计入净营收` : "本期暂无退款"}</span></div>
+    <div className={refundAmount > 0 ? "has-refund" : ""}><em>退款影响</em><b>{refundAmount > 0 ? `−${yuan(refundAmount)}` : yuan(0)}</b><span>{refundCount > 0 ? `${refundCount} 笔已计入净营收` : `${rangeLabel}暂无退款`}</span></div>
   </section>;
 }
 
@@ -369,6 +372,7 @@ function BrandStoreLogo({ assetId, preset = "store", alt, size = "normal" }: { a
 }
 
 const today = businessDate();
+const HOME_RANGE_BUDGET = { amountFen: 0, basis: "operating_cost" as const };
 
 export default function Home() {
   const book = useCostBook();
@@ -438,6 +442,7 @@ export default function Home() {
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [targetEditOpen, setTargetEditOpen] = useState(false);
   const [salesTargetInput, setSalesTargetInput] = useState("");
+  const [homeTimeRange, setHomeTimeRange] = useState<HomeTimeRange>("today");
   const [archivePeriod, setArchivePeriod] = useState(book.currentPeriod);
   const [cashChannelFilter, setCashChannelFilter] = useState<OrderChannel | "all">("all");
   const [cashSupplierFilter, setCashSupplierFilter] = useState("");
@@ -532,6 +537,32 @@ export default function Home() {
   const [periodYear, periodMonth] = currentPeriod.split("-").map(Number);
   const daysInCurrentPeriod = new Date(periodYear, periodMonth, 0).getDate();
   const currentDay = Math.min(Number(today.slice(-2)), daysInCurrentPeriod);
+  const homeRange = useMemo(() => buildHomeTimeRange(today, homeTimeRange), [homeTimeRange]);
+  const activeLedgerEntries = useMemo(() => book.state.entries.filter((entry) => entry.industryId === book.activeIndustryId), [book.activeIndustryId, book.state.entries]);
+  const homeRangeEntries = useMemo(() => filterByHomeTimeRange(activeLedgerEntries, homeRange), [activeLedgerEntries, homeRange]);
+  const previousHomeRangeEntries = useMemo(() => filterByHomeTimeRange(activeLedgerEntries, { startDate: homeRange.previousStartDate, endDate: homeRange.previousEndDate }), [activeLedgerEntries, homeRange.previousEndDate, homeRange.previousStartDate]);
+  const homeRangeMetrics = useMemo(() => buildMetrics(homeRangeEntries, HOME_RANGE_BUDGET), [homeRangeEntries]);
+  const previousHomeRangeMetrics = useMemo(() => buildMetrics(previousHomeRangeEntries, HOME_RANGE_BUDGET), [previousHomeRangeEntries]);
+  const homeRangeHasData = homeRangeEntries.some((entry) => entry.status === "posted");
+  const homeRangeTotals = useMemo(() => ({
+    revenue: fromFen(homeRangeMetrics.netRevenueFen),
+    totalCost: fromFen(homeRangeMetrics.cogsFen + homeRangeMetrics.operatingExpenseFen),
+    operatingProfit: fromFen(homeRangeMetrics.operatingProfitFen),
+  }), [homeRangeMetrics]);
+  const homeRangeProfitDelta = fromFen(homeRangeMetrics.operatingProfitFen - previousHomeRangeMetrics.operatingProfitFen);
+  const homeRangeOrders = useMemo(() => filterByHomeTimeRange(orders, homeRange), [homeRange, orders]);
+  const homeRangeRefunds = useMemo(() => filterByHomeTimeRange(refunds, homeRange), [homeRange, refunds]);
+  const homeRangeGrossOrderSales = useMemo(() => homeRangeOrders.reduce((sum, order) => sum + order.lines.reduce((lineTotal, line) => lineTotal + line.quantity * line.unitPriceFen / 100, 0), 0), [homeRangeOrders]);
+  const homeRangeAverageOrderValue = homeRangeOrders.length ? Number((homeRangeGrossOrderSales / homeRangeOrders.length).toFixed(2)) : 0;
+  const homeRangeRefundAmount = useMemo(() => Number(homeRangeRefunds.reduce((sum, refund) => sum + refund.refundFen / 100, 0).toFixed(2)), [homeRangeRefunds]);
+  const homeRangeNotifications = useMemo<HomeDecisionNotification[]>(() => {
+    if (!homeRangeHasData) return [];
+    const items: HomeDecisionNotification[] = [];
+    if (homeRangeMetrics.operatingProfitFen < 0) items.push({ id: "range-loss", tone: "risk", title: `${homeRange.label}经营亏损 ${yuan(Math.abs(fromFen(homeRangeMetrics.operatingProfitFen)))}`, action: "核对成本流水", target: "records" });
+    if (homeRangeRefunds.length) items.push({ id: "refund-watch", tone: "attention", title: `${homeRange.label}退款 ${yuan(homeRangeRefundAmount)}`, action: "查看退款订单", target: "orders" });
+    return items;
+  }, [homeRange.label, homeRangeHasData, homeRangeMetrics.operatingProfitFen, homeRangeRefundAmount, homeRangeRefunds.length]);
+  const homeRangeDecision = useMemo(() => buildHomeDecision({ industryLabel: template.label, period: `${homeRange.startDate}~${homeRange.endDate}`, revenue: homeRangeTotals.revenue, cost: homeRangeTotals.totalCost, operatingProfit: homeRangeTotals.operatingProfit, budgetRemaining: 0, budgetState: "healthy", budget: 0, budgetForecast: 0, notifications: homeRangeNotifications }), [homeRange.endDate, homeRange.startDate, homeRangeNotifications, homeRangeTotals.operatingProfit, homeRangeTotals.revenue, homeRangeTotals.totalCost, template.label]);
   const budgetBurn = useMemo(() => buildBudgetBurn({ budget: totals.budget, used: totals.totalCost, dayOfMonth: currentDay, daysInMonth: daysInCurrentPeriod }), [currentDay, daysInCurrentPeriod, totals.budget, totals.totalCost]);
   const notificationItems = useMemo<NotificationItem[]>(() => {
     const items: NotificationItem[] = [];
@@ -905,16 +936,9 @@ export default function Home() {
   }
 
   function HomePage() {
-    const homeProfile = industryHomeProfiles[book.activeIndustryId];
     const IndustryIcon = iconByIndustry[book.activeIndustryId];
-    const previousProfit = book.getPeriodView(book.previousPeriod(currentPeriod)).totals.operatingProfit;
-    const costRate = totals.revenue > 0 ? Number((totals.totalCost / totals.revenue * 100).toFixed(1)) : 0;
-    const profitMarginRate = totals.revenue > 0 ? Number((totals.operatingProfit / totals.revenue * 100).toFixed(1)) : 0;
-    const currentPeriodOrders = orders.filter((order) => order.occurredAt.startsWith(currentPeriod));
-    const currentPeriodRefunds = refunds.filter((refund) => refund.occurredAt.startsWith(currentPeriod));
-    const grossOrderSales = currentPeriodOrders.reduce((sum, order) => sum + order.lines.reduce((lineTotal, line) => lineTotal + line.quantity * line.unitPriceFen / 100, 0), 0);
-    const averageOrderValue = currentPeriodOrders.length ? Number((grossOrderSales / currentPeriodOrders.length).toFixed(2)) : 0;
-    const refundAmount = Number((currentPeriodRefunds.reduce((sum, refund) => sum + refund.refundFen / 100, 0)).toFixed(2));
+    const costRate = homeRangeTotals.revenue > 0 ? Number((homeRangeTotals.totalCost / homeRangeTotals.revenue * 100).toFixed(1)) : null;
+    const profitMarginRate = homeRangeTotals.revenue > 0 ? Number((homeRangeTotals.operatingProfit / homeRangeTotals.revenue * 100).toFixed(1)) : null;
     const orderRecordIds = new Set(records.filter((record) => record.orderId).map((record) => record.orderId));
     const recentActivities = [
       ...records.filter((record) => !record.orderId).map((record): HomeRecentActivityItem => ({
@@ -946,8 +970,8 @@ export default function Home() {
     ];
     return <div className="prototype-home home-redesign" data-chart-role={chartRole("home").primary}>
       <section className="dashboard-kicker home-context home-identity-context"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{template.storeName}</b><em>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</em></span><button onClick={() => goSub("notifications")}>查看提醒 <ChevronRight size={14} /></button></section>
-      <OperatingSnapshot decision={homeDecision} industryRisk={homeProfile.insight.title} costRate={costRate} profitMarginRate={profitMarginRate} profitDelta={totals.operatingProfit - previousProfit} onOpenPriority={openHomeDecision} />
-      <HomeOperationalMetrics orderCount={currentPeriodOrders.length} averageOrderValue={averageOrderValue} refundAmount={refundAmount} refundCount={currentPeriodRefunds.length} />
+      <OperatingSnapshot decision={homeRangeDecision} range={homeRange} hasData={homeRangeHasData} costRate={costRate} profitMarginRate={profitMarginRate} profitDelta={homeRangeProfitDelta} onSelectRange={setHomeTimeRange} onOpenPriority={openHomeDecision} />
+      <HomeOperationalMetrics rangeLabel={homeRange.label} orderCount={homeRangeOrders.length} averageOrderValue={homeRangeAverageOrderValue} refundAmount={homeRangeRefundAmount} refundCount={homeRangeRefunds.length} />
       <SalesOrdersTrend items={salesOrdersTrend} onOpenOrders={() => openOrdersContext("all")} onRecordOrder={openNewOrder} />
       <section className="home-quick-entry home-chart-card" data-testid="home-quick-entry"><div className="home-chart-head"><span>快捷操作</span><b>今天要做什么</b></div><div>{quickEntries.map(({ label, Icon, tone, action }) => <button key={label} className={tone} onClick={action}><i><Icon size={20} /></i><span>{label}</span></button>)}</div></section>
       <HomeRecentActivity items={recentActivities} onOpenRecord={openRecordDetail} onOpenOrder={openOrder} onOpenAll={() => { setRecordFilter("all"); setRecordMonth("all"); goSub("records"); }} />

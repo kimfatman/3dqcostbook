@@ -151,7 +151,18 @@ describe("首页第一期经营总览", () => {
     expect(within(metricStrip).getByText("订单数")).toBeTruthy();
     expect(within(metricStrip).getByText("客单价")).toBeTruthy();
     expect(within(metricStrip).getByText("退款影响")).toBeTruthy();
-    expect(within(metricStrip).getByText("本期暂无退款")).toBeTruthy();
+    expect(within(metricStrip).getByText("今天暂无退款")).toBeTruthy();
+
+    const rangeSwitcher = screen.getByRole("group", { name: "经营概览时间范围" });
+    expect(within(rangeSwitcher).getByRole("button", { name: "今天" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("今天尚无已入账数据")).toBeTruthy();
+    await user.click(within(rangeSwitcher).getByRole("button", { name: "本月" }));
+    expect(within(rangeSwitcher).getByRole("button", { name: "本月" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("较上月同期")).toBeTruthy();
+    await user.click(within(rangeSwitcher).getByRole("button", { name: "本周" }));
+    expect(within(rangeSwitcher).getByRole("button", { name: "本周" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("本周尚无已入账数据")).toBeTruthy();
+    await user.click(within(rangeSwitcher).getByRole("button", { name: "今天" }));
 
     const quickEntry = screen.getByTestId("home-quick-entry");
     expect(within(quickEntry).getAllByRole("button")).toHaveLength(4);
@@ -165,6 +176,28 @@ describe("首页第一期经营总览", () => {
     const recent = screen.getByTestId("home-recent-activity");
     await user.click(within(recent).getByRole("button", { name: /全部流水/ }));
     expect(screen.getByRole("heading", { name: "收入、成本，逐笔算清" })).toBeTruthy();
+  });
+
+  it("当天只有成本时显式显示亏损与不可计算的净营收比率，不误显示为盈利或零比率", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(within(screen.getByTestId("home-quick-entry")).getByRole("button", { name: "记一笔" }));
+    await user.clear(screen.getByPlaceholderText("0.00"));
+    await user.type(screen.getByPlaceholderText("0.00"), "99");
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "今日亏损回归成本");
+    await user.click(screen.getByRole("button", { name: "平台佣金" }));
+    await user.click(screen.getByRole("button", { name: "保存记录" }));
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await screen.findByRole("navigation", { name: "主导航" });
+
+    expect(screen.getAllByText("经营亏损").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("−¥99.00").length).toBeGreaterThan(0);
+    expect(screen.getByText("成本 / 净营收")).toBeTruthy();
+    expect(screen.getByText("利润 / 净营收")).toBeTruthy();
+    expect(screen.getAllByText("—").length).toBeGreaterThan(1);
+    expect(screen.getByRole("button", { name: /今天经营亏损/ })).toBeTruthy();
   });
 
   it("录入真实订单与流水后展示销售订单双序列趋势，并允许从最近动态回到对应流水详情", async () => {
@@ -469,7 +502,7 @@ describe("全站信息精简", () => {
     const user = userEvent.setup();
     renderHome();
 
-    expect(screen.getByText("本期经营")).toBeTruthy();
+    expect(screen.getByText("经营概览")).toBeTruthy();
     expect(screen.queryByText("核心经营结果")).toBeNull();
     expect(screen.queryByText("本月实时核算")).toBeNull();
     expect(screen.queryByText("未设目标")).toBeNull();
