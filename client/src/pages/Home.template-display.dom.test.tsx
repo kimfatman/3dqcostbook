@@ -97,7 +97,7 @@ describe("五行业模板的真实页面显示", () => {
       expect(screen.getByText((text) => text.includes(`${scenario.label}经营者`))).toBeTruthy();
       await user.click(mainNavigation().getByRole("button", { name: "经营" }));
       expect(screen.getAllByText(new RegExp(`${scenario.label} ·`)).length).toBeGreaterThan(0);
-      expect(screen.getByRole("button", { name: `${scenario.entity}成本` })).toBeTruthy();
+      expect(screen.getByRole("button", { name: `添加${scenario.entity}` })).toBeTruthy();
 
       const cardsTab = mainNavigation().getByRole("button", { name: scenario.cardsTab });
       expect(cardsTab.getAttribute("aria-current")).toBeNull();
@@ -129,6 +129,74 @@ describe("五行业模板的真实页面显示", () => {
       if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
       expect(screen.getByRole("heading", { name: `${scenario.label}潜在漏损` })).toBeTruthy();
     }
+  }, 12_000);
+});
+
+describe("首页第一期经营总览", () => {
+  it("按店铺期间、经营结论、真实补充指标、销售趋势、四项操作、动态和次级内容组织首页", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    const home = document.querySelector(".home-redesign") as HTMLElement;
+    const directSections = Array.from(home.children).map((node) => node.className);
+    expect(directSections[0]).toContain("home-identity-context");
+    expect(directSections[1]).toContain("home-decision");
+    expect(directSections[2]).toContain("home-operational-metrics");
+    expect(directSections[3]).toContain("home-sales-orders");
+    expect(directSections[4]).toContain("home-quick-entry");
+    expect(directSections[5]).toContain("home-recent-activity");
+    expect(directSections[6]).toContain("home-secondary-content");
+
+    const metricStrip = screen.getByTestId("home-operational-metrics");
+    expect(within(metricStrip).getByText("订单数")).toBeTruthy();
+    expect(within(metricStrip).getByText("客单价")).toBeTruthy();
+    expect(within(metricStrip).getByText("退款影响")).toBeTruthy();
+    expect(within(metricStrip).getByText("本期暂无退款")).toBeTruthy();
+
+    const quickEntry = screen.getByTestId("home-quick-entry");
+    expect(within(quickEntry).getAllByRole("button")).toHaveLength(4);
+    expect(within(quickEntry).getByRole("button", { name: "记一笔" })).toBeTruthy();
+    expect(within(quickEntry).getByRole("button", { name: "添加商品" })).toBeTruthy();
+    expect(within(quickEntry).getByRole("button", { name: "记录订单" })).toBeTruthy();
+    expect(within(quickEntry).getByRole("button", { name: "成本分析" })).toBeTruthy();
+
+    expect(screen.getByText("销售额 / 订单数")).toBeTruthy();
+    expect(screen.getByText("暂无商品销量")).toBeTruthy();
+    const recent = screen.getByTestId("home-recent-activity");
+    await user.click(within(recent).getByRole("button", { name: /全部流水/ }));
+    expect(screen.getByRole("heading", { name: "收入、成本，逐笔算清" })).toBeTruthy();
+  });
+
+  it("录入真实订单与流水后展示销售订单双序列趋势，并允许从最近动态回到对应流水详情", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: "记录订单" }));
+    await user.click(screen.getByRole("button", { name: "确认订单并入账" }));
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await screen.findByRole("navigation", { name: "主导航" });
+
+    const trend = screen.getByTestId("home-sales-orders-trend");
+    expect(within(trend).getByText("成交额")).toBeTruthy();
+    expect(within(trend).getByText("订单数")).toBeTruthy();
+    expect(within(trend).getByRole("button", { name: /查看销售额与订单数说明/ })).toBeTruthy();
+    await user.click(within(trend).getByRole("button", { name: /订单明细/ }));
+    expect(screen.getByRole("heading", { name: "订单" })).toBeTruthy();
+
+    await user.click(mainNavigation().getByRole("button", { name: "经营" }));
+    await user.click(within(screen.getByTestId("home-quick-entry")).getByRole("button", { name: "记一笔" }));
+    await user.clear(screen.getByPlaceholderText("0.00"));
+    await user.type(screen.getByPlaceholderText("0.00"), "66.60");
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "首页动态回归支出");
+    await user.click(screen.getByRole("button", { name: "平台佣金" }));
+    await user.click(screen.getByRole("button", { name: "保存记录" }));
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await screen.findByRole("navigation", { name: "主导航" });
+
+    const recent = screen.getByTestId("home-recent-activity");
+    await user.click(within(recent).getByRole("button", { name: /首页动态回归支出/ }));
+    expect(screen.getByRole("heading", { name: "首页动态回归支出" })).toBeTruthy();
   });
 });
 

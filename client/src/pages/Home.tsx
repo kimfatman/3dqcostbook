@@ -151,21 +151,32 @@ function HomeReminderList({ items, onOpen, onOpenAll }: { items: NotificationIte
   return <section className="home-reminders home-chart-card"><div className="home-chart-head"><span>经营提醒</span><button onClick={onOpenAll}>全部 <ChevronRight size={14} /></button></div><div className="home-reminder-list">{items.slice(0, 3).map(item => <button key={item.id} data-tone={item.tone} onClick={() => onOpen(item)}><i>{iconFor(item.tone)}</i><span><b>{item.title}</b><em>{item.copy}</em></span><small>{item.action}<ChevronRight size={15} /></small></button>)}</div></section>;
 }
 
-function MiniTrendCard({ label, caption, total, values, tone, onClick }: { label: string; caption: string; total: number; values: number[]; tone: "income" | "cost"; onClick: () => void }) {
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values);
-  const coordinates = values.map((value, index) => ({ x: 8 + index / Math.max(values.length - 1, 1) * 84, y: 82 - value / max * 56 }));
-  const curve = buildSmoothPricingProfitPolyline(coordinates);
-  const area = `${curve} 92,92 8,92`;
-  const gradientId = `mini-trend-${tone}`;
-  return <button className={`home-mini-trend ${tone}`} onClick={onClick}><span><em>{label}</em><b>{yuan(total)}</b><small>{caption}</small></span>{tone === "cost" ? <i className="home-mini-bars" aria-hidden="true">{values.map((value, index) => <b key={index} style={{ height: `${Math.max(value > 0 ? 8 : 3, value / max * 100)}%` }} />)}</i> : <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#49b9ff" stopOpacity=".34" /><stop offset="100%" stopColor="#49b9ff" stopOpacity="0" /></linearGradient></defs><polygon className="chart-soft-area" points={area} fill={`url(#${gradientId})`} /><polyline className="chart-soft-line" points={curve} /><g>{coordinates.map((point, index) => <circle key={index} className={`chart-soft-point${index === values.length - 1 ? " is-current" : values[index] === max ? " is-peak" : values[index] === min ? " is-low" : ""}`} cx={point.x} cy={point.y} r={index === values.length - 1 ? "3" : "1.8"} />)}</g></svg>}</button>;
+function HomeOperationalMetrics({ orderCount, averageOrderValue, refundAmount, refundCount }: { orderCount: number; averageOrderValue: number; refundAmount: number; refundCount: number }) {
+  return <section className="home-operational-metrics" aria-label="本期经营补充指标" data-testid="home-operational-metrics">
+    <div><em>订单数</em><b>{orderCount}<small>笔</small></b><span>{orderCount > 0 ? "已录入订单" : "待记录订单"}</span></div>
+    <div><em>客单价</em><b>{orderCount > 0 ? yuan(averageOrderValue) : "—"}</b><span>{orderCount > 0 ? "按订单成交额" : "暂无订单基数"}</span></div>
+    <div className={refundAmount > 0 ? "has-refund" : ""}><em>退款影响</em><b>{refundAmount > 0 ? `−${yuan(refundAmount)}` : yuan(0)}</b><span>{refundCount > 0 ? `${refundCount} 笔已计入净营收` : "本期暂无退款"}</span></div>
+  </section>;
 }
 
-function HomeAnalysisPreview({ sales, costs, onOpen }: { sales: ReturnType<typeof buildDailySalesOrders>; costs: number[]; onOpen: () => void }) {
-  const salesTotal = sales.reduce((sum, item) => sum + item.sales, 0);
-  const costTotal = costs.reduce((sum, item) => sum + item, 0);
-  return <section className="home-analysis-preview home-chart-card"><div className="home-chart-head"><span>经营趋势</span><button onClick={onOpen}>查看分析 <ChevronRight size={14} /></button></div><div><MiniTrendCard label="近 7 日销售走势" caption={`销售 ${yuan(salesTotal)} · 成本 ${yuan(costTotal)}`} total={salesTotal} values={sales.map(item => item.sales)} tone="income" onClick={onOpen} /></div></section>;
+type HomeRecentActivityItem = {
+  id: string;
+  source: "record" | "order";
+  sourceId: string;
+  title: string;
+  detail: string;
+  date: string;
+  amount: number;
+  tone: "income" | "expense" | "refund" | "order";
+};
+
+function HomeRecentActivity({ items, onOpenRecord, onOpenOrder, onOpenAll }: { items: HomeRecentActivityItem[]; onOpenRecord: (id: string) => void; onOpenOrder: (id: string) => void; onOpenAll: () => void }) {
+  return <section className="home-recent-activity" aria-labelledby="home-recent-activity-title" data-testid="home-recent-activity">
+    <div className="home-recent-activity-head"><span><em>最近动态</em><b id="home-recent-activity-title">最新入账与订单</b></span><button type="button" onClick={onOpenAll}>全部流水 <ChevronRight size={14} /></button></div>
+    {items.length ? <div className="home-recent-activity-list">{items.map((item) => <button key={item.id} type="button" onClick={() => item.source === "order" ? onOpenOrder(item.sourceId) : onOpenRecord(item.sourceId)}><i className={item.tone}>{item.tone === "order" ? <ClipboardList size={16} /> : <ReceiptText size={16} />}</i><span><b>{item.title}</b><em>{item.detail} · {item.date.replaceAll("-", "/")}</em></span><strong className={item.tone === "income" || item.tone === "order" ? "income" : "expense"}>{item.tone === "income" || item.tone === "order" ? "+" : "−"}{yuan(item.amount)}</strong><ChevronRight size={15} /></button>)}</div> : <HomeChartEmpty title="暂无经营动态" copy="从记一笔或记录订单开始，最新变动会出现在这里" action="记一笔" onClick={onOpenAll} />}
+  </section>;
 }
+
 function notificationImpact(item: NotificationItem) {
   const amount = item.title.match(/¥[\d,]+/)?.[0];
   if (amount) return amount;
@@ -206,10 +217,10 @@ function VisualSkinPicker({ skin, onChange }: { skin: VisualSkin; onChange: (ski
   return <section className="visual-skin-picker" aria-labelledby="visual-skin-title"><div className="visual-skin-heading"><span><em>视觉皮肤</em><b id="visual-skin-title">选择你的经营工作台</b></span><small>切换不影响账本数据</small></div><div className="visual-skin-options">{visualSkinOptions.map((option) => <button key={option.id} className={`skin-option ${option.material} ${skin === option.id ? "active" : ""}`} aria-pressed={skin === option.id} onClick={() => onChange(option.id)}><i aria-hidden="true"><span /><span /><span /></i><span><b>{option.label}</b><em>{option.detail}</em></span>{skin === option.id ? <Check size={17} /> : <ChevronRight size={16} />}</button>)}</div><button className="chart-theme-toggle" type="button" onClick={toggleTheme}><span>{theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}<b>图表深色模式</b><em>{theme === "dark" ? "深色已开启" : "跟随浅色界面"}</em></span><strong>{theme === "dark" ? "切换浅色" : "切换深色"}<ChevronRight size={16} /></strong></button></section>;
 }
 
-function SalesOrdersTrend({ items, onOpen }: { items: ReturnType<typeof buildDailySalesOrders>; onOpen: () => void }) {
+function SalesOrdersTrend({ items, onOpenOrders, onRecordOrder }: { items: ReturnType<typeof buildDailySalesOrders>; onOpenOrders: () => void; onRecordOrder: () => void }) {
   const salesTotal = items.reduce((sum, item) => sum + item.sales, 0);
   const orderTotal = items.reduce((sum, item) => sum + item.orders, 0);
-  if (!orderTotal) return <section className="home-chart-card"><div className="home-chart-head"><span>销售动能</span><b>近 7 日</b></div><HomeChartEmpty title="销售额 / 订单数" copy="本期还没有订单数据" action="记录订单" onClick={onOpen} /></section>;
+  if (!orderTotal) return <section className="home-chart-card home-sales-orders"><div className="home-chart-head"><span>销售动能 <ChartTooltip label="销售额与订单数" value="暂无订单" detail="销售额按订单成交日汇总；订单数为同一日期内已录入订单数。退款仍按实际退款日单独影响净营收。" /></span><b>近 7 日</b></div><HomeChartEmpty title="销售额 / 订单数" copy="本期还没有订单数据" action="记录订单" onClick={onRecordOrder} /></section>;
   const maxSales = Math.max(...items.map((item) => item.sales), 1);
   const orderValues = items.map((item) => item.orders);
   const maxOrders = Math.max(...orderValues);
@@ -220,7 +231,7 @@ function SalesOrdersTrend({ items, onOpen }: { items: ReturnType<typeof buildDai
   const lineCoordinates = items.map((item, index) => ({ x: 8 + index / Math.max(items.length - 1, 1) * 84, y: 88 - item.orders / maxOrders * 68 }));
   const curve = buildSmoothPricingProfitPolyline(lineCoordinates);
   const area = `${curve} 92,92 8,92`;
-  return <button className="home-chart-card home-sales-orders template-hybrid-trend" onClick={onOpen}><div className="home-chart-head"><span>销售动能</span><b>近 7 日</b></div><div className="sales-summary"><label><em>销售额</em><strong><AnimatedChartValue value={salesTotal} format={yuan} /></strong></label><label><em>订单数</em><strong><AnimatedChartValue value={orderTotal} format={(value) => `${Math.round(value)} 笔`} /></strong></label><small><i className="sales" />销售额　<i className="orders" />订单数</small></div><div className="sales-orders-plot"><div className="sales-bars">{items.map((item) => <span key={item.date}><i style={{ height: `${Math.max(item.sales > 0 ? 8 : 2, item.sales / maxSales * 100)}%` }} /><em>{Number(item.date.slice(-2))}日</em></span>)}</div><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sales-orders-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#0b1836" stopOpacity=".2" /><stop offset="100%" stopColor="#0b1836" stopOpacity="0" /></linearGradient></defs><polygon className="sales-orders-area" points={area} fill="url(#sales-orders-area)" /><polyline className="sales-orders-line" points={curve} />{lineCoordinates.map((point, index) => <circle key={items[index].date} className={`sales-orders-point${index === items.length - 1 ? " is-current" : items[index].orders === maxOrders ? " is-peak" : items[index].orders === minOrders ? " is-low" : ""}`} cx={point.x} cy={point.y} r={index === items.length - 1 ? "2.8" : "1.65"} />)}</svg></div><div className="trend-insights"><span><em>最新</em><b>{yuan(latest.sales)} · {latest.orders}笔</b></span><span><em>峰值</em><b>{Number(peakSales.date.slice(-2))}日 {yuan(peakSales.sales)}</b></span><span><em>客单</em><b>{yuan(averageOrderValue)}</b></span></div></button>;
+  return <section className="home-chart-card home-sales-orders template-hybrid-trend" data-testid="home-sales-orders-trend"><div className="home-chart-head"><span>销售动能 <ChartTooltip label="销售额与订单数" value={`${yuan(salesTotal)} · ${orderTotal} 笔`} detail="柱形按订单成交日汇总成交额，曲线表示同日订单数；退款不会倒灌至销售日。" /></span><button type="button" onClick={onOpenOrders}>订单明细 <ChevronRight size={14} /></button></div><button type="button" className="home-sales-orders-trigger" onClick={onOpenOrders} aria-label={`查看近 7 日销售订单趋势，订单成交额 ${yuan(salesTotal)}，${orderTotal} 笔订单`}><div className="sales-summary"><label><em>成交额</em><strong><AnimatedChartValue value={salesTotal} format={yuan} /></strong></label><label><em>订单数</em><strong><AnimatedChartValue value={orderTotal} format={(value) => `${Math.round(value)} 笔`} /></strong></label><small><i className="sales" />成交额　<i className="orders" />订单数</small></div><div className="sales-orders-plot"><div className="sales-bars">{items.map((item) => <span key={item.date}><i style={{ height: `${Math.max(item.sales > 0 ? 8 : 2, item.sales / maxSales * 100)}%` }} /><em>{Number(item.date.slice(-2))}日</em></span>)}</div><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sales-orders-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#0b1836" stopOpacity=".2" /><stop offset="100%" stopColor="#0b1836" stopOpacity="0" /></linearGradient></defs><polygon className="sales-orders-area" points={area} fill="url(#sales-orders-area)" /><polyline className="sales-orders-line" points={curve} />{lineCoordinates.map((point, index) => <circle key={items[index].date} className={`sales-orders-point${index === items.length - 1 ? " is-current" : items[index].orders === maxOrders ? " is-peak" : items[index].orders === minOrders ? " is-low" : ""}`} cx={point.x} cy={point.y} r={index === items.length - 1 ? "2.8" : "1.65"} />)}</svg></div><div className="trend-insights"><span><em>最新</em><b>{yuan(latest.sales)} · {latest.orders}笔</b></span><span><em>峰值</em><b>{Number(peakSales.date.slice(-2))}日 {yuan(peakSales.sales)}</b></span><span><em>客单</em><b>{yuan(averageOrderValue)}</b></span></div></button></section>;
 }
 
 function SkuTopBars({ title, type, items, onSelect, onEmpty }: { title: string; type: "sales" | "profit"; items: ReturnType<typeof buildSkuRankings>["sales"]; onSelect: (id: string) => void; onEmpty: () => void }) {
@@ -896,27 +907,56 @@ export default function Home() {
   function HomePage() {
     const homeProfile = industryHomeProfiles[book.activeIndustryId];
     const IndustryIcon = iconByIndustry[book.activeIndustryId];
-    const hasSalesData = salesOrdersTrend.some((item) => item.orders > 0);
     const previousProfit = book.getPeriodView(book.previousPeriod(currentPeriod)).totals.operatingProfit;
     const costRate = totals.revenue > 0 ? Number((totals.totalCost / totals.revenue * 100).toFixed(1)) : 0;
     const profitMarginRate = totals.revenue > 0 ? Number((totals.operatingProfit / totals.revenue * 100).toFixed(1)) : 0;
-    const dailyCosts = salesOrdersTrend.map(item => records.filter(record => record.type === "expense" && record.date === item.date).reduce((sum, record) => sum + record.amount, 0));
+    const currentPeriodOrders = orders.filter((order) => order.occurredAt.startsWith(currentPeriod));
+    const currentPeriodRefunds = refunds.filter((refund) => refund.occurredAt.startsWith(currentPeriod));
+    const grossOrderSales = currentPeriodOrders.reduce((sum, order) => sum + order.lines.reduce((lineTotal, line) => lineTotal + line.quantity * line.unitPriceFen / 100, 0), 0);
+    const averageOrderValue = currentPeriodOrders.length ? Number((grossOrderSales / currentPeriodOrders.length).toFixed(2)) : 0;
+    const refundAmount = Number((currentPeriodRefunds.reduce((sum, refund) => sum + refund.refundFen / 100, 0)).toFixed(2));
+    const orderRecordIds = new Set(records.filter((record) => record.orderId).map((record) => record.orderId));
+    const recentActivities = [
+      ...records.filter((record) => !record.orderId).map((record): HomeRecentActivityItem => ({
+        id: `record-${record.id}`,
+        source: "record",
+        sourceId: record.id,
+        title: record.merchant || categoryByKey.get(record.categoryKey)?.label || "未命名流水",
+        detail: categoryByKey.get(record.categoryKey)?.label || "未分类",
+        date: record.date,
+        amount: record.amount,
+        tone: record.type,
+      })),
+      ...orders.filter((order) => !orderRecordIds.has(order.id)).map((order): HomeRecentActivityItem => ({
+        id: `order-${order.id}`,
+        source: "order",
+        sourceId: order.id,
+        title: order.orderNo,
+        detail: `${channelLabel[order.channel]} · ${order.buyer || "未填写客户"}`,
+        date: order.occurredAt,
+        amount: getOrderAfterSalesMetrics(order, refunds).netRevenueFen / 100,
+        tone: "order",
+      })),
+    ].sort((left, right) => right.date.localeCompare(left.date)).slice(0, 3);
     const quickEntries: { label: string; Icon: LucideIcon; tone: string; action: () => void }[] = [
-      { label: `${template.entityLabel}成本`, Icon: PackageOpen, tone: "blue", action: () => openRootTab("cards") },
-      { label: "采购分析", Icon: ShoppingCart, tone: "orange", action: () => { setRecordFilter("expense"); setRecordMonth(currentPeriod); goSub("records"); } },
-      { label: "订单管理", Icon: ClipboardList, tone: "purple", action: () => openOrdersContext("all") },
-      { label: "经营报告", Icon: FileText, tone: "green", action: () => goSub("reports") },
-      { label: "更多功能", Icon: MoreHorizontal, tone: "slate", action: () => openRootTab("profile") },
+      { label: "记一笔", Icon: Plus, tone: "blue", action: openNewRecord },
+      { label: `添加${template.entityLabel}`, Icon: PackageOpen, tone: "orange", action: openNewCard },
+      { label: "记录订单", Icon: ClipboardList, tone: "purple", action: openNewOrder },
+      { label: "成本分析", Icon: BarChart3, tone: "green", action: () => openRootTab("analysis") },
     ];
     return <div className="prototype-home home-redesign" data-chart-role={chartRole("home").primary}>
-      <section className="dashboard-kicker home-context"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</b></span><button onClick={() => goSub("notifications")}>查看提醒 <ChevronRight size={14} /></button></section>
+      <section className="dashboard-kicker home-context home-identity-context"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{template.storeName}</b><em>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</em></span><button onClick={() => goSub("notifications")}>查看提醒 <ChevronRight size={14} /></button></section>
       <OperatingSnapshot decision={homeDecision} industryRisk={homeProfile.insight.title} costRate={costRate} profitMarginRate={profitMarginRate} profitDelta={totals.operatingProfit - previousProfit} onOpenPriority={openHomeDecision} />
-      <SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} />
-      <HomeReminderList items={notificationItems} onOpen={openNotificationTarget} onOpenAll={() => goSub("notifications")} />
-      <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传"><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 20}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><img className="promotion-3d-asset" src={banner.asset} alt="" aria-hidden="true" /><span className="promotion-overlay" aria-hidden="true" /><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}</div></section>
-      <HomeAnalysisPreview sales={salesOrdersTrend} costs={dailyCosts} onOpen={() => openRootTab("analysis")} />
-      <section className="home-sku-template-grid" aria-label="商品销量与利润排行"><SkuTopBars title="商品销量 Top 5" type="sales" items={skuRankings.sales} onSelect={() => goSub("skus")} onEmpty={() => openRootTab("cards")} /><SkuTopBars title="商品利润 Top 5" type="profit" items={skuRankings.profit} onSelect={() => goSub("skus")} onEmpty={() => openRootTab("cards")} /></section>
-      <section className="home-quick-entry home-chart-card"><div className="home-chart-head"><span>快捷入口</span><b>常用功能</b></div><div>{quickEntries.map(({ label, Icon, tone, action }) => <button key={label} className={tone} onClick={action}><i><Icon size={20} /></i><span>{label}</span></button>)}</div></section>
+      <HomeOperationalMetrics orderCount={currentPeriodOrders.length} averageOrderValue={averageOrderValue} refundAmount={refundAmount} refundCount={currentPeriodRefunds.length} />
+      <SalesOrdersTrend items={salesOrdersTrend} onOpenOrders={() => openOrdersContext("all")} onRecordOrder={openNewOrder} />
+      <section className="home-quick-entry home-chart-card" data-testid="home-quick-entry"><div className="home-chart-head"><span>快捷操作</span><b>今天要做什么</b></div><div>{quickEntries.map(({ label, Icon, tone, action }) => <button key={label} className={tone} onClick={action}><i><Icon size={20} /></i><span>{label}</span></button>)}</div></section>
+      <HomeRecentActivity items={recentActivities} onOpenRecord={openRecordDetail} onOpenOrder={openOrder} onOpenAll={() => { setRecordFilter("all"); setRecordMonth("all"); goSub("records"); }} />
+      <section className="home-secondary-content" aria-label="更多经营内容">
+        <SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} />
+        <HomeReminderList items={notificationItems} onOpen={openNotificationTarget} onOpenAll={() => goSub("notifications")} />
+        <section className="home-promotion" aria-roledescription="carousel" aria-label="算得清产品宣传"><div className="promotion-track" style={{ transform: `translateX(-${promotionIndex * 20}%)` }}>{promotionBanners.map((banner) => <button key={banner.title} className="promotion-slide" onClick={() => openPromotion(banner.target)} aria-label={`${banner.title}，${banner.action}`}><img className="promotion-3d-asset" src={banner.asset} alt="" aria-hidden="true" /><span className="promotion-overlay" aria-hidden="true" /><span className="promotion-copy"><em>{banner.eyebrow}</em><b>{banner.title}</b><small>{banner.copy}</small><strong>{banner.action}<ChevronRight size={14} /></strong></span></button>)}</div><div className="promotion-dots">{promotionBanners.map((banner, index) => <button key={banner.title} className={index === promotionIndex ? "active" : ""} onClick={() => setPromotionIndex(index)} aria-label={`查看第 ${index + 1} 张宣传卡`} aria-current={index === promotionIndex ? "true" : undefined} />)}</div></section>
+        <section className="home-sku-template-grid" aria-label="商品销量与利润排行"><SkuTopBars title="商品销量 Top 5" type="sales" items={skuRankings.sales} onSelect={() => goSub("skus")} onEmpty={() => openRootTab("cards")} /><SkuTopBars title="商品利润 Top 5" type="profit" items={skuRankings.profit} onSelect={() => goSub("skus")} onEmpty={() => openRootTab("cards")} /></section>
+      </section>
     </div>;
   }
 
