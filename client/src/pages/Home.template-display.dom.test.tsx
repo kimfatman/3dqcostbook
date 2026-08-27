@@ -97,7 +97,7 @@ describe("五行业模板的真实页面显示", () => {
       expect(screen.getByText((text) => text.includes(`${scenario.label}经营者`))).toBeTruthy();
       await user.click(mainNavigation().getByRole("button", { name: "经营" }));
       expect(screen.getAllByText(new RegExp(`${scenario.label} ·`)).length).toBeGreaterThan(0);
-      expect(screen.getByRole("button", { name: `添加${scenario.entity}` })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: `添加${scenario.entity}` })).toBeNull();
 
       const cardsTab = mainNavigation().getByRole("button", { name: scenario.cardsTab });
       expect(cardsTab.getAttribute("aria-current")).toBeNull();
@@ -143,9 +143,8 @@ describe("首页第一期经营总览", () => {
     expect(directSections[1]).toContain("home-decision");
     expect(directSections[2]).toContain("home-operational-metrics");
     expect(directSections[3]).toContain("home-sales-orders");
-    expect(directSections[4]).toContain("home-quick-entry");
-    expect(directSections[5]).toContain("home-recent-activity");
-    expect(directSections[6]).toContain("home-secondary-content");
+    expect(directSections[4]).toContain("home-recent-activity");
+    expect(directSections[5]).toContain("home-secondary-content");
 
     const metricStrip = screen.getByTestId("home-operational-metrics");
     expect(within(metricStrip).getByText("订单数")).toBeTruthy();
@@ -164,12 +163,8 @@ describe("首页第一期经营总览", () => {
     expect(screen.getByText("本周尚无已入账数据")).toBeTruthy();
     await user.click(within(rangeSwitcher).getByRole("button", { name: "今天" }));
 
-    const quickEntry = screen.getByTestId("home-quick-entry");
-    expect(within(quickEntry).getAllByRole("button")).toHaveLength(4);
-    expect(within(quickEntry).getByRole("button", { name: "记一笔" })).toBeTruthy();
-    expect(within(quickEntry).getByRole("button", { name: "添加商品" })).toBeTruthy();
-    expect(within(quickEntry).getByRole("button", { name: "记录订单" })).toBeTruthy();
-    expect(within(quickEntry).getByRole("button", { name: "成本分析" })).toBeTruthy();
+    expect(screen.queryByTestId("home-quick-entry")).toBeNull();
+    expect(screen.getByRole("button", { name: "新增记一笔" })).toBeTruthy();
 
     expect(screen.getByText("销售额 / 订单数")).toBeTruthy();
     expect(screen.getByText("暂无商品销量")).toBeTruthy();
@@ -182,7 +177,7 @@ describe("首页第一期经营总览", () => {
     const user = userEvent.setup();
     renderHome();
 
-    await user.click(within(screen.getByTestId("home-quick-entry")).getByRole("button", { name: "记一笔" }));
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
     await user.clear(screen.getByPlaceholderText("0.00"));
     await user.type(screen.getByPlaceholderText("0.00"), "99");
     await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
@@ -204,7 +199,8 @@ describe("首页第一期经营总览", () => {
     const user = userEvent.setup();
     renderHome();
 
-    await user.click(screen.getByRole("button", { name: "记录订单" }));
+    const salesOrderEmpty = screen.getByText("销售额 / 订单数").closest(".home-sales-orders") as HTMLElement;
+    await user.click(within(salesOrderEmpty).getByRole("button", { name: /记录订单/ }));
     await user.click(screen.getByRole("button", { name: "确认订单并入账" }));
     await user.click(screen.getByRole("button", { name: "返回" }));
     await screen.findByRole("navigation", { name: "主导航" });
@@ -217,7 +213,7 @@ describe("首页第一期经营总览", () => {
     expect(screen.getByRole("heading", { name: "订单" })).toBeTruthy();
 
     await user.click(mainNavigation().getByRole("button", { name: "经营" }));
-    await user.click(within(screen.getByTestId("home-quick-entry")).getByRole("button", { name: "记一笔" }));
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
     await user.clear(screen.getByPlaceholderText("0.00"));
     await user.type(screen.getByPlaceholderText("0.00"), "66.60");
     await user.clear(screen.getByPlaceholderText("例如：平台服务商"));

@@ -962,18 +962,11 @@ export default function Home() {
         tone: "order",
       })),
     ].sort((left, right) => right.date.localeCompare(left.date)).slice(0, 3);
-    const quickEntries: { label: string; Icon: LucideIcon; tone: string; action: () => void }[] = [
-      { label: "记一笔", Icon: Plus, tone: "blue", action: openNewRecord },
-      { label: `添加${template.entityLabel}`, Icon: PackageOpen, tone: "orange", action: openNewCard },
-      { label: "记录订单", Icon: ClipboardList, tone: "purple", action: openNewOrder },
-      { label: "成本分析", Icon: BarChart3, tone: "green", action: () => openRootTab("analysis") },
-    ];
     return <div className="prototype-home home-redesign" data-chart-role={chartRole("home").primary}>
       <section className="dashboard-kicker home-context home-identity-context"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{template.storeName}</b><em>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</em></span><button onClick={() => goSub("notifications")}>查看提醒 <ChevronRight size={14} /></button></section>
       <OperatingSnapshot decision={homeRangeDecision} range={homeRange} hasData={homeRangeHasData} costRate={costRate} profitMarginRate={profitMarginRate} profitDelta={homeRangeProfitDelta} onSelectRange={setHomeTimeRange} onOpenPriority={openHomeDecision} />
       <HomeOperationalMetrics rangeLabel={homeRange.label} orderCount={homeRangeOrders.length} averageOrderValue={homeRangeAverageOrderValue} refundAmount={homeRangeRefundAmount} refundCount={homeRangeRefunds.length} />
       <SalesOrdersTrend items={salesOrdersTrend} onOpenOrders={() => openOrdersContext("all")} onRecordOrder={openNewOrder} />
-      <section className="home-quick-entry home-chart-card" data-testid="home-quick-entry"><div className="home-chart-head"><span>快捷操作</span><b>今天要做什么</b></div><div>{quickEntries.map(({ label, Icon, tone, action }) => <button key={label} className={tone} onClick={action}><i><Icon size={20} /></i><span>{label}</span></button>)}</div></section>
       <HomeRecentActivity items={recentActivities} onOpenRecord={openRecordDetail} onOpenOrder={openOrder} onOpenAll={() => { setRecordFilter("all"); setRecordMonth("all"); goSub("records"); }} />
       <section className="home-secondary-content" aria-label="更多经营内容">
         <SalesTargetProgress progress={salesTargetProgress} runRateForecast={salesRunRateForecast} editing={targetEditOpen} input={salesTargetInput} onInputChange={setSalesTargetInput} onEdit={openSalesTargetEditor} onSave={saveSalesTarget} onCancel={() => setTargetEditOpen(false)} onOpenOrders={() => openOrdersContext("all")} />
