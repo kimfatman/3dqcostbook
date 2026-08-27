@@ -192,7 +192,7 @@ describe("首页第一期经营总览", () => {
     expect(screen.getByText("成本 / 净营收")).toBeTruthy();
     expect(screen.getByText("利润 / 净营收")).toBeTruthy();
     expect(screen.getAllByText("—").length).toBeGreaterThan(1);
-    expect(screen.getByRole("button", { name: /今天经营亏损/ })).toBeTruthy();
+    expect(screen.queryByText("优先处理")).toBeNull();
   });
 
   it("录入真实订单与流水后展示销售订单双序列趋势，并允许从最近动态回到对应流水详情", async () => {
@@ -525,7 +525,7 @@ describe("全站信息精简", () => {
     expect(screen.queryByText("核心经营结果")).toBeNull();
     expect(screen.queryByText("本月实时核算")).toBeNull();
     expect(screen.queryByText("未设目标")).toBeNull();
-    expect(screen.getByRole("button", { name: /设置月销售目标/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /设置本月销售目标/ })).toBeTruthy();
 
     await user.click(mainNavigation().getByRole("button", { name: "商品" }));
     expect(screen.getByRole("heading", { name: "商品成本" })).toBeTruthy();
@@ -622,5 +622,72 @@ describe("Dycharts 模板化图表信息层级", () => {
     const refundReason = screen.getByRole("button", { name: /质量问题.*累计/ });
     await user.click(refundReason);
     expect((screen.getByPlaceholderText("搜索订单号、客户或 SKU") as HTMLInputElement).value).toBe("质量问题");
+  });
+});
+
+describe("第一批范围、待办与成本快照表达", () => {
+  it("将首页与我的页收束到同一份本月待办，并在首页保留清晰的范围与月度提醒标签", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    expect(screen.getByRole("button", { name: /查看本月提醒/ })).toBeTruthy();
+    expect(screen.getByText("本月经营提醒")).toBeTruthy();
+    expect(screen.getByText("本月待办")).toBeTruthy();
+    expect(screen.queryByText("优先处理")).toBeNull();
+
+    await openProfile(user);
+    expect(screen.getByText("本月待办")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /本月经营提醒/ })).toBeTruthy();
+  });
+
+  it("在完成率高于120%时提示复核本月目标，并复用既有目标编辑入口", async () => {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    saved.workspace.salesTargets.ecommerce = 100;
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
+    const user = userEvent.setup();
+    renderHome();
+
+    expect(screen.getByText(/本月目标可能偏低/)).toBeTruthy();
+    const review = screen.getByRole("button", { name: /复核目标/ });
+    await user.click(review);
+    expect(screen.getByRole("spinbutton", { name: "目标金额（元）" })).toBeTruthy();
+  });
+
+  it("在成本卡详情只读展示当前单位成本与最近成交冻结成本，无成交时保留明确缺口", async () => {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    const card = saved.cards.find((item: { industryId: string }) => item.industryId === "ecommerce");
+    const sku = saved.skus.find((item: { cardId?: string }) => item.cardId === card.id);
+    const period = new Date().toISOString().slice(0, 7);
+    const occurredAt = `${period}-18`;
+    saved.orders = [{ id: "snapshot-order-1", workspaceId: "workspace-main", industryId: "ecommerce", orderNo: "SNAPSHOT-001", channel: "platform", buyer: "成本快照客户", occurredAt, status: "paid", lines: [{ id: "snapshot-line-1", skuId: sku.id, skuCode: sku.code, skuName: sku.name, unit: sku.unit, quantity: 1, refundedQuantity: 0, unitPriceFen: sku.unitPriceFen, unitCostFen: 1234 }], pricing: saved.workspace.channelPricing.platform, saleEntryId: "", createdAt: `${occurredAt}T12:00:00.000Z`, updatedAt: `${occurredAt}T12:00:00.000Z` }];
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(mainNavigation().getByRole("button", { name: "商品" }));
+    await user.click(screen.getByRole("button", { name: new RegExp(card.name) }));
+
+    expect(screen.getByText("订单成本快照")).toBeTruthy();
+    expect(screen.getByText("当前单位成本")).toBeTruthy();
+    expect(screen.getByText("最近成交冻结成本")).toBeTruthy();
+    expect(screen.getByText(`¥12.34 / ${sku.unit}`)).toBeTruthy();
+    expect(screen.getByText(/后续订单才使用当前成本/)).toBeTruthy();
+  });
+
+  it("关联SKU尚无成交时不伪造最近冻结成本", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(mainNavigation().getByRole("button", { name: "商品" }));
+    await user.click(screen.getByRole("button", { name: /轻盈收纳盒/ }));
+
+    expect(screen.getByText("当前单位成本")).toBeTruthy();
+    expect(screen.getByText("暂无历史成交成本快照")).toBeTruthy();
+    expect(screen.getByText(/尚无关联 SKU 的成交订单/)).toBeTruthy();
   });
 });

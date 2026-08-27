@@ -823,3 +823,42 @@
 .skin-deep .analysis-profit-total { border-color: rgba(152,213,255,.14); }.skin-deep .analysis-profit-total > span, .skin-deep .analysis-profit-total > em, .skin-deep .analysis-profit-kpis em, .skin-deep .profit-trend-summary em, .skin-deep .profit-trend-labels button, .skin-deep .analysis-profit-sku-list span > em { color: #a4c0d8; }.skin-deep .analysis-profit-total > strong, .skin-deep .analysis-profit-kpis b, .skin-deep .profit-trend-summary b, .skin-deep .analysis-profit-sku-list b { color: #edf7ff; }.skin-deep .analysis-profit-total.is-loss > strong, .skin-deep .analysis-profit-sku strong.is-loss { color: #ffb5bd; }.skin-deep .analysis-profit-sku-list > button, .skin-deep .profit-trend-summary { border-color: rgba(152,213,255,.12); }.skin-deep .analysis-profit-sku-list > button > i:first-child { color: #bee5ff; background: rgba(150,214,255,.12); }.skin-deep .analysis-profit-sku-track { background: rgba(152,213,255,.14); }.skin-deep .profit-trend-zero { stroke: rgba(174,222,255,.3); }.skin-deep .profit-trend-point { fill: #102d52; stroke: #70c9ff; }.skin-deep .profit-trend-point.is-current { fill: #70c9ff; stroke: #102d52; }
 @media (min-width: 768px) { .analysis-profit-page { grid-template-columns: repeat(2, minmax(0, 1fr)); }.analysis-profit-page .prototype-analysis-title, .analysis-profit-page .analysis-profit-overview, .analysis-profit-page .analysis-profit-trend, .analysis-profit-page .analysis-cost-overview, .analysis-profit-page > .analysis-more { grid-column: 1 / -1; }.analysis-profit-page .analysis-waterfall-card, .analysis-profit-page .analysis-profit-sku { margin: 0; }.analysis-profit-kpis b { font-size: 15px; } }
 @media (prefers-reduced-motion: reduce) { .profit-trend-line, .profit-trend-point { transition: none; animation: none; } }
+
+/* 第一批数据表达：本月目标的异常只提示复核，不改变目标或预测计算。 */
+.home-redesign .home-sales-orders .home-chart-head span::after { content: none; }
+.home-redesign .home-chart-head > b,
+.home-redesign .home-chart-head > button { font-size: 11px; }
+.home-redesign .sales-target-review { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 9px 0; margin-top: 8px; border-top: 1px solid rgba(195,119,0,.2); }
+.home-redesign .sales-target-review > span { display: flex; gap: 7px; align-items: center; min-width: 0; color: #ad6700; }
+.home-redesign .sales-target-review > span > span { display: grid; gap: 1px; min-width: 0; }
+.home-redesign .sales-target-review em { color: #8a5808; font-size: 11px; font-style: normal; font-weight: 700; }
+.home-redesign .sales-target-review b { color: #694300; font-size: 12px; letter-spacing: -.02em; }
+.home-redesign .sales-target-review button { flex: 0 0 auto; display: inline-flex; gap: 4px; align-items: center; justify-content: center; min-height: 34px; padding: 0 9px; color: #9c5f00; font-size: 11px; font-weight: 800; background: #fff8e7; border: 1px solid #f1d39a; border-radius: 8px; transition: transform 160ms cubic-bezier(.23, 1, .32, 1), background-color 160ms ease-out; }
+.home-redesign .sales-target-review button:active { transform: scale(.97); }
+.home-redesign .sales-target-review button:focus-visible { outline: 3px solid rgba(8,127,245,.28); outline-offset: 2px; }
+.skin-deep .home-redesign .sales-target-review { border-top-color: rgba(255,196,88,.25); }
+.skin-deep .home-redesign .sales-target-review > span { color: #ffd17c; }
+.skin-deep .home-redesign .sales-target-review em { color: #ffdc94; }
+.skin-deep .home-redesign .sales-target-review b { color: #fff0cb; }
+.skin-deep .home-redesign .sales-target-review button { color: #ffe3a7; background: rgba(221,151,28,.16); border-color: rgba(255,204,108,.35); }
+@media (min-width: 414px) { .home-redesign .sales-target-review { padding-right: 2px; padding-left: 2px; } }
+@media (prefers-reduced-motion: reduce) { .home-redesign .sales-target-review button { transition: none; } }
+.cost-snapshot-compare { display: grid; gap: 10px; padding: 13px 14px; margin: 12px 0; background: #f7fbff; border: 1px solid #dbeaf5; border-radius: 14px; }
+.cost-snapshot-compare > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cost-snapshot-compare > div > span { color: #183e68; font-size: 13px; font-weight: 800; letter-spacing: -.03em; }
+.cost-snapshot-compare > div > em { padding: 2px 7px; color: #54718d; font-size: 11px; font-style: normal; font-weight: 700; background: #eaf3fa; border-radius: 99px; }
+.cost-snapshot-compare dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin: 0; border-top: 1px solid #deebf4; border-bottom: 1px solid #deebf4; }
+.cost-snapshot-compare dl > div { display: grid; gap: 4px; min-width: 0; padding: 9px 8px; }
+.cost-snapshot-compare dl > div + div { border-left: 1px solid #deebf4; }
+.cost-snapshot-compare dt { overflow: hidden; color: #5f7790; font-size: 11px; line-height: 1.35; white-space: nowrap; text-overflow: ellipsis; }
+.cost-snapshot-compare dd { min-height: 18px; margin: 0; overflow: hidden; color: #0b1836; font-family: var(--financial-numeric-font); font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 800; letter-spacing: -.045em; line-height: 1.45; text-overflow: ellipsis; }
+.cost-snapshot-compare dl > div:last-child dd { color: #176b9d; }
+.cost-snapshot-compare p { margin: 0; color: #55718c; font-size: 11px; line-height: 1.55; }
+.skin-aurora .cost-snapshot-compare { background: rgba(255,255,255,.56); border-color: rgba(199,225,246,.86); }
+.skin-deep .cost-snapshot-compare { background: rgba(85,151,208,.09); border-color: rgba(154,213,255,.18); }
+.skin-deep .cost-snapshot-compare > div > span, .skin-deep .cost-snapshot-compare dd { color: #edf7ff; }
+.skin-deep .cost-snapshot-compare > div > em { color: #bae1fb; background: rgba(137,205,255,.12); }
+.skin-deep .cost-snapshot-compare dl, .skin-deep .cost-snapshot-compare dl > div + div { border-color: rgba(154,213,255,.16); }
+.skin-deep .cost-snapshot-compare dt, .skin-deep .cost-snapshot-compare p { color: #a4c0d8; }
+.skin-deep .cost-snapshot-compare dl > div:last-child dd { color: #83cffd; }
+@media (max-width: 359px) { .cost-snapshot-compare dl { grid-template-columns: 1fr; }.cost-snapshot-compare dl > div + div { border-top: 1px solid #deebf4; border-left: 0; }.skin-deep .cost-snapshot-compare dl > div + div { border-top-color: rgba(154,213,255,.16); } }
