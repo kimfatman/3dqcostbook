@@ -1,0 +1,2 @@
+ALTER TABLE `app_users` ADD `status` enum('active','suspended') DEFAULT 'active' NOT NULL;--> statement-breakpoint
+ALTER TABLE `workspaces` ADD `status` enum('active','suspended') DEFAULT 'active' NOT NULL;

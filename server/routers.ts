@@ -5,6 +5,7 @@ import { assertAuthAttemptAllowed, assertOtpSendAllowed, assertPasswordPolicy, c
 import { completeCloudbaseOtpChallenge, requestCloudbaseOtpChallenge, type CloudbaseOtpMethod, type CloudbaseOtpPurpose, type CloudbaseVerifiedIdentity } from "./cloudbase-auth";
 import { protectedProcedure, publicProcedure, router, adminProcedure } from "./_core/trpc";
 import { getAdminHealth, getAdminOverview, getAdminVersion } from "./admin";
+import { listAdminUsers, listAdminWorkspaces, setAdminUserStatus, setAdminWorkspaceStatus } from "./admin-data";
 
 const email = z.string().trim().toLowerCase().email().max(320);
 const password = z.string().min(8, "密码至少需要 8 个字符").max(128, "密码不能超过 128 个字符");
@@ -17,6 +18,18 @@ const cloudbaseOtpPurpose = z.enum(["login", "register", "recover"]);
 const cloudbaseChallengeId = z.string().uuid();
 const cloudbaseVerificationCode = z.string().regex(/^\d{6}$/, "请输入 6 位验证码");
 const phoneNumber = z.string().regex(/^\+861\d{10}$/, "请输入中国大陆手机号，例如 138 0000 0000");
+const adminPageInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  query: z.string().trim().max(80).optional(),
+  status: z.enum(["active", "suspended"]).optional(),
+});
+const adminStatusChangeInput = z.object({
+  status: z.enum(["active", "suspended"]),
+  reason: z.string().trim().min(2).max(240),
+  confirm: z.literal(true, "必须完成二次确认后才能执行状态变更"),
+  requestId: z.string().uuid().optional(),
+});
 
 async function getLinkedCloudbaseUser(identity: CloudbaseVerifiedIdentity) {
   return (await getAppUserByCloudbaseSubject(identity.subject))
@@ -173,6 +186,14 @@ export const appRouter = router({
     health: adminProcedure.query(() => getAdminHealth()),
     version: adminProcedure.query(() => getAdminVersion()),
     overview: adminProcedure.query(() => getAdminOverview()),
+    users: router({
+      list: adminProcedure.input(adminPageInput).query(({ input }) => listAdminUsers(input)),
+      setStatus: adminProcedure.input(adminStatusChangeInput.extend({ userId: z.string().uuid() })).mutation(({ input, ctx }) => setAdminUserStatus({ ...input, targetUserId: input.userId, actorUserId: ctx.user.id })),
+    }),
+    workspaces: router({
+      list: adminProcedure.input(adminPageInput).query(({ input }) => listAdminWorkspaces(input)),
+      setStatus: adminProcedure.input(adminStatusChangeInput.extend({ workspaceId: z.string().uuid() })).mutation(({ input, ctx }) => setAdminWorkspaceStatus({ ...input, actorUserId: ctx.user.id })),
+    }),
   }),
   profile: router({
     updateMe: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(120), avatarAssetId: z.string().uuid().nullable().optional(), avatarPreset })).mutation(({ input, ctx }) => updateAppUserProfile(ctx.user.id, input)),

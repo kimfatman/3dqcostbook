@@ -14,6 +14,7 @@ export const appUsers = mysqlTable("app_users", {
   avatarPreset: varchar("avatarPreset", { length: 32 }),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   role: mysqlEnum("role", ["admin", "member"]).notNull().default("member"),
+  status: mysqlEnum("status", ["active", "suspended"]).notNull().default("active"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
   lastSignedInAt: timestamp("lastSignedInAt"),
@@ -41,6 +42,7 @@ export const workspaces = mysqlTable("workspaces", {
   name: varchar("name", { length: 120 }).notNull(),
   ownerId: varchar("ownerId", { length: 36 }).notNull(),
   industryId: varchar("industryId", { length: 40 }).notNull().default("restaurant"),
+  status: mysqlEnum("status", ["active", "suspended"]).notNull().default("active"),
   contactName: varchar("contactName", { length: 120 }).notNull().default(""),
   logoAssetId: varchar("logoAssetId", { length: 36 }),
   logoPreset: varchar("logoPreset", { length: 32 }),
@@ -86,10 +88,24 @@ export const auditEvents = mysqlTable("audit_events", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 }, table => [index("audit_events_workspace_created_idx").on(table.workspaceId, table.createdAt)]);
 
+/** 不绑定单一工作区的系统级管理员审计；details 只保存脱敏白名单。 */
+export const adminAuditEvents = mysqlTable("admin_audit_events", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  actorUserId: varchar("actorUserId", { length: 36 }).notNull(),
+  action: varchar("action", { length: 80 }).notNull(),
+  targetType: varchar("targetType", { length: 80 }).notNull(),
+  targetId: varchar("targetId", { length: 80 }),
+  outcome: mysqlEnum("outcome", ["success", "failure", "cancelled"]).notNull(),
+  requestId: varchar("requestId", { length: 64 }),
+  details: json("details").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, table => [index("admin_audit_events_created_idx").on(table.createdAt), index("admin_audit_events_target_idx").on(table.targetType, table.targetId)]);
+
 export type AppUser = typeof appUsers.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Workspace = typeof workspaces.$inferSelect;
 export type WorkspaceBook = typeof workspaceBooks.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type AdminAuditEvent = typeof adminAuditEvents.$inferSelect;
 export type MoneyFen = bigint;

@@ -186,7 +186,8 @@ export async function listWorkspacesForUser(userId: string) {
   return db.select({ id: workspaces.id, name: workspaces.name, industryId: workspaces.industryId, contactName: workspaces.contactName, logoAssetId: workspaces.logoAssetId, logoPreset: workspaces.logoPreset, role: workspaceMembers.role, updatedAt: workspaces.updatedAt })
     .from(workspaceMembers)
     .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
-    .where(eq(workspaceMembers.userId, userId));
+    .innerJoin(appUsers, eq(appUsers.id, workspaceMembers.userId))
+    .where(and(eq(workspaceMembers.userId, userId), eq(workspaces.status, "active"), eq(appUsers.status, "active")));
 }
 
 export async function getWorkspaceAccess(workspaceId: string, userId: string) {
@@ -195,7 +196,8 @@ export async function getWorkspaceAccess(workspaceId: string, userId: string) {
   const rows = await db.select({ workspace: workspaces, role: workspaceMembers.role })
     .from(workspaceMembers)
     .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
-    .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, userId))).limit(1);
+    .innerJoin(appUsers, eq(appUsers.id, workspaceMembers.userId))
+    .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, userId), eq(workspaces.status, "active"), eq(appUsers.status, "active"))).limit(1);
   return rows[0];
 }
 
@@ -281,4 +283,4 @@ export async function recentAuditEvents(workspaceId: string, userId: string) {
   return db.select().from(auditEvents).where(eq(auditEvents.workspaceId, workspaceId)).orderBy(desc(auditEvents.createdAt)).limit(30);
 }
 
-export type LocalUser = Pick<AppUser, "id" | "email" | "name" | "avatarAssetId" | "avatarPreset" | "role" | "createdAt" | "updatedAt" | "lastSignedInAt">;
+export type LocalUser = Pick<AppUser, "id" | "email" | "name" | "avatarAssetId" | "avatarPreset" | "role" | "status" | "createdAt" | "updatedAt" | "lastSignedInAt">;
