@@ -131,6 +131,41 @@ export const adminMigrationReviews = mysqlTable("admin_migration_reviews", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
 }, table => [uniqueIndex("admin_migration_reviews_migration_unique").on(table.migrationId), index("admin_migration_reviews_status_idx").on(table.status)]);
 
+/** 可聚合的系统性能指标样本；不记录请求体、凭据或用户隐私内容。 */
+export const systemMetricSamples = mysqlTable("system_metric_samples", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  metricKey: varchar("metricKey", { length: 80 }).notNull(),
+  value: int("value").notNull(),
+  unit: varchar("unit", { length: 16 }).notNull(),
+  recordedAt: timestamp("recordedAt").notNull().defaultNow(),
+}, table => [index("system_metric_samples_key_time_idx").on(table.metricKey, table.recordedAt)]);
+
+/** 定时备份计划；只保存频率与保留策略，不保存 COS/数据库等第三方凭据。 */
+export const backupSchedules = mysqlTable("backup_schedules", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  cadence: mysqlEnum("cadence", ["daily", "weekly"]).notNull(),
+  runAt: varchar("runAt", { length: 5 }).notNull(),
+  timezone: varchar("timezone", { length: 64 }).notNull().default("Asia/Shanghai"),
+  retentionDays: int("retentionDays").notNull().default(30),
+  status: mysqlEnum("status", ["enabled", "paused"]).notNull().default("enabled"),
+  createdByUserId: varchar("createdByUserId", { length: 36 }).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
+}, table => [index("backup_schedules_status_run_idx").on(table.status, table.runAt)]);
+
+/** 备份执行记录；P3 管理 API 只负责排队和展示，不在请求中执行实际备份。 */
+export const backupRuns = mysqlTable("backup_runs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  scheduleId: varchar("scheduleId", { length: 36 }).notNull(),
+  status: mysqlEnum("status", ["queued", "running", "succeeded", "failed", "cancelled"]).notNull().default("queued"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  bytesWritten: int("bytesWritten"),
+  errorSummary: varchar("errorSummary", { length: 240 }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, table => [index("backup_runs_schedule_created_idx").on(table.scheduleId, table.createdAt), index("backup_runs_status_created_idx").on(table.status, table.createdAt)]);
+
 export type AppUser = typeof appUsers.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -140,4 +175,7 @@ export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type AdminAuditEvent = typeof adminAuditEvents.$inferSelect;
 export type GlobalConfig = typeof globalConfigs.$inferSelect;
 export type AdminMigrationReview = typeof adminMigrationReviews.$inferSelect;
+export type SystemMetricSample = typeof systemMetricSamples.$inferSelect;
+export type BackupSchedule = typeof backupSchedules.$inferSelect;
+export type BackupRun = typeof backupRuns.$inferSelect;
 export type MoneyFen = bigint;

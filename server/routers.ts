@@ -7,6 +7,7 @@ import { protectedProcedure, publicProcedure, router, adminProcedure } from "./_
 import { getAdminHealth, getAdminOverview, getAdminVersion } from "./admin";
 import { listAdminUsers, listAdminWorkspaces, setAdminUserStatus, setAdminWorkspaceStatus } from "./admin-data";
 import { listAdminAuditEvents, listMigrationReviews, reviewMigration, listGlobalConfigs, saveGlobalConfigDraft, publishGlobalConfig } from "./admin-platform-data";
+import { createBackupSchedule, getAdminPerformanceSummary, getRuntimeMetrics, listAdminMetricSamples, listBackupRuns, listBackupSchedules, queueBackupRun, setBackupScheduleStatus } from "./admin-operations-data";
 
 const email = z.string().trim().toLowerCase().email().max(320);
 const password = z.string().min(8, "密码至少需要 8 个字符").max(128, "密码不能超过 128 个字符");
@@ -73,6 +74,38 @@ const configPublishInput = z.object({
   configId: z.string().uuid(),
   confirm: z.literal(true, "必须完成二次确认后才能发布配置"),
   requestId: z.string().uuid().optional(),
+});
+const metricListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(50),
+  metricKey: z.string().trim().regex(/^[a-z][a-z0-9_.-]{0,79}$/).optional(),
+  periodMinutes: z.number().int().min(5).max(10_080).default(1_440),
+});
+const backupScheduleCreateInput = z.object({
+  name: z.string().trim().min(1).max(120),
+  cadence: z.enum(["daily", "weekly"]),
+  runAt: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),
+  timezone: z.string().trim().regex(/^[A-Za-z_]+(?:\/[A-Za-z_]+)+$/).max(64).default("Asia/Shanghai"),
+  retentionDays: z.number().int().min(1).max(365),
+  confirm: z.literal(true, "必须完成二次确认后才能创建备份计划"),
+  requestId: z.string().uuid().optional(),
+});
+const backupScheduleStatusInput = z.object({
+  scheduleId: z.string().uuid(),
+  status: z.enum(["enabled", "paused"]),
+  confirm: z.literal(true, "必须完成二次确认后才能修改备份计划"),
+  requestId: z.string().uuid().optional(),
+});
+const backupRunInput = z.object({
+  scheduleId: z.string().uuid(),
+  confirm: z.literal(true, "必须完成二次确认后才能排队备份"),
+  requestId: z.string().uuid().optional(),
+});
+const backupRunListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  scheduleId: z.string().uuid().optional(),
+  status: z.enum(["queued", "running", "succeeded", "failed", "cancelled"]).optional(),
 });
 
 async function getLinkedCloudbaseUser(identity: CloudbaseVerifiedIdentity) {
@@ -249,6 +282,20 @@ export const appRouter = router({
       list: adminProcedure.input(configListInput).query(({ input }) => listGlobalConfigs(input)),
       saveDraft: adminProcedure.input(configDraftInput).mutation(({ input, ctx }) => saveGlobalConfigDraft({ ...input, actorUserId: ctx.user.id })),
       publish: adminProcedure.input(configPublishInput).mutation(({ input, ctx }) => publishGlobalConfig({ ...input, actorUserId: ctx.user.id })),
+    }),
+    metrics: router({
+      summary: adminProcedure.query(() => getAdminPerformanceSummary()),
+      runtime: adminProcedure.query(() => getRuntimeMetrics()),
+      list: adminProcedure.input(metricListInput).query(({ input }) => listAdminMetricSamples(input)),
+    }),
+    backups: router({
+      schedules: router({
+        list: adminProcedure.query(() => listBackupSchedules()),
+        create: adminProcedure.input(backupScheduleCreateInput).mutation(({ input, ctx }) => createBackupSchedule({ ...input, actorUserId: ctx.user.id })),
+        setStatus: adminProcedure.input(backupScheduleStatusInput).mutation(({ input, ctx }) => setBackupScheduleStatus({ ...input, actorUserId: ctx.user.id })),
+        runNow: adminProcedure.input(backupRunInput).mutation(({ input, ctx }) => queueBackupRun({ ...input, actorUserId: ctx.user.id })),
+      }),
+      runs: adminProcedure.input(backupRunListInput).query(({ input }) => listBackupRuns(input)),
     }),
   }),
   profile: router({
