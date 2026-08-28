@@ -1,0 +1,222 @@
+{
+  "schema_version": "1.0",
+  "project": {
+    "id": "sdq_brand_system_v1",
+    "name_zh": "算得清",
+    "name_en": "SUAN DE QING",
+    "language": "zh-CN",
+    "product_type": "小微商家经营管理App",
+    "core_tagline": "生意算得清，老板更轻松",
+    "core_value": "将收入、成本、库存、订单和利润转化为小微商家一眼可懂、可行动的经营信息。",
+    "brand_personality": ["清晰", "可靠", "智能", "轻松", "亲和"]
+  },
+  "design_tokens": {
+    "colors": {
+      "brand_primary": "#087AFF",
+      "brand_secondary": "#5ACBFA",
+      "brand_surface": "#E6F1FF",
+      "text_primary": "#1C1C1E",
+      "action_emphasis": "#F6A623",
+      "status_success": "#20A779",
+      "status_risk": "#E8534F",
+      "page_background": "#F7F9FC",
+      "border_subtle": "#EAECEF",
+      "icon_default": "#8B95A7",
+      "icon_disabled": "#C9CFD9"
+    },
+    "gradients": {
+      "primary_brand": {
+        "start": "#5ACBFA",
+        "end": "#087AFF",
+        "direction": "left-top_to_right-bottom",
+        "allowed_uses": ["app_icon", "splash_screen", "hero_banner", "featured_card"]
+      }
+    },
+    "typography": {
+      "primary_cn": "Source Han Sans SC",
+      "fallbacks": ["PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC"],
+      "title_weight": 700,
+      "body_weight": 400,
+      "sizes_px": {
+        "brand_title": {"font_size": 48, "line_height": 60, "weight": 700},
+        "page_title": {"font_size": 24, "line_height": 32, "weight": 600},
+        "metric": {"font_size": 28, "line_height": 36, "weight": 700},
+        "section_title": {"font_size": 18, "line_height": 26, "weight": 600},
+        "body": {"font_size": 14, "line_height": 22, "weight": 400},
+        "caption": {"font_size": 12, "line_height": 18, "weight": 400}
+      }
+    },
+    "layout": {
+      "mobile_grid": "4pt",
+      "mobile_horizontal_padding_px": 16,
+      "spacing_px": [4, 8, 12, 16, 20, 24, 32],
+      "card_radius_px": 12,
+      "button_radius_px": 10,
+      "primary_button_min_height_dp": 44
+    },
+    "icons": {
+      "base_grid_dp": 24,
+      "common_sizes_dp": [16, 20, 24, 28, 32, 48],
+      "stroke_at_24dp": 2,
+      "linecap": "round",
+      "linejoin": "round",
+      "min_visual_padding_at_24dp": 2,
+      "default_style": "rounded_outline",
+      "selected_style": "filled_or_outline_plus_fill"
+    }
+  },
+  "brand_identity": {
+    "logo": {
+      "semantic_elements": {
+        "roof": "小微商家、门店、经营场景",
+        "plus": "收入、增长、汇总、能力叠加",
+        "equals": "算清结果、平衡、结算",
+        "smile": "轻松经营、满意、陪伴"
+      },
+      "do": [
+        "优先使用蓝色渐变方形底和白色符号",
+        "深色背景使用反白组合标志",
+        "小尺寸场景仅使用图标"
+      ],
+      "dont": [
+        "拉伸、压扁、旋转或描边标志",
+        "替换屋檐、加号、等号和微笑曲线",
+        "改变蓝色渐变方向",
+        "使用复杂纹理或强投影"
+      ],
+      "safe_area": "X为加号横笔高度；标志四周至少保留1X空白。"
+    },
+    "mascot": {
+      "name": "算小胖",
+      "type": "橘色圆润猫咪",
+      "identity_anchors": ["橘色条纹", "白色肚皮与口鼻", "圆润短腿和饱满脸颊", "深棕色小算盘", "友好安心的表情"],
+      "style": "柔和3D插画，暖光，干净轮廓",
+      "states": {
+        "clear": "坐姿微笑，双爪扶算盘；用于正常经营和数据同步完成。",
+        "relaxed": "侧卧或抱算盘；用于启动页、引导页、品牌海报。",
+        "alert": "举爪或轻量感叹号；用于库存、待办、功能引导。",
+        "welcome": "正面招手；用于新用户引导和首次建账。",
+        "empty": "搭配纸箱、文件夹或商品道具；用于暂无商品、订单或数据。"
+      },
+      "restrictions": ["不可改变为其他动物或毛色", "不可移除算盘饰品", "不可用于删除、付款确认或法律条款等严肃动作", "不可遮挡核心数据或CTA"]
+    }
+  },
+  "ui_patterns": {
+    "information_order": ["summary", "trend", "to_do"],
+    "components": {
+      "metric_card": "白底、12px圆角、细边或轻阴影；一项核心指标加一项次级趋势。",
+      "primary_button": "品牌蓝底、白字、最小44dp、每屏最多一个。",
+      "secondary_button": "白底蓝描边或浅蓝底蓝字，用于取消或次要操作。",
+      "warning_tag": "浅橙底与橙色文字；必须有原因和下一步。",
+      "chart": "品牌蓝为主线，橙色和成功绿为辅助线；包含周期、单位和图例。",
+      "empty_state": "浅蓝背景、算小胖、一句说明、一个明确主要操作。"
+    },
+    "icon_ids": [
+      "ic_nav_home", "ic_nav_data", "ic_nav_business", "ic_nav_report", "ic_nav_profile",
+      "ic_biz_store", "ic_biz_income", "ic_biz_cost", "ic_biz_profit", "ic_biz_inventory",
+      "ic_status_stock_alert", "ic_biz_order", "ic_biz_customer", "ic_biz_report",
+      "ic_status_notification", "ic_biz_multistore", "ic_biz_cashflow"
+    ],
+    "state_colors": {
+      "default": "#8B95A7",
+      "interactive": "#087AFF",
+      "selected": "#087AFF",
+      "success": "#20A779",
+      "warning": "#F6A623",
+      "risk": "#E8534F",
+      "disabled": "#C9CFD9"
+    }
+  },
+  "motion": {
+    "rules": ["动效解释状态变化而非装饰", "一屏同时运动元素不超过3个", "开启减少动态效果时仍可静态理解所有关键信息", "禁止高频闪烁、无意义循环旋转和复杂粒子效果"],
+    "presets": {
+      "press": "100-140ms ease-out",
+      "state_change": "160-220ms ease-in-out",
+      "modal": "220-280ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+      "page_transition": "240-320ms cubic-bezier(0.2, 0.0, 0.0, 1)",
+      "metric_count_up": "360-600ms ease-out",
+      "chart_draw": "500-700ms ease-out",
+      "breathing": "1.8-2.4s ease-in-out"
+    },
+    "interactions": [
+      {"id": "nav_switch", "trigger": "点击底部导航", "result": "新页面淡入并上移8dp；图标从灰色线性过渡到蓝色线面组合", "duration_ms": 220},
+      {"id": "metric_count_up", "trigger": "首页数据返回", "result": "金额平滑递增，随后出现趋势箭头", "duration_ms": "360-600"},
+      {"id": "chart_reveal", "trigger": "趋势图首次可见", "result": "图例先出现，收入/成本/利润线依次绘制", "duration_ms": "500-700"},
+      {"id": "alert_arrival", "trigger": "新提醒出现", "result": "图标与卡片过渡为橙色/浅橙色，铃铛可一次轻摆", "duration_ms": "180-220"},
+      {"id": "submit_success", "trigger": "操作提交成功", "result": "蓝色主按钮过渡为成功绿，图标替换为勾选", "duration_ms": 180},
+      {"id": "empty_state_in", "trigger": "空状态首次显示", "result": "算小胖上移12dp并淡入，显示主要操作", "duration_ms": 280},
+      {"id": "splash_enter", "trigger": "App启动", "result": "品牌图标淡入并轻微缩放至1.04", "duration_ms": 360}
+    ],
+    "reduced_motion": {
+      "page_transition": "120-160ms opacity only",
+      "metric_count_up": "show final value immediately",
+      "chart_reveal": "show complete chart immediately",
+      "mascot_animation": "disabled",
+      "bell_swing": "disabled",
+      "breathing_glow": "disabled"
+    }
+  },
+  "copy_library": {
+    "brand": [
+      {"id": "copy.brand.tagline", "text": "生意算得清，老板更轻松。", "usage": ["品牌海报", "首屏", "线下物料"]},
+      {"id": "copy.brand.description", "text": "让每一次经营决策都有清晰依据。", "usage": ["品牌介绍页", "招商材料"]}
+    ],
+    "marketing": [
+      {"id": "copy.overview.title", "text": "生意，一眼算清", "topic": "经营总览"},
+      {"id": "copy.overview.subtitle", "text": "收入、成本、利润，今天就看明白", "topic": "经营总览"},
+      {"id": "copy.inventory.title", "text": "库存有提醒，不怕卖断货", "topic": "库存预警"},
+      {"id": "copy.inventory.subtitle", "text": "商品余量实时掌握，补货刚刚好", "topic": "库存预警"},
+      {"id": "copy.trend.title", "text": "趋势看得见，经营更有底", "topic": "经营趋势"},
+      {"id": "copy.trend.subtitle", "text": "看收入、成本和利润的每一步变化", "topic": "经营趋势"},
+      {"id": "copy.multistore.title", "text": "多门店，也能一起管清楚", "topic": "多门店管理"},
+      {"id": "copy.reminder.title", "text": "及时提醒，少操心一点", "topic": "经营提醒"}
+    ],
+    "ui": [
+      {"id": "ui.success.bookkeeping", "text": "已记好这笔账，今天的收入更清楚了。", "action": "查看经营总览"},
+      {"id": "ui.alert.inventory", "text": "牛奶库存只剩 3 件，建议及时补货。", "action": "去补货"},
+      {"id": "ui.alert.cost", "text": "这笔成本与平时差异较大，建议核对一下。", "action": "查看明细"},
+      {"id": "ui.empty.products", "text": "还没有商品，先添加第一件吧。", "action": "添加商品"},
+      {"id": "ui.reminder.order", "text": "还有 5 笔订单等待处理。", "action": "去处理"}
+    ]
+  },
+  "assets": [
+    {"id": "vi_master_board", "path": "SDQ_整套VI展示板_高清版.png", "format": "png", "width": 2176, "height": 1632, "aspect_ratio": "4:3", "tags": ["品牌总览", "VI", "Logo", "UI", "线下物料"], "use_case": "完整品牌视觉、色彩、图标、吉祥物和应用场景参考。"},
+    {"id": "splash_blue", "path": "SDQ_Splash_Blue.png", "format": "png", "width": 1440, "height": 2560, "aspect_ratio": "9:16", "tags": ["启动页", "Logo", "吉祥物"], "use_case": "蓝色渐变启动页和纵向Logo组合参考。"},
+    {"id": "icon_motion_board", "path": "SDQ_UI图标与交互动效规范板.png", "format": "png", "width": 2176, "height": 1632, "aspect_ratio": "4:3", "tags": ["图标", "状态色", "动效", "导航"], "use_case": "图标结构、色彩状态和动效节奏参考。"},
+    {"id": "appstore_overview", "path": "SDQ_AppStore_01_经营总览.png", "format": "png", "width": 1440, "height": 2560, "aspect_ratio": "9:16", "tags": ["应用商店", "经营总览", "收入", "利润"], "use_case": "应用商店首屏和经营总览营销素材。"},
+    {"id": "appstore_inventory", "path": "SDQ_AppStore_02_库存提醒.png", "format": "png", "width": 1440, "height": 2560, "aspect_ratio": "9:16", "tags": ["应用商店", "库存", "预警"], "use_case": "库存提醒和橙色预警使用参考。"},
+    {"id": "appstore_trend", "path": "SDQ_AppStore_03_经营趋势.png", "format": "png", "width": 1440, "height": 2560, "aspect_ratio": "9:16", "tags": ["应用商店", "趋势", "报表", "图表"], "use_case": "趋势分析和经营洞察参考。"},
+    {"id": "appstore_multistore", "path": "SDQ_AppStore_04_多门店管理.png", "format": "png", "width": 1440, "height": 2560, "aspect_ratio": "9:16", "tags": ["应用商店", "多门店", "店铺汇总"], "use_case": "多门店数据汇总场景参考。"},
+    {"id": "appstore_reminder", "path": "SDQ_AppStore_05_经营提醒.png", "format": "png", "width": 1440, "height": 2560, "aspect_ratio": "9:16", "tags": ["应用商店", "提醒", "待办", "成本"], "use_case": "主动提醒和待办管理场景参考。"},
+    {"id": "moments_overview", "path": "SDQ_Moments_01_经营总览.png", "format": "png", "width": 1632, "height": 2176, "aspect_ratio": "3:4", "tags": ["朋友圈", "私域", "经营总览"], "use_case": "朋友圈/社群经营总览宣传。"},
+    {"id": "moments_inventory", "path": "SDQ_Moments_02_库存预警.png", "format": "png", "width": 1632, "height": 2176, "aspect_ratio": "3:4", "tags": ["朋友圈", "私域", "库存"], "use_case": "朋友圈/社群库存预警宣传。"},
+    {"id": "moments_trend", "path": "SDQ_Moments_03_经营趋势.png", "format": "png", "width": 1632, "height": 2176, "aspect_ratio": "3:4", "tags": ["朋友圈", "私域", "趋势"], "use_case": "朋友圈/社群趋势分析宣传。"},
+    {"id": "moments_multistore", "path": "SDQ_Moments_04_多门店管理.png", "format": "png", "width": 1632, "height": 2176, "aspect_ratio": "3:4", "tags": ["朋友圈", "私域", "多门店"], "use_case": "朋友圈/社群多门店宣传。"},
+    {"id": "moments_reminder", "path": "SDQ_Moments_05_经营提醒.png", "format": "png", "width": 1632, "height": 2176, "aspect_ratio": "3:4", "tags": ["朋友圈", "私域", "提醒"], "use_case": "朋友圈/社群经营提醒宣传。"},
+    {"id": "wechat_article_cover", "path": "SDQ_WeChat_ArticleCover_经营总览.png", "format": "png", "width": 2560, "height": 1440, "aspect_ratio": "16:9", "tags": ["微信公众号", "文章封面", "经营总览"], "use_case": "公众号文章主封面。"}
+  ],
+  "asset_selection": {
+    "app_store": "根据feature_topic选择appstore_overview、appstore_inventory、appstore_trend、appstore_multistore或appstore_reminder。",
+    "wechat_moments": "根据feature_topic选择对应moments_*资产。",
+    "wechat_article_cover": "选择wechat_article_cover或参考其左文右图构图。",
+    "splash_screen": "选择splash_blue。",
+    "icons_or_motion": "选择icon_motion_board并遵循design_tokens.icons和motion。",
+    "brand_or_vi": "选择vi_master_board并遵循brand_identity和design_tokens。"
+  },
+  "critical_constraints": [
+    "蓝色为主色，橙色只承担强调、增长或关注提示。",
+    "库存提醒默认使用活力橙，不使用大面积红色制造恐慌。",
+    "每个产品页面只设置一个主焦点和最多一个主按钮。",
+    "图表必须包含周期、单位或图例，避免复杂金融终端风格。",
+    "算小胖必须保留橘色圆润猫咪、白色肚皮和深棕色算盘。",
+    "不生成第三方Logo、二维码或未经提供的夸大承诺。",
+    "动效不能阻塞操作；减少动效模式下应能静态理解所有状态。"
+  ],
+  "related_documents": [
+    "算得清_AI素材理解与提取指南.md",
+    "算得清设计手册_完整版.md",
+    "算得清品牌设计规范手册.md",
+    "算得清运营海报文案与视觉排版方案.md",
+    "算得清UI图标与核心交互动效规范.md"
+  ]
+}
