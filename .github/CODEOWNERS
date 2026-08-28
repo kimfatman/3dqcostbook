@@ -1,17 +1,14 @@
 # 算得清仓库的代码归属规则。
 #
-# 当前安全回退审查人：@kimfatman
-# 在创建三类账号后，请将以下位置替换为实际 GitHub 用户名或组织团队：
-#   UI_OWNER       -> 例如 @your-org/costbook-ui
-#   BACKEND_OWNER  -> 例如 @your-org/costbook-backend
-#   QA_OWNER       -> 例如 @your-org/costbook-acceptance
+# 本仓库由同一 GitHub 身份 @kimfatman 运行 UI、后端和独立验收 Agent。
+# CODEOWNERS 在此用于标示代码路径和安全回退负责人；由于三类 Agent 使用同一
+# GitHub 身份，它不能区分 Agent，也不能提供独立审批证明。
 #
-# 替换示例（不要保留尖括号）：
-#   /client/** @<UI_OWNER> @kimfatman
-#   /server/** @<BACKEND_OWNER> @kimfatman
-# 验收账号通常仅需 Triage 权限，用于提交验收 Issue，不应拥有合并权限。
+# 高风险变更的职责隔离以 PR 模板中的“Agent 交接与独立验收”记录执行：
+# UI Agent 与后端 Agent 需要使用独立任务/会话复核；验收 Agent 只记录测试结论，
+# 不读取生产密钥或运行时配置。不要添加虚构的 GitHub 用户名或团队作为所有者。
 
-# 兜底：尚未分配专属负责人或跨模块改动，必须由仓库管理员审查。
+# 兜底：未分类或跨模块文件由唯一仓库身份负责。
 * @kimfatman
 
 # UI 开发责任区：移动端页面、组件、图表、样式、无障碍与前端回归。
@@ -27,7 +24,8 @@
 /package.json @kimfatman
 /pnpm-lock.yaml @kimfatman
 
-# 认证、数据变更与生产配置是高风险边界；替换账号后建议改为 UI 与后端负责人共同审查。
+# 认证、数据变更与生产配置是高风险边界；必须按 PR 模板完成 UI/后端 Agent
+# 交叉复核与独立验收记录，不能将本规则视为独立 GitHub 审批。
 /.github/** @kimfatman
 /shared/** @kimfatman
 /docs/** @kimfatman

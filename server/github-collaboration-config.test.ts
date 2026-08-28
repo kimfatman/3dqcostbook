@@ -14,17 +14,19 @@ describe("GitHub 三账号协作配置", () => {
     expect(codeowners).toContain("/drizzle/** @kimfatman");
     expect(codeowners).toContain("/deploy/** @kimfatman");
     expect(codeowners).toContain("/.github/** @kimfatman");
+    expect(codeowners).toContain("它不能区分 Agent");
     expect(codeowners).not.toMatch(/^\s*\/[^#\n]*@</m);
   });
 
-  it("提供统一的 PR 验证、数据安全与验收交接模板", async () => {
+  it("提供统一的 PR 验证、数据安全与多 Agent 验收交接模板", async () => {
     const template = await readFile(path.join(projectRoot, ".github", "PULL_REQUEST_TEMPLATE.md"), "utf8");
 
     expect(template).toContain("pnpm check");
     expect(template).toContain("pnpm test");
     expect(template).toContain("pnpm build");
     expect(template).toContain("金额的 fen 存储");
-    expect(template).toContain("验收交接");
+    expect(template).toContain("Agent 交接与独立验收");
+    expect(template).toContain("GitHub 的同一账号审批不能替代独立 Agent 复核");
     expect(template).toContain("未提交 `.env`、密钥、Token、验证码");
   });
 });
