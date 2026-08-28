@@ -3,7 +3,8 @@ import { getAppUserByCloudbaseSubject, getAppUserByEmail, getAppUserByPhoneNumbe
 import { localSessionCookieOptions, LOCAL_SESSION_COOKIE, hashPassword, signSession, verifyPassword } from "./local-auth";
 import { assertAuthAttemptAllowed, assertOtpSendAllowed, assertPasswordPolicy, clearAuthFailures, createAuthRateLimitKeys, recordAuthFailure, recordOtpSend } from "./auth-security";
 import { completeCloudbaseOtpChallenge, requestCloudbaseOtpChallenge, type CloudbaseOtpMethod, type CloudbaseOtpPurpose, type CloudbaseVerifiedIdentity } from "./cloudbase-auth";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { protectedProcedure, publicProcedure, router, adminProcedure } from "./_core/trpc";
+import { getAdminHealth, getAdminOverview, getAdminVersion } from "./admin";
 
 const email = z.string().trim().toLowerCase().email().max(320);
 const password = z.string().min(8, "密码至少需要 8 个字符").max(128, "密码不能超过 128 个字符");
@@ -167,6 +168,11 @@ export const appRouter = router({
       ctx.res.clearCookie(LOCAL_SESSION_COOKIE, { ...localSessionCookieOptions(), maxAge: -1 });
       return { success: true } as const;
     }),
+  }),
+  admin: router({
+    health: adminProcedure.query(() => getAdminHealth()),
+    version: adminProcedure.query(() => getAdminVersion()),
+    overview: adminProcedure.query(() => getAdminOverview()),
   }),
   profile: router({
     updateMe: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(120), avatarAssetId: z.string().uuid().nullable().optional(), avatarPreset })).mutation(({ input, ctx }) => updateAppUserProfile(ctx.user.id, input)),
