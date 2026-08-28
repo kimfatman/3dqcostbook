@@ -159,12 +159,18 @@ export const backupRuns = mysqlTable("backup_runs", {
   id: varchar("id", { length: 36 }).primaryKey(),
   scheduleId: varchar("scheduleId", { length: 36 }).notNull(),
   status: mysqlEnum("status", ["queued", "running", "succeeded", "failed", "cancelled"]).notNull().default("queued"),
+  attempt: int("attempt").notNull().default(0),
+  nextAttemptAt: timestamp("nextAttemptAt"),
+  leaseUntil: timestamp("leaseUntil"),
+  workerId: varchar("workerId", { length: 80 }),
+  idempotencyKey: varchar("idempotencyKey", { length: 160 }),
+  sourceSnapshot: json("sourceSnapshot").$type<Record<string, string | number | boolean | null>>(),
   startedAt: timestamp("startedAt"),
   completedAt: timestamp("completedAt"),
   bytesWritten: int("bytesWritten"),
   errorSummary: varchar("errorSummary", { length: 240 }),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
-}, table => [index("backup_runs_schedule_created_idx").on(table.scheduleId, table.createdAt), index("backup_runs_status_created_idx").on(table.status, table.createdAt)]);
+}, table => [index("backup_runs_schedule_created_idx").on(table.scheduleId, table.createdAt), index("backup_runs_status_attempt_idx").on(table.status, table.nextAttemptAt), uniqueIndex("backup_runs_idempotency_unique").on(table.idempotencyKey)]);
 
 export type AppUser = typeof appUsers.$inferSelect;
 export type User = typeof users.$inferSelect;

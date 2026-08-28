@@ -71,6 +71,13 @@
       "when": 1787887491773,
       "tag": "0009_living_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1787887940755,
+      "tag": "0010_kind_sentinel",
+      "breakpoints": true
     }
   ]
 }
