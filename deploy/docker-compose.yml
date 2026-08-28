@@ -23,6 +23,8 @@ services:
       dockerfile: deploy/Dockerfile
       args:
         VITE_SELF_HOSTED: "true"
+        VITE_CLOUDBASE_ENV_ID: ${VITE_CLOUDBASE_ENV_ID}
+        VITE_CLOUDBASE_PUBLISHABLE_KEY: ${VITE_CLOUDBASE_PUBLISHABLE_KEY}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -31,6 +33,8 @@ services:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       BOOTSTRAP_ADMIN_TOKEN: ${BOOTSTRAP_ADMIN_TOKEN}
+      CLOUDBASE_ENV_ID: ${CLOUDBASE_ENV_ID}
+      CLOUDBASE_APIKEY: ${CLOUDBASE_APIKEY}
       COS_REGION: ${COS_REGION}
       COS_BUCKET: ${COS_BUCKET}
       TENCENT_SECRET_ID: ${TENCENT_SECRET_ID}

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const caddyfile = readFileSync(join(root, "deploy", "Caddyfile"), "utf8");
 const dockerfile = readFileSync(join(root, "deploy", "Dockerfile"), "utf8");
+const composefile = readFileSync(join(root, "deploy", "docker-compose.yml"), "utf8");
 
 describe("生产部署安全基线", () => {
   it("为应用与 API 站点启用同一组最小安全响应头", () => {
@@ -23,5 +24,14 @@ describe("生产部署安全基线", () => {
     expect(dockerfile).toContain("useradd --system --uid 10001 --gid costbook");
     expect(dockerfile).toContain("chown -R costbook:costbook /app");
     expect(dockerfile).toMatch(/USER costbook\s+CMD \["node", "dist\/index\.js"\]/s);
+  });
+
+  it("仅将 CloudBase Publishable Key 注入浏览器构建，并将服务器 API Key 保留在运行时环境", () => {
+    expect(composefile).toContain("VITE_CLOUDBASE_ENV_ID: ${VITE_CLOUDBASE_ENV_ID}");
+    expect(composefile).toContain("VITE_CLOUDBASE_PUBLISHABLE_KEY: ${VITE_CLOUDBASE_PUBLISHABLE_KEY}");
+    expect(composefile).toContain("CLOUDBASE_ENV_ID: ${CLOUDBASE_ENV_ID}");
+    expect(composefile).toContain("CLOUDBASE_APIKEY: ${CLOUDBASE_APIKEY}");
+    expect(dockerfile).toContain("ARG VITE_CLOUDBASE_PUBLISHABLE_KEY");
+    expect(dockerfile).not.toContain("CLOUDBASE_APIKEY=");
   });
 });
