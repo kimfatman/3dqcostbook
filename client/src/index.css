@@ -865,3 +865,174 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 0; bo
   .prototype-home .home-range-switcher button,
   .prototype-home .operating-snapshot.home-decision { transition: none !important; }
 }
+
+
+/* P1 经营分析看板：结论—拆解—下钻，图表只服务真实账本数据。 */
+.prototype-analysis.analysis-profit-page {
+  --analysis-surface: var(--sdq-bg-surface);
+  --analysis-surface-subtle: var(--sdq-bg-surface-subtle);
+  --analysis-text: var(--sdq-text-primary);
+  --analysis-muted: var(--sdq-text-secondary);
+  --analysis-faint: var(--sdq-text-tertiary);
+  --analysis-line: var(--sdq-border-subtle);
+  --analysis-brand: var(--sdq-action-primary);
+  --analysis-cost: var(--sdq-cost);
+  --analysis-profit: var(--sdq-profit);
+  display: grid;
+  gap: 12px;
+  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+}
+
+.prototype-analysis.analysis-profit-page > .ledger-page-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 2px 16px 4px;
+}
+.prototype-analysis.analysis-profit-page > .ledger-page-heading h1 {
+  color: var(--analysis-text);
+  font-size: clamp(22px, 6.2vw, 28px);
+  letter-spacing: -.055em;
+}
+.prototype-analysis.analysis-profit-page > .ledger-page-heading p { color: var(--analysis-muted); }
+.prototype-analysis.analysis-profit-page .segment-control {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--analysis-surface-subtle);
+  border: 1px solid var(--analysis-line);
+  border-radius: var(--sdq-radius-pill);
+}
+.prototype-analysis.analysis-profit-page .segment-control button {
+  min-width: 48px;
+  min-height: 34px;
+  padding: 0 9px;
+  color: var(--analysis-muted);
+  font-size: 11px;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-radius: var(--sdq-radius-pill);
+}
+.prototype-analysis.analysis-profit-page .segment-control button.active {
+  color: var(--sdq-text-on-brand);
+  background: var(--analysis-brand);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--analysis-brand) 20%, transparent);
+}
+
+.prototype-analysis.analysis-profit-page > .ledger-surface {
+  margin-right: 16px;
+  margin-left: 16px;
+  border-color: var(--analysis-line);
+  border-radius: var(--sdq-radius-lg);
+  background: var(--analysis-surface);
+  box-shadow: var(--sdq-shadow-card);
+}
+.prototype-analysis.analysis-profit-page .analysis-card-head h2,
+.prototype-analysis.analysis-profit-page .analysis-card-head > div > h2 { color: var(--analysis-text); }
+.prototype-analysis.analysis-profit-page .analysis-card-head span,
+.prototype-analysis.analysis-profit-page .analysis-card-head > div > span { color: var(--analysis-muted); }
+.prototype-analysis.analysis-profit-page .analysis-profit-overview {
+  padding: 16px;
+  border: 0;
+  background: linear-gradient(145deg, var(--sdq-bg-brand), color-mix(in srgb, var(--sdq-bg-brand) 78%, #153f9a));
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--sdq-bg-brand) 22%, transparent);
+}
+.prototype-analysis.analysis-profit-page .analysis-profit-overview .analysis-card-head h2,
+.prototype-analysis.analysis-profit-page .analysis-profit-overview .analysis-card-head span { color: rgba(255, 255, 255, .82); }
+.prototype-analysis.analysis-profit-page .analysis-profit-overview .analysis-card-head { border-color: rgba(255, 255, 255, .2); }
+.prototype-analysis.analysis-profit-page .analysis-profit-total { padding: 18px 0 14px; }
+.prototype-analysis.analysis-profit-page .analysis-profit-total span,
+.prototype-analysis.analysis-profit-page .analysis-profit-total em { color: rgba(255, 255, 255, .78); }
+.prototype-analysis.analysis-profit-page .analysis-profit-total strong { color: #fff; font-family: var(--sdq-financial-font); font-size: clamp(30px, 9vw, 40px); letter-spacing: -.075em; }
+.prototype-analysis.analysis-profit-page .analysis-profit-kpis { border-color: rgba(255, 255, 255, .2); }
+.prototype-analysis.analysis-profit-page .analysis-profit-kpis span { border-color: rgba(255, 255, 255, .2); }
+.prototype-analysis.analysis-profit-page .analysis-profit-kpis em { color: rgba(255, 255, 255, .7); }
+.prototype-analysis.analysis-profit-page .analysis-profit-kpis b { color: #fff; font-family: var(--sdq-financial-font); font-variant-numeric: tabular-nums lining-nums; }
+.prototype-analysis.analysis-profit-page .analysis-no-revenue { color: var(--analysis-text); background: var(--sdq-bg-brand-soft); border-color: transparent; }
+
+.prototype-analysis.analysis-profit-page .analysis-waterfall-card,
+.prototype-analysis.analysis-profit-page .analysis-profit-sku,
+.prototype-analysis.analysis-profit-page .analysis-cost-overview,
+.prototype-analysis.analysis-profit-page .analysis-cost-composition,
+.prototype-analysis.analysis-profit-page .analysis-more,
+.prototype-analysis.analysis-profit-page .analysis-target-management { padding: 16px; }
+.prototype-analysis.analysis-profit-page .analysis-waterfall-card .analysis-card-head,
+.prototype-analysis.analysis-profit-page .analysis-profit-sku .analysis-card-head,
+.prototype-analysis.analysis-profit-page .analysis-cost-overview .analysis-card-head,
+.prototype-analysis.analysis-profit-page .analysis-cost-composition .analysis-card-head { padding-bottom: 10px; border-bottom: 1px solid var(--analysis-line); }
+.prototype-analysis.analysis-profit-page .analysis-card-head > b,
+.prototype-analysis.analysis-profit-page .analysis-card-head > span { color: var(--analysis-faint); font-size: 11px; }
+
+/* 期间对比：两条横向轨道比垂直柱更适合小屏扫描，精确值仍由文案和 aria-label 提供。 */
+.analysis-structure-compare .analysis-grouped-comparison {
+  display: grid;
+  gap: 2px;
+  margin-top: 10px;
+}
+.analysis-comparison-summary {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  margin: 0 0 7px;
+  background: var(--sdq-bg-brand-soft);
+  border: 1px solid color-mix(in srgb, var(--sdq-action-primary) 12%, var(--sdq-border-subtle));
+  border-radius: var(--sdq-radius-md);
+}
+.analysis-comparison-summary span { color: var(--sdq-text-tertiary); font-size: 10px; font-weight: 700; }
+.analysis-comparison-summary b { color: var(--sdq-text-primary); font-size: 13px; line-height: 1.35; }
+.analysis-comparison-summary em { color: var(--sdq-text-secondary); font-size: 10px; font-style: normal; line-height: 1.4; }
+.analysis-structure-compare .analysis-grouped-comparison > button {
+  display: grid;
+  grid-template-columns: minmax(92px, .85fr) minmax(100px, 1.3fr) auto 16px;
+  gap: 9px;
+  align-items: center;
+  min-height: 76px;
+  padding: 9px 0;
+  color: var(--sdq-text-primary);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--sdq-border-subtle);
+}
+.analysis-structure-compare .analysis-grouped-comparison > button:last-child { border-bottom: 0; }
+.analysis-grouped-copy { display: grid; gap: 4px; min-width: 0; }
+.analysis-grouped-copy b { overflow: hidden; color: var(--sdq-text-primary); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.analysis-grouped-copy em { overflow: hidden; color: var(--sdq-text-secondary); font-size: 10px; font-style: normal; white-space: nowrap; text-overflow: ellipsis; }
+.analysis-grouped-bars { display: grid; gap: 5px; align-content: center; min-width: 0; padding: 5px 0; }
+.analysis-grouped-bars::before,
+.analysis-grouped-bars::after { position: absolute; }
+.analysis-grouped-bars { position: relative; }
+.analysis-grouped-bars > i { display: block; width: 0; max-width: 100%; height: 8px !important; min-width: 3px; border-radius: var(--sdq-radius-pill); transition: width 220ms ease-out; }
+.analysis-grouped-bars > i.current { background: var(--sdq-income); }
+.analysis-grouped-bars > i.previous { background: color-mix(in srgb, var(--sdq-income) 32%, var(--sdq-bg-surface-subtle)); border: 1px solid color-mix(in srgb, var(--sdq-income) 38%, var(--sdq-border-subtle)); }
+.analysis-structure-compare .analysis-grouped-comparison > button > strong { min-width: 38px; font-family: var(--sdq-financial-font); font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; }
+.analysis-structure-compare .analysis-grouped-comparison > button > strong.up { color: var(--sdq-cost); }
+.analysis-structure-compare .analysis-grouped-comparison > button > strong.down { color: var(--sdq-profit); }
+.analysis-structure-compare .analysis-grouped-comparison > button > strong.flat { color: var(--sdq-text-tertiary); }
+
+.analysis-structure-compare .analysis-grouped-legend { display: flex; flex-wrap: wrap; gap: 9px; justify-content: flex-end; }
+.analysis-structure-compare .analysis-grouped-legend span { display: inline-flex; gap: 4px; align-items: center; color: var(--sdq-text-secondary); font-size: 10px; }
+.analysis-structure-compare .analysis-grouped-legend i { width: 7px; height: 7px; border-radius: 50%; }
+.analysis-structure-compare .analysis-grouped-legend i.current { background: var(--sdq-income); }
+.analysis-structure-compare .analysis-grouped-legend i.previous { background: color-mix(in srgb, var(--sdq-income) 32%, var(--sdq-bg-surface-subtle)); border: 1px solid color-mix(in srgb, var(--sdq-income) 38%, var(--sdq-border-subtle)); }
+.analysis-structure-compare .analysis-empty-copy { padding: 18px 0 4px; color: var(--sdq-text-secondary); font-size: 12px; line-height: 1.5; }
+
+@media (max-width: 374px) {
+  .prototype-analysis.analysis-profit-page > .ledger-page-heading { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .prototype-analysis.analysis-profit-page .segment-control { justify-self: start; }
+  .analysis-structure-compare .analysis-grouped-comparison > button { grid-template-columns: minmax(78px, .8fr) minmax(84px, 1.2fr) auto 14px; gap: 6px; }
+  .analysis-grouped-copy em { font-size: 9px; }
+}
+
+@media (min-width: 768px) {
+  .prototype-analysis.analysis-profit-page { max-width: 760px; margin: 0 auto; }
+  .prototype-analysis.analysis-profit-page > .ledger-page-heading { padding-right: 0; padding-left: 0; }
+  .prototype-analysis.analysis-profit-page > .ledger-surface { margin-right: 0; margin-left: 0; }
+  .analysis-structure-compare .analysis-grouped-comparison > button { min-height: 68px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analysis-grouped-bars > i { transition: none; }
+}

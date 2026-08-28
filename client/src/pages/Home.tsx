@@ -313,9 +313,13 @@ function CostAnalysisPieChart({ items, grossCost, onSelect, onOpenAll }: { items
 }
 
 function StructureComparisonGroupedBars({ items, onSelect }: { items: ReturnType<typeof buildCostStructureComparison>; onSelect: (key: string, label: string) => void }) {
-  if (!items.length) return <div className="analysis-empty-copy">本期与上期均暂无可对照的正向成本。</div>;
+  if (!items.length) return <div className="analysis-empty-copy" role="status">本期与上期均暂无可对照的正向成本。</div>;
   const maxShare = Math.max(1, ...items.map((item) => Math.max(item.share, item.previousShare)));
-  return <div className="analysis-grouped-comparison template-grouped-structure" aria-label="本期与上期正向成本占比变化">{items.map((item) => { const deltaLabel = item.shareDelta === 0 ? "持平" : `${item.shareDelta > 0 ? "+" : ""}${item.shareDelta}pt`; return <button key={item.key} onClick={() => onSelect(item.key, item.label)}><span className="analysis-grouped-copy"><b>{item.label}</b><em>本期 {item.share}% · 上期 {item.previousShare}%</em></span><span className="analysis-grouped-bars" role="img" aria-label={`${item.label}：本期 ${item.share}%，上期 ${item.previousShare}%`}><i className="current" style={{ height: `${item.share / maxShare * 100}%` }} /><i className="previous" style={{ height: `${item.previousShare / maxShare * 100}%` }} /></span><strong className={item.shareDelta > 0 ? "up" : item.shareDelta < 0 ? "down" : "flat"}>{deltaLabel}</strong><ChevronRight size={15} /></button>; })}</div>;
+  const largestChange = [...items].sort((a, b) => Math.abs(b.shareDelta) - Math.abs(a.shareDelta))[0];
+  const largestChangeCopy = largestChange.shareDelta === 0
+    ? "各成本分类与上期持平"
+    : `${largestChange.label}变化最大：${largestChange.shareDelta > 0 ? "上升" : "下降"} ${Math.abs(largestChange.shareDelta)} 个百分点`;
+  return <div className="analysis-grouped-comparison template-grouped-structure" aria-label="本期与上期正向成本占比变化"><p className="analysis-comparison-summary"><span>对比结论</span><b>{largestChangeCopy}</b><em>点击任一分类可查看本期与上期对应流水。</em></p>{items.map((item) => { const deltaLabel = item.shareDelta === 0 ? "持平" : `${item.shareDelta > 0 ? "+" : ""}${item.shareDelta}pt`; return <button key={item.key} onClick={() => onSelect(item.key, item.label)}><span className="analysis-grouped-copy"><b>{item.label}</b><em>本期 {item.share}% · 上期 {item.previousShare}%</em></span><span className="analysis-grouped-bars" role="img" aria-label={`${item.label}：本期 ${item.share}%，上期 ${item.previousShare}%`}><i className="current" style={{ width: `${item.share / maxShare * 100}%` }} /><i className="previous" style={{ width: `${item.previousShare / maxShare * 100}%` }} /></span><strong className={item.shareDelta > 0 ? "up" : item.shareDelta < 0 ? "down" : "flat"}>{deltaLabel}</strong><ChevronRight size={15} /></button>; })}</div>;
 }
 
 function SalesTargetProgress({ progress, runRateForecast, editing, input, onInputChange, onEdit, onSave, onCancel, onOpenOrders }: { progress: ReturnType<typeof buildSalesTargetProgress>; runRateForecast: number; editing: boolean; input: string; onInputChange: (value: string) => void; onEdit: () => void; onSave: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; onOpenOrders: () => void }) {

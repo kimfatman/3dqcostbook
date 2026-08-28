@@ -425,8 +425,10 @@ describe("成本分析供应商排行与结构对照", () => {
     expect(document.querySelector(".template-cost-pie .analysis-cost-pie")).toBeTruthy();
     const comparison = document.querySelector(".template-grouped-structure");
     expect(comparison).toBeTruthy();
+    expect(within(comparison as HTMLElement).getByText("对比结论")).toBeTruthy();
+    expect(within(comparison as HTMLElement).getByText(/点击任一分类可查看/)).toBeTruthy();
     const priorBar = comparison?.querySelector(".analysis-grouped-bars > i.previous") as HTMLElement;
-    expect(priorBar.style.height).toBe("0%");
+    expect(priorBar.style.width).toBe("0%");
     const firstCategory = within(comparison as HTMLElement).getAllByRole("button")[0];
     expect(firstCategory.textContent).toContain("上期 0%");
     await user.click(firstCategory);
