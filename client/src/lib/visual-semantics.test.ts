@@ -47,6 +47,8 @@ describe("第二批全站视觉语义", () => {
     expect(baseCss).toContain(".prototype-products .product-cost-list > button");
     expect(baseCss).toContain(".supplier-list > div:not(.empty-state)");
     expect(baseCss).toContain("min-height: var(--sdq-height-control)");
+    expect(baseCss).toContain(".app-content :where(.fixed-primary, .floating-add, .sales-baseline-primary, .list-primary, .form-save)");
+    expect(baseCss).toContain("border-radius: var(--sdq-radius-sm)");
   });
 
   it("使用中文可见上传控件和字段级校验，不触发英文浏览器原生提示", () => {

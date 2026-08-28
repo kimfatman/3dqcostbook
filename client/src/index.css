@@ -1186,3 +1186,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 0; bo
 .mobile-shell.skin-deep :where(.record-filter .month-filter, .record-filter .month-filter select, .result-summary) { color: var(--sdq-text-secondary); border-color: var(--sdq-border-subtle); }
 .mobile-shell.skin-deep :where(.record-row > strong, .record-row > strong.income, .supplier-list > div > strong, .prototype-products .product-kpis label b) { color: var(--sdq-income); }
 .mobile-shell.skin-deep :where(.record-row .record-icon, .supplier-list > div > span, .prototype-products .product-card-head > i) { background: var(--sdq-bg-brand-soft); }
+
+
+/* 设计手册对齐：所有主按钮统一使用 button.primary 配方的 8px radius。 */
+.app-content :where(.fixed-primary, .floating-add, .sales-baseline-primary, .list-primary, .form-save),
+button.bg-primary { border-radius: var(--sdq-radius-sm); }
