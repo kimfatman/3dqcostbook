@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 
-describe("GitHub 三账号协作配置", () => {
+describe("GitHub 单账号多 Agent 协作配置", () => {
   it("在 GitHub 识别路径中为 UI、后端与高风险目录提供安全回退的代码归属", async () => {
     const codeowners = await readFile(path.join(projectRoot, ".github", "CODEOWNERS"), "utf8");
 
@@ -39,5 +39,8 @@ describe("GitHub 三账号协作配置", () => {
     expect(prompts).toContain("不得直接推送 main");
     expect(prompts).toContain("金额以 fen 整数存储");
     expect(prompts).toContain("/opt/cost-book/deploy/runtime.secrets");
+    expect(prompts).toContain("管理员可视化维护界面规则");
+    expect(prompts).toContain("服务端管理员授权");
+    expect(prompts).toContain("禁止仅依赖前端隐藏菜单或路由守卫");
   });
 });
