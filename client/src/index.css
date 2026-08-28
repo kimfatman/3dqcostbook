@@ -1170,3 +1170,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 0; bo
   .record-row > strong { font-size: 11px; }
   .supplier-list > div:not(.empty-state) { grid-template-columns: 34px minmax(0, 1fr) auto 25px 25px; gap: 5px; }
 }
+
+
+/* 截图验收修复：深蓝主题下，历史页面专用白色表面不得覆盖核心模块语义表面。 */
+.mobile-shell.skin-deep :where(.record-group, .record-export-panel, .prototype-products .product-cost-list > button, .supplier-list > div:not(.empty-state), .supplier-list .empty-state) {
+  color: var(--sdq-text-primary);
+  background: var(--sdq-bg-surface);
+  border-color: var(--sdq-border-subtle);
+  box-shadow: var(--sdq-shadow-card);
+}
+.mobile-shell.skin-deep :where(.record-group h3, .record-row, .supplier-list > div > section b, .prototype-products .product-card-head > div b, .prototype-products .product-kpis label b) { color: var(--sdq-text-primary); }
+.mobile-shell.skin-deep :where(.record-group h3, .record-row, .prototype-products .product-kpis, .supplier-list > div:not(.empty-state)) { border-color: var(--sdq-border-subtle); }
+.mobile-shell.skin-deep :where(.record-group h3 span, .record-row > span:nth-child(2) em, .supplier-list > div > section em, .supplier-list > div > strong small, .prototype-products .product-card-head > div em, .prototype-products .product-kpis label em) { color: var(--sdq-text-secondary); }
+.mobile-shell.skin-deep :where(.record-filter, .search-field) { color: var(--sdq-text-secondary); background: var(--sdq-bg-surface); border-color: var(--sdq-border-subtle); }
+.mobile-shell.skin-deep :where(.record-filter .month-filter, .record-filter .month-filter select, .result-summary) { color: var(--sdq-text-secondary); border-color: var(--sdq-border-subtle); }
+.mobile-shell.skin-deep :where(.record-row > strong, .record-row > strong.income, .supplier-list > div > strong, .prototype-products .product-kpis label b) { color: var(--sdq-income); }
+.mobile-shell.skin-deep :where(.record-row .record-icon, .supplier-list > div > span, .prototype-products .product-card-head > i) { background: var(--sdq-bg-brand-soft); }
