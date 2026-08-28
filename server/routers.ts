@@ -6,6 +6,7 @@ import { completeCloudbaseOtpChallenge, requestCloudbaseOtpChallenge, type Cloud
 import { protectedProcedure, publicProcedure, router, adminProcedure } from "./_core/trpc";
 import { getAdminHealth, getAdminOverview, getAdminVersion } from "./admin";
 import { listAdminUsers, listAdminWorkspaces, setAdminUserStatus, setAdminWorkspaceStatus } from "./admin-data";
+import { listAdminAuditEvents, listMigrationReviews, reviewMigration, listGlobalConfigs, saveGlobalConfigDraft, publishGlobalConfig } from "./admin-platform-data";
 
 const email = z.string().trim().toLowerCase().email().max(320);
 const password = z.string().min(8, "密码至少需要 8 个字符").max(128, "密码不能超过 128 个字符");
@@ -28,6 +29,49 @@ const adminStatusChangeInput = z.object({
   status: z.enum(["active", "suspended"]),
   reason: z.string().trim().min(2).max(240),
   confirm: z.literal(true, "必须完成二次确认后才能执行状态变更"),
+  requestId: z.string().uuid().optional(),
+});
+const adminAuditListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  action: z.string().trim().max(80).optional(),
+  outcome: z.enum(["success", "failure", "cancelled"]).optional(),
+  targetType: z.string().trim().max(80).optional(),
+});
+const migrationListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
+});
+const migrationReviewInput = z.object({
+  migrationId: z.string().trim().regex(/^\d{4}_[a-z0-9_]+$/).max(32),
+  title: z.string().trim().min(1).max(160),
+  impactSummary: z.string().trim().min(1).max(500),
+  rollbackPlan: z.string().trim().min(1).max(500),
+  destructive: z.boolean(),
+  status: z.enum(["approved", "rejected"]),
+  reviewNote: z.string().trim().max(500).optional(),
+  confirm: z.literal(true, "必须完成二次确认后才能提交迁移审核结论"),
+  requestId: z.string().uuid().optional(),
+});
+const configListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  configKey: z.string().trim().regex(/^[a-z][a-z0-9_.-]{0,79}$/).optional(),
+  status: z.enum(["draft", "published", "archived"]).optional(),
+});
+const configPayload = z.record(z.string().trim().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/), z.union([z.string().max(500), z.number().finite(), z.boolean(), z.null()]))
+  .refine(value => Object.keys(value).length <= 40, "配置字段不能超过 40 个")
+  .refine(value => Object.keys(value).every(key => !/password|secret|token|verification|authorization|cookie|credential|connection|string|key/i.test(key)), "配置不能包含敏感字段");
+const configDraftInput = z.object({
+  configKey: z.string().trim().regex(/^[a-z][a-z0-9_.-]{0,79}$/),
+  payload: configPayload,
+  changeSummary: z.string().trim().min(2).max(240),
+  requestId: z.string().uuid().optional(),
+});
+const configPublishInput = z.object({
+  configId: z.string().uuid(),
+  confirm: z.literal(true, "必须完成二次确认后才能发布配置"),
   requestId: z.string().uuid().optional(),
 });
 
@@ -193,6 +237,18 @@ export const appRouter = router({
     workspaces: router({
       list: adminProcedure.input(adminPageInput).query(({ input }) => listAdminWorkspaces(input)),
       setStatus: adminProcedure.input(adminStatusChangeInput.extend({ workspaceId: z.string().uuid() })).mutation(({ input, ctx }) => setAdminWorkspaceStatus({ ...input, actorUserId: ctx.user.id })),
+    }),
+    audit: router({
+      list: adminProcedure.input(adminAuditListInput).query(({ input }) => listAdminAuditEvents(input)),
+    }),
+    migrations: router({
+      list: adminProcedure.input(migrationListInput).query(({ input }) => listMigrationReviews(input)),
+      review: adminProcedure.input(migrationReviewInput).mutation(({ input, ctx }) => reviewMigration({ ...input, actorUserId: ctx.user.id })),
+    }),
+    configs: router({
+      list: adminProcedure.input(configListInput).query(({ input }) => listGlobalConfigs(input)),
+      saveDraft: adminProcedure.input(configDraftInput).mutation(({ input, ctx }) => saveGlobalConfigDraft({ ...input, actorUserId: ctx.user.id })),
+      publish: adminProcedure.input(configPublishInput).mutation(({ input, ctx }) => publishGlobalConfig({ ...input, actorUserId: ctx.user.id })),
     }),
   }),
   profile: router({

@@ -1,4 +1,4 @@
-import { bigint, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { boolean, bigint, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * 用户、工作区和账本事实的首期云端模型。
@@ -101,6 +101,36 @@ export const adminAuditEvents = mysqlTable("admin_audit_events", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 }, table => [index("admin_audit_events_created_idx").on(table.createdAt), index("admin_audit_events_target_idx").on(table.targetType, table.targetId)]);
 
+/** 版本化全局配置；payload 仅允许经过服务端白名单校验的非敏感配置。 */
+export const globalConfigs = mysqlTable("global_configs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  configKey: varchar("configKey", { length: 80 }).notNull(),
+  version: int("version").notNull(),
+  status: mysqlEnum("status", ["draft", "published", "archived"]).notNull().default("draft"),
+  payload: json("payload").$type<Record<string, string | number | boolean | null>>().notNull(),
+  changeSummary: varchar("changeSummary", { length: 240 }).notNull(),
+  createdByUserId: varchar("createdByUserId", { length: 36 }).notNull(),
+  publishedByUserId: varchar("publishedByUserId", { length: 36 }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
+  publishedAt: timestamp("publishedAt"),
+}, table => [uniqueIndex("global_configs_key_version_unique").on(table.configKey, table.version), index("global_configs_key_status_idx").on(table.configKey, table.status)]);
+
+/** 账本结构迁移的审核记录；只记录审核元数据，不触发迁移执行。 */
+export const adminMigrationReviews = mysqlTable("admin_migration_reviews", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  migrationId: varchar("migrationId", { length: 32 }).notNull(),
+  title: varchar("title", { length: 160 }).notNull(),
+  impactSummary: varchar("impactSummary", { length: 500 }).notNull(),
+  rollbackPlan: varchar("rollbackPlan", { length: 500 }).notNull(),
+  destructive: boolean("destructive").notNull().default(false),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).notNull().default("pending"),
+  reviewedByUserId: varchar("reviewedByUserId", { length: 36 }),
+  reviewNote: varchar("reviewNote", { length: 500 }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
+}, table => [uniqueIndex("admin_migration_reviews_migration_unique").on(table.migrationId), index("admin_migration_reviews_status_idx").on(table.status)]);
+
 export type AppUser = typeof appUsers.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -108,4 +138,6 @@ export type Workspace = typeof workspaces.$inferSelect;
 export type WorkspaceBook = typeof workspaceBooks.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type AdminAuditEvent = typeof adminAuditEvents.$inferSelect;
+export type GlobalConfig = typeof globalConfigs.$inferSelect;
+export type AdminMigrationReview = typeof adminMigrationReviews.$inferSelect;
 export type MoneyFen = bigint;
