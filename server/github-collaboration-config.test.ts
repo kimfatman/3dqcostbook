@@ -29,4 +29,15 @@ describe("GitHub 三账号协作配置", () => {
     expect(template).toContain("GitHub 的同一账号审批不能替代独立 Agent 复核");
     expect(template).toContain("未提交 `.env`、密钥、Token、验证码");
   });
+
+  it("为 UI 与后端 Agent 提供独立分支、共同仓库和安全边界提示词", async () => {
+    const prompts = await readFile(path.join(projectRoot, "docs", "ui-backend-agent-prompts.md"), "utf8");
+
+    expect(prompts).toContain("https://github.com/kimfatman/3dqcostbook.git");
+    expect(prompts).toContain("agent/ui/<简短任务名>");
+    expect(prompts).toContain("agent/backend/<简短任务名>");
+    expect(prompts).toContain("不得直接推送 main");
+    expect(prompts).toContain("金额以 fen 整数存储");
+    expect(prompts).toContain("/opt/cost-book/deploy/runtime.secrets");
+  });
 });
