@@ -2,6 +2,12 @@ import { useMemo, useState } from "react";
 import {
   Activity,
   Archive,
+  Filter,
+  PauseCircle,
+  PlayCircle,
+  RefreshCw,
+  Search,
+  X,
   BookOpen,
   CheckCircle2,
   ChevronRight,
@@ -87,6 +93,46 @@ function Overview({ onNavigate }: { onNavigate: (section: SectionKey) => void })
   </>;
 }
 
+function UserOperations() {
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<"all" | "active" | "suspended">("all");
+  const [selected, setSelected] = useState<{ id: string; name: string; status: "active" | "suspended" } | null>(null);
+  const [reason, setReason] = useState("");
+  const [actionError, setActionError] = useState("");
+  const users = trpc.admin.users.list.useQuery({ page, pageSize: 10, query: query || undefined, status: status === "all" ? undefined : status }, { retry: false, refetchOnWindowFocus: false });
+  const setUserStatus = trpc.admin.users.setStatus.useMutation({
+    onSuccess: async () => {
+      setSelected(null);
+      setReason("");
+      setActionError("");
+      await users.refetch();
+    },
+    onError: () => setActionError("状态变更未完成，请确认理由和权限后重试。"),
+  });
+  const items = users.data?.items ?? [];
+  const totalPages = Math.max(1, Math.ceil((users.data?.total ?? 0) / 10));
+  const nextStatus = selected?.status === "active" ? "suspended" : "active";
+
+  const submitSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    setPage(1);
+    setQuery(searchInput.trim());
+  };
+  const changeStatus = () => {
+    if (!selected || reason.trim().length < 2) return;
+    setUserStatus.mutate({ userId: selected.id, status: nextStatus, reason: reason.trim(), confirm: true, requestId: crypto.randomUUID() });
+  };
+
+  return <>
+    <div className="admin-page-heading"><div><p className="admin-eyebrow">USER OPERATIONS</p><h2>用户运营</h2><p>查看最小运营字段并管理账号状态。邮箱和手机号已由服务端脱敏，所有状态变更均会写入管理员审计。</p></div><div className="admin-heading-meta"><Users size={18} /><span>{formatNumber(users.data?.total)} 个账号</span></div></div>
+    <section className="admin-panel admin-user-toolbar"><form className="admin-search-form" onSubmit={submitSearch}><Search size={16} /><input aria-label="搜索用户" value={searchInput} onChange={event => setSearchInput(event.target.value)} placeholder="搜索姓名、邮箱或手机号" maxLength={80} /><button type="submit">搜索</button></form><label className="admin-filter-select"><Filter size={15} /><span>状态</span><select aria-label="用户状态筛选" value={status} onChange={event => { setStatus(event.target.value as typeof status); setPage(1); }}><option value="all">全部</option><option value="active">正常</option><option value="suspended">已暂停</option></select></label><button className="admin-icon-button" title="刷新用户列表" aria-label="刷新用户列表" onClick={() => users.refetch()}><RefreshCw size={15} className={users.isFetching ? "admin-spin" : ""} /></button></section>
+    <section className="admin-panel admin-table-panel"><div className="admin-table-head"><div><p className="admin-eyebrow">ACCOUNT DIRECTORY</p><h3>账号目录</h3></div><span className="admin-table-caption">第 {page} / {totalPages} 页</span></div>{users.isLoading ? <LoadingPanel label="正在读取用户目录" /> : users.isError ? <ErrorPanel label="用户目录暂时不可用" /> : items.length === 0 ? <div className="admin-empty"><Users size={22} /><strong>没有匹配的用户</strong><span>请调整关键词或状态筛选。</span></div> : <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>用户</th><th>角色</th><th>状态</th><th>工作区</th><th>最后登录</th><th>操作</th></tr></thead><tbody>{items.map(user => <tr key={user.id}><td><div className="admin-user-cell"><div className="admin-table-avatar">{(user.name || "用").slice(0, 1)}</div><div><strong>{user.name || "未命名用户"}</strong><small>{user.email || user.phoneNumber || "联系方式已隐藏"}</small></div></div></td><td><span className="admin-role-tag">{user.role === "admin" ? "管理员" : "成员"}</span></td><td><StatusPill status={user.status === "active" ? "正常" : "已暂停"} /></td><td><strong className="admin-table-number">{formatNumber(user.workspaceCount)}</strong></td><td><span className="admin-table-date">{formatDate(user.lastSignedInAt)}</span></td><td><button className={`admin-row-action ${user.status === "active" ? "is-danger" : "is-safe"}`} disabled={user.role === "admin" && user.status === "active"} onClick={() => { setSelected({ id: user.id, name: user.name || "未命名用户", status: user.status }); setReason(""); setActionError(""); }}>{user.status === "active" ? <><PauseCircle size={15} />暂停</> : <><PlayCircle size={15} />恢复</>}</button></td></tr>)}</tbody></table></div>}<div className="admin-pagination"><span>共 {formatNumber(users.data?.total)} 个用户</span><div><button disabled={page <= 1 || users.isFetching} onClick={() => setPage(value => Math.max(1, value - 1))}>上一页</button><button disabled={page >= totalPages || users.isFetching} onClick={() => setPage(value => Math.min(totalPages, value + 1))}>下一页</button></div></div></section>
+    {selected && <div className="admin-confirm-backdrop" role="presentation"><section className="admin-confirm-card" role="dialog" aria-modal="true" aria-labelledby="user-status-confirm-title"><button className="admin-confirm-close" aria-label="取消状态变更" onClick={() => setSelected(null)}><X size={17} /></button><p className="admin-eyebrow">CONFIRM ACCOUNT ACTION</p><h3 id="user-status-confirm-title">{nextStatus === "suspended" ? "暂停用户账号" : "恢复用户账号"}</h3><p className="admin-confirm-lead">你将把 <strong>{selected.name}</strong> 的状态变更为“{nextStatus === "suspended" ? "已暂停" : "正常"}”。这会影响该账号后续访问受保护服务的权限。</p><label className="admin-reason-label">变更理由<span>必填</span><textarea aria-label="变更理由" value={reason} onChange={event => setReason(event.target.value)} placeholder="请说明本次状态变更的原因" maxLength={240} /></label>{actionError && <div className="admin-inline-error"><ShieldAlert size={15} />{actionError}</div>}<div className="admin-confirm-actions"><button className="admin-cancel-button" disabled={setUserStatus.isPending} onClick={() => setSelected(null)}>取消</button><button className="admin-primary-action" disabled={reason.trim().length < 2 || setUserStatus.isPending} onClick={changeStatus}>{setUserStatus.isPending ? <><Loader2 size={15} className="admin-spin" />提交中</> : "确认变更"}</button></div><small className="admin-confirm-note">服务端将执行二次确认、最小权限校验并写入管理员审计。</small></section></div>}
+  </>;
+}
+
 function SectionPlaceholder({ section }: { section: NavigationItem }) {
   const Icon = section.icon;
   const queries = {
@@ -115,5 +161,5 @@ export default function AdminPlatform() {
   if (me.isError || !me.data) return <div className="admin-gate"><div className="admin-gate-card"><LockKeyhole size={30} /><h1>需要登录</h1><p>请先登录平台账号，再访问管理员维护系统。</p></div></div>;
   if (me.data.role !== "admin" || me.data.status !== "active") return <div className="admin-gate"><div className="admin-gate-card"><XCircle size={30} /><h1>无权访问</h1><p>当前账号没有管理员维护权限。管理入口不会展示普通商家数据。</p></div></div>;
 
-  return <div className="admin-shell"><aside className="admin-sidebar"><div className="admin-brand"><span className="admin-brand-mark"><ShieldAlert size={17} /></span><div><strong>算得清</strong><small>管理维护平台</small></div></div><div className="admin-sidebar-label">平台运营</div><nav>{navigation.map(item => { const Icon = item.icon; return <button key={item.key} className={`admin-nav-item ${sectionKey === item.key ? "is-active" : ""}`} onClick={() => setSectionKey(item.key)}><Icon size={17} /><span>{item.label}</span>{sectionKey === item.key && <span className="admin-nav-dot" />}</button>; })}</nav><div className="admin-sidebar-footer"><div className="admin-user-avatar">{(me.data.name ?? "管").slice(0, 1)}</div><div><strong>{me.data.name ?? "平台管理员"}</strong><small>{me.data.email ?? "已授权管理员"}</small></div></div></aside><main className="admin-main"><header className="admin-topbar"><div><span className="admin-topbar-kicker">ADMIN CONSOLE</span><span className="admin-topbar-divider">/</span><span>{section.label}</span></div><div className="admin-topbar-right"><span className="admin-live-dot" />服务端已授权<span className="admin-topbar-separator" />只读安全模式</div></header><div className="admin-content">{sectionKey === "overview" ? <Overview onNavigate={setSectionKey} /> : <SectionPlaceholder section={section} />}</div></main></div>;
+  return <div className="admin-shell"><aside className="admin-sidebar"><div className="admin-brand"><span className="admin-brand-mark"><ShieldAlert size={17} /></span><div><strong>算得清</strong><small>管理维护平台</small></div></div><div className="admin-sidebar-label">平台运营</div><nav>{navigation.map(item => { const Icon = item.icon; return <button key={item.key} className={`admin-nav-item ${sectionKey === item.key ? "is-active" : ""}`} onClick={() => setSectionKey(item.key)}><Icon size={17} /><span>{item.label}</span>{sectionKey === item.key && <span className="admin-nav-dot" />}</button>; })}</nav><div className="admin-sidebar-footer"><div className="admin-user-avatar">{(me.data.name ?? "管").slice(0, 1)}</div><div><strong>{me.data.name ?? "平台管理员"}</strong><small>{me.data.email ?? "已授权管理员"}</small></div></div></aside><main className="admin-main"><header className="admin-topbar"><div><span className="admin-topbar-kicker">ADMIN CONSOLE</span><span className="admin-topbar-divider">/</span><span>{section.label}</span></div><div className="admin-topbar-right"><span className="admin-live-dot" />服务端已授权<span className="admin-topbar-separator" />只读安全模式</div></header><div className="admin-content">{sectionKey === "overview" ? <Overview onNavigate={setSectionKey} /> : sectionKey === "users" ? <UserOperations /> : <SectionPlaceholder section={section} />}</div></main></div>;
 }
