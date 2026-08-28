@@ -1,0 +1,126 @@
+/* 算得清 SDQ 语义令牌层。
+ * 仅承载视觉语义，不参与账本、订单、库存或成本计算。
+ * VisualSkin 的持久化值保持兼容：soft=清蓝、deep=深蓝、aurora=有限场景增强。
+ */
+:root {
+  color-scheme: light;
+  --sdq-bg-canvas: #f7f9fc;
+  --sdq-bg-surface: #ffffff;
+  --sdq-bg-surface-subtle: #f2f7ff;
+  --sdq-bg-elevated: #ffffff;
+  --sdq-bg-brand: #087aff;
+  --sdq-bg-brand-soft: #e6f1ff;
+  --sdq-bg-warning-soft: #fff4e1;
+  --sdq-bg-success-soft: #e8f8f2;
+  --sdq-bg-danger-soft: #fdedec;
+  --sdq-text-primary: #1c1c1e;
+  --sdq-text-secondary: #586174;
+  --sdq-text-tertiary: #8b95a7;
+  --sdq-text-on-brand: #ffffff;
+  --sdq-border-subtle: #eaecef;
+  --sdq-border-strong: #c9d4e6;
+  --sdq-shadow-card: 0 4px 16px rgba(20, 50, 90, 0.08);
+  --sdq-overlay-scrim: rgba(18, 31, 53, 0.42);
+  --sdq-action-primary: #087aff;
+  --sdq-action-primary-pressed: #0569de;
+  --sdq-income: #087aff;
+  --sdq-cost: #f6a623;
+  --sdq-profit: #20a779;
+  --sdq-risk: #e8534f;
+  --sdq-info: #5acbfa;
+  --sdq-icon-default: #8b95a7;
+  --sdq-icon-disabled: #c9cfd9;
+  --sdq-radius-xs: 6px;
+  --sdq-radius-sm: 8px;
+  --sdq-radius-md: 12px;
+  --sdq-radius-lg: 16px;
+  --sdq-radius-pill: 999px;
+  --sdq-space-page-x: 16px;
+  --sdq-space-section: 24px;
+  --sdq-space-card: 16px;
+  --sdq-height-control: 44px;
+  --sdq-height-nav: calc(56px + env(safe-area-inset-bottom, 0px));
+  --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --sdq-motion-press: 100ms;
+  --sdq-motion-card: 220ms;
+}
+
+.mobile-shell.skin-deep {
+  color-scheme: dark;
+  --sdq-bg-canvas: #0b1220;
+  --sdq-bg-surface: #151f31;
+  --sdq-bg-surface-subtle: #1b2940;
+  --sdq-bg-elevated: #202e45;
+  --sdq-bg-brand: #328fff;
+  --sdq-bg-brand-soft: #123b70;
+  --sdq-bg-warning-soft: #4a3514;
+  --sdq-bg-success-soft: #123b32;
+  --sdq-bg-danger-soft: #4a2023;
+  --sdq-text-primary: #f5f8ff;
+  --sdq-text-secondary: #bac5d7;
+  --sdq-text-tertiary: #7f8ba0;
+  --sdq-border-subtle: #2d3a50;
+  --sdq-border-strong: #49607d;
+  --sdq-shadow-card: 0 6px 20px rgba(0, 0, 0, 0.24);
+  --sdq-overlay-scrim: rgba(0, 0, 0, 0.62);
+  --sdq-action-primary: #328fff;
+  --sdq-action-primary-pressed: #1c79e8;
+  --sdq-income: #5ca7ff;
+  --sdq-cost: #f7ba4b;
+  --sdq-profit: #45c99b;
+  --sdq-risk: #f06b69;
+  --sdq-info: #6bcbfa;
+  --sdq-icon-default: #7f8ba0;
+  --sdq-icon-disabled: #526176;
+}
+
+/* aurora 保留历史皮肤入口，但只允许改变场景材质，不改变业务语义色。 */
+.mobile-shell.skin-aurora {
+  --sdq-bg-canvas: #f7f9fc;
+  --sdq-bg-surface: rgba(255, 255, 255, 0.94);
+  --sdq-bg-surface-subtle: #f2f7ff;
+  --sdq-bg-elevated: rgba(255, 255, 255, 0.98);
+  --sdq-shadow-card: 0 8px 24px rgba(33, 79, 131, 0.11);
+}
+
+.mobile-shell {
+  background: var(--sdq-bg-canvas);
+  color: var(--sdq-text-primary);
+}
+
+.mobile-shell :where(.app-frame, .app-content, .tabbar, .page-header) {
+  border-color: var(--sdq-border-subtle);
+}
+
+.mobile-shell :where(.home-chart-card, .analysis-stack-card, .analysis-cashflow-card, .analysis-health-card, .ledger-surface, .form-section, .empty-state) {
+  background-color: var(--sdq-bg-surface);
+  border-color: var(--sdq-border-subtle);
+  box-shadow: var(--sdq-shadow-card);
+}
+
+.mobile-shell :where(input, select, textarea) {
+  color: var(--sdq-text-primary);
+  background-color: var(--sdq-bg-surface);
+  border-color: var(--sdq-border-subtle);
+}
+
+.mobile-shell :where(input, select, textarea):focus-visible {
+  border-color: var(--sdq-action-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sdq-action-primary) 16%, transparent);
+}
+
+.mobile-shell :where(button, a) { -webkit-tap-highlight-color: transparent; }
+.mobile-shell :where(button):focus-visible,
+.mobile-shell :where(a):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sdq-action-primary) 24%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-shell :where(*, *::before, *::after) {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

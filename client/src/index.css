@@ -588,3 +588,280 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 0; bo
 
 /* CloudBase 验证码：三种登录方式共用既有登录卡，确保手机端可一眼区分当前渠道与下一步。 */
 .selfhost-methods { display: flex; gap: 6px; padding: 4px; margin-top: 18px; overflow-x: auto; background: #f3f7fb; border-radius: 13px; scrollbar-width: none; }.selfhost-methods button { display: inline-flex; flex: 1 0 auto; gap: 4px; align-items: center; justify-content: center; min-height: 34px; padding: 0 9px; color: #66809d; font-size: 11px; font-weight: 750; white-space: nowrap; background: transparent; border: 0; border-radius: 9px; transition: background .16s ease, color .16s ease, box-shadow .16s ease; }.selfhost-methods button.is-active { color: #0d5faf; background: #fff; box-shadow: 0 2px 7px rgba(42,86,134,.14); }.selfhost-access-links { display: grid; justify-items: center; gap: 3px; }.selfhost-access-switch:focus-visible, .selfhost-methods button:focus-visible { outline: 3px solid rgba(8,127,245,.28); outline-offset: 2px; }.selfhost-access-switch:disabled { color: #91a1b5; cursor: not-allowed; }
+
+
+/* P0 首页经营结果卡：先结论，再口径，再可解释指标；不改变任何账本计算。 */
+.prototype-home .operating-snapshot.home-decision {
+  --home-card-surface: var(--sdq-bg-brand);
+  --home-card-text: var(--sdq-text-on-brand);
+  --home-card-muted: rgba(255, 255, 255, .78);
+  --home-card-line: rgba(255, 255, 255, .24);
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+  margin: 0 16px 12px;
+  color: var(--home-card-text);
+  background: var(--home-card-surface) !important;
+  border: 0;
+  border-radius: var(--sdq-radius-lg);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--sdq-bg-brand) 25%, transparent);
+  isolation: isolate;
+}
+
+.prototype-home .operating-snapshot.home-decision::before {
+  position: absolute;
+  inset: -40px -28px auto auto;
+  z-index: -1;
+  width: 170px;
+  height: 170px;
+  content: "";
+  background: radial-gradient(circle, rgba(255, 255, 255, .24), transparent 68%);
+  pointer-events: none;
+}
+
+.prototype-home .home-decision-topline {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--home-card-line);
+}
+
+.prototype-home .home-decision-topline > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.prototype-home .home-decision-topline > span b {
+  overflow: hidden;
+  color: var(--home-card-text);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.prototype-home .home-decision-topline > span em {
+  color: var(--home-card-muted);
+  font-size: 11px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.prototype-home .home-range-switcher {
+  display: flex;
+  flex: none;
+  gap: 3px;
+  max-width: 58%;
+  padding: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: rgba(0, 0, 0, .12);
+  border-radius: var(--sdq-radius-pill);
+}
+
+.prototype-home .home-range-switcher::-webkit-scrollbar { display: none; }
+.prototype-home .home-range-switcher button {
+  min-width: 42px;
+  min-height: 30px;
+  padding: 0 8px;
+  color: var(--home-card-muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  border-radius: var(--sdq-radius-pill);
+}
+.prototype-home .home-range-switcher button[aria-pressed="true"] {
+  color: var(--sdq-bg-brand);
+  background: var(--sdq-bg-surface);
+  box-shadow: 0 2px 6px rgba(8, 57, 125, .16);
+}
+
+.prototype-home .home-decision-result {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-height: 108px;
+  padding: 18px 0 14px;
+}
+.prototype-home .home-decision-result > div { min-width: 0; }
+.prototype-home .home-decision-result em {
+  display: block;
+  color: var(--home-card-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+.prototype-home .home-decision-result strong {
+  display: grid;
+  gap: 3px;
+  margin-top: 7px;
+}
+.prototype-home .home-decision-result strong > b {
+  overflow: hidden;
+  color: var(--home-card-text);
+  font-family: var(--sdq-financial-font);
+  font-size: clamp(30px, 9vw, 38px);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 700;
+  letter-spacing: -.075em;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-decision-result strong > small {
+  color: var(--home-card-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.prototype-home .home-decision-result .profit-sculpture {
+  flex: none;
+  width: 70px;
+  height: 58px;
+  opacity: .78;
+  transform: scale(.9);
+  transform-origin: right bottom;
+}
+
+.prototype-home .home-decision-equation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr) 16px minmax(0, 1.1fr);
+  gap: 4px;
+  align-items: center;
+  padding: 11px 0;
+  border-top: 1px solid var(--home-card-line);
+  border-bottom: 1px solid var(--home-card-line);
+}
+.prototype-home .home-decision-equation label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.prototype-home .home-decision-equation label em {
+  overflow: hidden;
+  color: var(--home-card-muted);
+  font-size: 10px;
+  font-style: normal;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-decision-equation label b {
+  overflow: hidden;
+  color: var(--home-card-text);
+  font-family: var(--sdq-financial-font);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-decision-equation label.outcome b { color: var(--home-card-text); }
+.prototype-home .home-decision-equation > i {
+  color: var(--home-card-muted);
+  font-size: 14px;
+  font-style: normal;
+  text-align: center;
+}
+
+.prototype-home .home-decision-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding-top: 12px;
+}
+.prototype-home .home-decision-metrics > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.prototype-home .home-decision-metrics dt {
+  overflow: hidden;
+  color: var(--home-card-muted);
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-decision-metrics dd {
+  overflow: hidden;
+  margin: 0;
+  color: var(--home-card-text);
+  font-family: var(--sdq-financial-font);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-decision-metrics > div.is-negative dd { color: #ffd0c9; }
+
+/* 空态仍使用同一张结果卡，但以浅蓝表面表达“待补数据”，避免伪造指标。 */
+.prototype-home .operating-snapshot.home-decision.is-empty {
+  color: var(--sdq-text-primary);
+  background: var(--sdq-bg-brand-soft) !important;
+  border: 1px solid color-mix(in srgb, var(--sdq-action-primary) 16%, var(--sdq-border-subtle));
+  box-shadow: var(--sdq-shadow-card);
+}
+.prototype-home .operating-snapshot.home-decision.is-empty::before { opacity: .35; }
+.prototype-home .home-decision.is-empty .home-decision-topline,
+.prototype-home .home-decision.is-empty .home-decision-topline > span b,
+.prototype-home .home-decision.is-empty .home-decision-result em,
+.prototype-home .home-decision.is-empty .home-decision-result strong > small {
+  color: var(--sdq-text-secondary);
+}
+.prototype-home .home-decision-empty {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 126px;
+  padding: 18px 0 4px;
+}
+.prototype-home .home-decision-empty > div { min-width: 0; }
+.prototype-home .home-decision-empty em {
+  display: block;
+  color: var(--sdq-text-tertiary);
+  font-size: 11px;
+  font-style: normal;
+}
+.prototype-home .home-decision-empty b {
+  display: block;
+  margin-top: 6px;
+  color: var(--sdq-text-primary);
+  font-size: 18px;
+  line-height: 1.25;
+}
+.prototype-home .home-decision-empty p {
+  max-width: 25em;
+  margin: 6px 0 0;
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.prototype-home .home-decision-empty .profit-sculpture { flex: none; opacity: .66; }
+
+@media (max-width: 374px) {
+  .prototype-home .operating-snapshot.home-decision { margin-right: 13px; margin-left: 13px; padding: 14px; }
+  .prototype-home .home-decision-topline { gap: 8px; }
+  .prototype-home .home-range-switcher { max-width: 54%; }
+  .prototype-home .home-range-switcher button { min-width: 38px; padding-right: 6px; padding-left: 6px; font-size: 10px; }
+  .prototype-home .home-decision-result strong > b { font-size: 29px; }
+  .prototype-home .home-decision-equation { grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr) 12px minmax(0, 1.05fr); gap: 2px; }
+  .prototype-home .home-decision-equation label b { font-size: 12px; }
+  .prototype-home .home-decision-metrics { gap: 5px; }
+}
+
+@media (min-width: 768px) {
+  .prototype-home .operating-snapshot.home-decision { max-width: 760px; margin-right: auto; margin-left: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prototype-home .home-range-switcher button,
+  .prototype-home .operating-snapshot.home-decision { transition: none !important; }
+}

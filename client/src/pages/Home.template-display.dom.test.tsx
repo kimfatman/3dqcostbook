@@ -145,6 +145,13 @@ describe("首页第一期经营总览", () => {
     expect(directSections[2]).toContain("home-operational-metrics");
     expect(directSections).toHaveLength(3);
 
+    const decisionCard = home.querySelector(".operating-snapshot.home-decision") as HTMLElement;
+    expect(decisionCard).toBeTruthy();
+    expect(decisionCard.classList.contains("is-empty")).toBe(true);
+    expect(within(decisionCard).getByText("今天尚无已入账数据")).toBeTruthy();
+    expect(within(decisionCard).getByText("从一笔流水或订单开始")).toBeTruthy();
+    expect(within(decisionCard).getByRole("group", { name: "经营概览时间范围" })).toBeTruthy();
+
     const metricStrip = screen.getByTestId("home-operational-metrics");
     expect(within(metricStrip).getByText("订单数")).toBeTruthy();
     expect(within(metricStrip).getByText("客单价")).toBeTruthy();
