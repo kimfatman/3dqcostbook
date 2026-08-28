@@ -36,6 +36,7 @@ const asset = (
 
 export const brandAssets = {
   viMasterBoard: asset("vi_master_board", "SDQ_整套VI展示板_高清版.png", "brand", "品牌总览、Logo、VI、图标和吉祥物参考", 2176, 1632, ["品牌", "Logo", "VI"]),
+  logoMark: asset("logo_mark", "SDQ_Logo_Mark.png", "brand", "顶部栏、店铺身份卡和小尺寸品牌入口图标", 423, 402, ["Logo", "图标", "顶部栏"]),
   splashBlue: asset("splash_blue", "SDQ_Splash_Blue.png", "brand", "蓝色渐变启动页与纵向 Logo 组合", 1440, 2560, ["启动页", "Logo", "算小胖"]),
   iconMotionBoard: asset("icon_motion_board", "SDQ_UI图标与交互动效规范板.png", "ui-reference", "图标结构、状态色和交互动效参考", 2176, 1632, ["图标", "动效", "导航"]),
   skinBoard: asset("skin_board", "SDQ_UI皮肤规范展示板.png", "ui-reference", "清蓝/深蓝皮肤、数据卡、按钮、状态和图表参考", 2176, 1632, ["皮肤", "组件", "图表"]),
