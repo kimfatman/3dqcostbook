@@ -1,0 +1,33 @@
+# 算得清仓库的代码归属规则。
+#
+# 当前安全回退审查人：@kimfatman
+# 在创建三类账号后，请将以下位置替换为实际 GitHub 用户名或组织团队：
+#   UI_OWNER       -> 例如 @your-org/costbook-ui
+#   BACKEND_OWNER  -> 例如 @your-org/costbook-backend
+#   QA_OWNER       -> 例如 @your-org/costbook-acceptance
+#
+# 替换示例（不要保留尖括号）：
+#   /client/** @<UI_OWNER> @kimfatman
+#   /server/** @<BACKEND_OWNER> @kimfatman
+# 验收账号通常仅需 Triage 权限，用于提交验收 Issue，不应拥有合并权限。
+
+# 兜底：尚未分配专属负责人或跨模块改动，必须由仓库管理员审查。
+* @kimfatman
+
+# UI 开发责任区：移动端页面、组件、图表、样式、无障碍与前端回归。
+/client/** @kimfatman
+
+# 后端开发责任区：认证、业务接口、持久化、迁移、部署与服务端安全回归。
+/server/** @kimfatman
+/drizzle/** @kimfatman
+/deploy/** @kimfatman
+/docker-compose.yml @kimfatman
+/Dockerfile @kimfatman
+/vite.config.ts @kimfatman
+/package.json @kimfatman
+/pnpm-lock.yaml @kimfatman
+
+# 认证、数据变更与生产配置是高风险边界；替换账号后建议改为 UI 与后端负责人共同审查。
+/.github/** @kimfatman
+/shared/** @kimfatman
+/docs/** @kimfatman
