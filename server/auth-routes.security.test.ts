@@ -22,7 +22,10 @@ const authMocks = vi.hoisted(() => ({
   verifyPassword: vi.fn(),
 }));
 
-const cloudbaseMocks = vi.hoisted(() => ({ verifyCloudbaseAccessToken: vi.fn() }));
+const cloudbaseMocks = vi.hoisted(() => ({
+  completeCloudbaseOtpChallenge: vi.fn(),
+  requestCloudbaseOtpChallenge: vi.fn(),
+}));
 
 vi.mock("./db", async importOriginal => ({
   ...(await importOriginal<typeof import("./db")>()),
@@ -51,7 +54,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   authMocks.hashPassword.mockResolvedValue("scrypt$hash");
   authMocks.signSession.mockReturnValue("signed-session");
-  cloudbaseMocks.verifyCloudbaseAccessToken.mockResolvedValue({ subject: "cloudbase-subject-1", email: "shop@example.com", phoneNumber: "+8613800138000" });
+  cloudbaseMocks.completeCloudbaseOtpChallenge.mockResolvedValue({ subject: "cloudbase-subject-1", email: "shop@example.com", phoneNumber: "+8613800138000" });
+  cloudbaseMocks.requestCloudbaseOtpChallenge.mockResolvedValue({ challengeId: "6d9f7029-39e6-4f8b-8eb2-4ebcd992afe5", expiresIn: 600 });
   dbMocks.getAppUserByCloudbaseSubject.mockResolvedValue(undefined);
   dbMocks.getAppUserByEmail.mockResolvedValue(undefined);
   dbMocks.getAppUserByPhoneNumber.mockResolvedValue(undefined);
@@ -117,22 +121,22 @@ describe("public auth route security", () => {
     expect(dbMocks.createInitialAdmin).not.toHaveBeenCalled();
   });
 
-  it("only links a CloudBase identity after token verification and issues the existing local session", async () => {
+  it("only links a CloudBase identity after the server completes its OTP challenge and issues the existing local session", async () => {
     const user = { id: "user-1", email: "shop@example.com", phoneNumber: null, cloudbaseSubject: null, passwordHash: "scrypt$hash", name: "李晓", role: "member" };
     dbMocks.getAppUserByEmail.mockResolvedValue(user);
     dbMocks.linkCloudbaseIdentity.mockResolvedValue({ ...user, cloudbaseSubject: "cloudbase-subject-1", phoneNumber: "+8613800138000" });
     const ctx = anonymousContext();
     const caller = appRouter.createCaller(ctx);
 
-    await expect(caller.auth.loginWithCloudbase({ accessToken: "a".repeat(24) })).resolves.toMatchObject({ user: { id: "user-1", phoneNumber: "+8613800138000" } });
-    expect(cloudbaseMocks.verifyCloudbaseAccessToken).toHaveBeenCalledWith("a".repeat(24));
+    await expect(caller.auth.loginWithCloudbaseOtp({ challengeId: "6d9f7029-39e6-4f8b-8eb2-4ebcd992afe5", verificationCode: "123456" })).resolves.toMatchObject({ user: { id: "user-1", phoneNumber: "+8613800138000" } });
+    expect(cloudbaseMocks.completeCloudbaseOtpChallenge).toHaveBeenCalledWith({ challengeId: "6d9f7029-39e6-4f8b-8eb2-4ebcd992afe5", verificationCode: "123456", purpose: "login" });
     expect(dbMocks.linkCloudbaseIdentity).toHaveBeenCalledWith("user-1", expect.objectContaining({ subject: "cloudbase-subject-1" }));
     expect(ctx.res.cookie).toHaveBeenCalledWith(LOCAL_SESSION_COOKIE, "signed-session", expect.any(Object));
   });
 
   it("requires an existing local account for CloudBase login rather than creating one implicitly", async () => {
     const caller = appRouter.createCaller(anonymousContext());
-    await expect(caller.auth.loginWithCloudbase({ accessToken: "a".repeat(24) })).rejects.toThrow("验证已完成，请继续创建店铺");
+    await expect(caller.auth.loginWithCloudbaseOtp({ challengeId: "6d9f7029-39e6-4f8b-8eb2-4ebcd992afe5", verificationCode: "123456" })).rejects.toThrow("验证已完成，请继续创建店铺");
     expect(dbMocks.registerCloudbaseUserAndCreateWorkspace).not.toHaveBeenCalled();
   });
 
@@ -141,15 +145,15 @@ describe("public auth route security", () => {
     const ctx = anonymousContext();
     const caller = appRouter.createCaller(ctx);
 
-    await expect(caller.auth.registerWithCloudbase({ accessToken: "a".repeat(24), name: "李晓", password: "a secure long passphrase", workspaceName: "晓食店", industryId: "canteen" })).resolves.toEqual({ workspaceId: "workspace-2" });
+    await expect(caller.auth.registerWithCloudbaseOtp({ challengeId: "6d9f7029-39e6-4f8b-8eb2-4ebcd992afe5", verificationCode: "123456", name: "李晓", password: "a secure long passphrase", workspaceName: "晓食店", industryId: "canteen" })).resolves.toEqual({ workspaceId: "workspace-2" });
     expect(dbMocks.registerCloudbaseUserAndCreateWorkspace).toHaveBeenCalledWith(expect.objectContaining({ subject: "cloudbase-subject-1", email: "shop@example.com", passwordHash: "scrypt$hash" }));
     expect(ctx.res.cookie).toHaveBeenCalledWith(LOCAL_SESSION_COOKIE, "signed-session", expect.any(Object));
   });
 
   it("refuses a weak new password before using a CloudBase token for password reset", async () => {
     const caller = appRouter.createCaller(anonymousContext());
-    await expect(caller.auth.resetPasswordWithCloudbase({ accessToken: "a".repeat(24), password: "password123" })).rejects.toThrow("密码不符合安全要求");
-    expect(cloudbaseMocks.verifyCloudbaseAccessToken).not.toHaveBeenCalled();
+    await expect(caller.auth.resetPasswordWithCloudbaseOtp({ challengeId: "6d9f7029-39e6-4f8b-8eb2-4ebcd992afe5", verificationCode: "123456", password: "password123" })).rejects.toThrow("密码不符合安全要求");
+    expect(cloudbaseMocks.completeCloudbaseOtpChallenge).not.toHaveBeenCalled();
     expect(dbMocks.updateAppUserPassword).not.toHaveBeenCalled();
   });
 });

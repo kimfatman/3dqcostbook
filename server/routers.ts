@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { getAppUserByCloudbaseSubject, getAppUserByEmail, getAppUserByPhoneNumber, getWorkspaceBook, hasAnyAppUsers, linkCloudbaseIdentity, listWorkspacesForUser, markSignedIn, createInitialAdmin, recentAuditEvents, registerAndCreateWorkspace, registerCloudbaseUserAndCreateWorkspace, saveWorkspaceBook, updateAppUserPassword, updateAppUserProfile, updateWorkspaceProfile } from "./db";
 import { localSessionCookieOptions, LOCAL_SESSION_COOKIE, hashPassword, signSession, verifyPassword } from "./local-auth";
-import { assertAuthAttemptAllowed, assertPasswordPolicy, clearAuthFailures, createAuthRateLimitKeys, recordAuthFailure } from "./auth-security";
-import { verifyCloudbaseAccessToken, type CloudbaseVerifiedIdentity } from "./cloudbase-auth";
+import { assertAuthAttemptAllowed, assertOtpSendAllowed, assertPasswordPolicy, clearAuthFailures, createAuthRateLimitKeys, recordAuthFailure, recordOtpSend } from "./auth-security";
+import { completeCloudbaseOtpChallenge, requestCloudbaseOtpChallenge, type CloudbaseOtpMethod, type CloudbaseOtpPurpose, type CloudbaseVerifiedIdentity } from "./cloudbase-auth";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 
 const email = z.string().trim().toLowerCase().email().max(320);
@@ -11,7 +11,11 @@ const state = z.record(z.string(), z.unknown());
 const industryId = z.enum(["canteen", "retail", "ecommerce", "beauty", "stall"]);
 const avatarPreset = z.enum(["classic", "retail", "ecommerce", "canteen", "beauty", "stall"]).nullable().optional();
 const logoPreset = z.enum(["store", "retail", "ecommerce", "canteen", "beauty", "stall"]).nullable().optional();
-const cloudbaseAccessToken = z.string().trim().min(24).max(8192);
+const cloudbaseOtpMethod = z.enum(["email", "sms"]);
+const cloudbaseOtpPurpose = z.enum(["login", "register", "recover"]);
+const cloudbaseChallengeId = z.string().uuid();
+const cloudbaseVerificationCode = z.string().regex(/^\d{6}$/, "请输入 6 位验证码");
+const phoneNumber = z.string().regex(/^\+861\d{10}$/, "请输入中国大陆手机号，例如 138 0000 0000");
 
 async function getLinkedCloudbaseUser(identity: CloudbaseVerifiedIdentity) {
   return (await getAppUserByCloudbaseSubject(identity.subject))
@@ -19,12 +23,11 @@ async function getLinkedCloudbaseUser(identity: CloudbaseVerifiedIdentity) {
     ?? (identity.phoneNumber ? await getAppUserByPhoneNumber(identity.phoneNumber) : undefined);
 }
 
-/** 先对来源限流、再回源验证 token，任何失败均不信任浏览器提供的身份字段。 */
-async function authenticateCloudbase(ctx: { req: Parameters<typeof createAuthRateLimitKeys>[1] }, accessToken: string) {
+/** 仅处理服务端已完成验证码验证的身份，不接受浏览器提交的 access token 或资料字段。 */
+async function authenticateCloudbaseIdentity(ctx: { req: Parameters<typeof createAuthRateLimitKeys>[1] }, identity: CloudbaseVerifiedIdentity) {
   const pendingKeys = createAuthRateLimitKeys("cloudbase", ctx.req, "pending-cloudbase-identity");
   assertAuthAttemptAllowed(pendingKeys);
   try {
-    const identity = await verifyCloudbaseAccessToken(accessToken);
     const identityKeys = createAuthRateLimitKeys("cloudbase", ctx.req, identity.subject);
     assertAuthAttemptAllowed(identityKeys);
     clearAuthFailures(pendingKeys);
@@ -79,8 +82,32 @@ export const appRouter = router({
       ctx.res.cookie(LOCAL_SESSION_COOKIE, signSession(user.id), localSessionCookieOptions());
       return { user: { id: user.id, email: user.email, name: user.name, role: user.role } };
     }),
-    loginWithCloudbase: publicProcedure.input(z.object({ accessToken: cloudbaseAccessToken })).mutation(async ({ input, ctx }) => {
-      const { identity, identityKeys } = await authenticateCloudbase(ctx, input.accessToken);
+    requestCloudbaseOtp: publicProcedure.input(z.object({
+      method: cloudbaseOtpMethod,
+      purpose: cloudbaseOtpPurpose,
+      email: email.optional(),
+      phoneNumber: phoneNumber.optional(),
+    }).superRefine((value, context) => {
+      if (value.method === "email" && !value.email) context.addIssue({ code: "custom", message: "请输入正确的邮箱地址", path: ["email"] });
+      if (value.method === "sms" && !value.phoneNumber) context.addIssue({ code: "custom", message: "请输入中国大陆手机号，例如 138 0000 0000", path: ["phoneNumber"] });
+    })).mutation(async ({ input, ctx }) => {
+      const target = input.method === "email" ? input.email! : input.phoneNumber!;
+      const rateLimitKeys = createAuthRateLimitKeys("cloudbase", ctx.req, `send:${input.purpose}:${target}`);
+      assertAuthAttemptAllowed(rateLimitKeys);
+      assertOtpSendAllowed(rateLimitKeys);
+      try {
+        const challenge = await requestCloudbaseOtpChallenge({ method: input.method as CloudbaseOtpMethod, purpose: input.purpose as CloudbaseOtpPurpose, target });
+        recordOtpSend(rateLimitKeys);
+        clearAuthFailures(rateLimitKeys);
+        return challenge;
+      } catch (error) {
+        recordAuthFailure(rateLimitKeys);
+        throw error;
+      }
+    }),
+    loginWithCloudbaseOtp: publicProcedure.input(z.object({ challengeId: cloudbaseChallengeId, verificationCode: cloudbaseVerificationCode })).mutation(async ({ input, ctx }) => {
+      const identity = await completeCloudbaseOtpChallenge({ ...input, purpose: "login" });
+      const { identityKeys } = await authenticateCloudbaseIdentity(ctx, identity);
       const user = await getLinkedCloudbaseUser(identity);
       if (!user) {
         recordAuthFailure(identityKeys);
@@ -96,15 +123,17 @@ export const appRouter = router({
       ctx.res.cookie(LOCAL_SESSION_COOKIE, signSession(linked.id), localSessionCookieOptions());
       return { user: { id: linked.id, email: linked.email, phoneNumber: linked.phoneNumber, name: linked.name, role: linked.role } };
     }),
-    registerWithCloudbase: publicProcedure.input(z.object({
-      accessToken: cloudbaseAccessToken,
+    registerWithCloudbaseOtp: publicProcedure.input(z.object({
+      challengeId: cloudbaseChallengeId,
+      verificationCode: cloudbaseVerificationCode,
       name: z.string().trim().min(1).max(120),
       password,
       workspaceName: z.string().trim().min(1).max(120),
       industryId,
     })).mutation(async ({ input, ctx }) => {
       assertPasswordPolicy(input.password);
-      const { identity, identityKeys } = await authenticateCloudbase(ctx, input.accessToken);
+      const identity = await completeCloudbaseOtpChallenge({ challengeId: input.challengeId, verificationCode: input.verificationCode, purpose: "register" });
+      const { identityKeys } = await authenticateCloudbaseIdentity(ctx, identity);
       if (await getLinkedCloudbaseUser(identity)) {
         recordAuthFailure(identityKeys);
         throw new Error("无法创建账号，请检查输入后重试");
@@ -114,9 +143,10 @@ export const appRouter = router({
       ctx.res.cookie(LOCAL_SESSION_COOKIE, signSession(result.userId), localSessionCookieOptions());
       return { workspaceId: result.workspaceId };
     }),
-    resetPasswordWithCloudbase: publicProcedure.input(z.object({ accessToken: cloudbaseAccessToken, password })).mutation(async ({ input, ctx }) => {
+    resetPasswordWithCloudbaseOtp: publicProcedure.input(z.object({ challengeId: cloudbaseChallengeId, verificationCode: cloudbaseVerificationCode, password })).mutation(async ({ input, ctx }) => {
       assertPasswordPolicy(input.password);
-      const { identity, identityKeys } = await authenticateCloudbase(ctx, input.accessToken);
+      const identity = await completeCloudbaseOtpChallenge({ challengeId: input.challengeId, verificationCode: input.verificationCode, purpose: "recover" });
+      const { identityKeys } = await authenticateCloudbaseIdentity(ctx, identity);
       const user = await getLinkedCloudbaseUser(identity);
       if (!user) {
         recordAuthFailure(identityKeys);

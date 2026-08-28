@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { verifyCloudbaseAccessToken } from "./cloudbase-auth";
+import { completeCloudbaseOtpChallenge, requestCloudbaseOtpChallenge, resetCloudbaseOtpChallengesForTesting, verifyCloudbaseAccessToken } from "./cloudbase-auth";
 
 const fetchMock = vi.fn();
 
 describe("verifyCloudbaseAccessToken", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    fetchMock.mockReset();
+    resetCloudbaseOtpChallengesForTesting();
     delete process.env.CLOUDBASE_ENV_ID;
   });
 
@@ -30,5 +32,28 @@ describe("verifyCloudbaseAccessToken", () => {
 
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ sub: "anonymous", status: "ACTIVE" }), { status: 200 }));
     await expect(verifyCloudbaseAccessToken("anonymous-token")).rejects.toThrow("验证已失效或不可用");
+  });
+
+  it("仅向浏览器返回本站 challenge id，并在服务器内完成验证码、登录令牌与身份回源交换", async () => {
+    process.env.CLOUDBASE_ENV_ID = "cloudbase-test";
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ verification_id: "provider-verification-id" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ verification_token: "provider-verification-token" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "cloudbase-user-access-token" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sub: "cloudbase-subject", email: "owner@example.com", status: "ACTIVE" }), { status: 200 }));
+
+    const challenge = await requestCloudbaseOtpChallenge({ method: "email", target: "owner@example.com", purpose: "login" });
+    expect(challenge).toMatchObject({ expiresIn: 600 });
+    expect(challenge.challengeId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(JSON.stringify(challenge)).not.toContain("provider-verification-id");
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "https://cloudbase-test.api.tcloudbasegateway.com/auth/v1/verification", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ email: "owner@example.com", target: "ANY" }),
+    }));
+
+    await expect(completeCloudbaseOtpChallenge({ challengeId: challenge.challengeId, verificationCode: "123456", purpose: "login" })).resolves.toEqual({ subject: "cloudbase-subject", email: "owner@example.com", phoneNumber: undefined });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "https://cloudbase-test.api.tcloudbasegateway.com/auth/v1/verification/verify", expect.objectContaining({ body: JSON.stringify({ verification_id: "provider-verification-id", verification_code: "123456" }) }));
+    expect(fetchMock).toHaveBeenNthCalledWith(3, "https://cloudbase-test.api.tcloudbasegateway.com/auth/v1/signin", expect.objectContaining({ body: JSON.stringify({ verification_token: "provider-verification-token" }) }));
   });
 });

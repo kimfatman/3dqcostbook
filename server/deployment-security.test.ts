@@ -26,12 +26,11 @@ describe("生产部署安全基线", () => {
     expect(dockerfile).toMatch(/USER costbook\s+CMD \["node", "dist\/index\.js"\]/s);
   });
 
-  it("仅将 CloudBase Publishable Key 注入浏览器构建，并将服务器 API Key 保留在运行时环境", () => {
-    expect(composefile).toContain("VITE_CLOUDBASE_ENV_ID: ${VITE_CLOUDBASE_ENV_ID}");
-    expect(composefile).toContain("VITE_CLOUDBASE_PUBLISHABLE_KEY: ${VITE_CLOUDBASE_PUBLISHABLE_KEY}");
+  it("将 CloudBase 环境标识保留在服务器运行时环境，浏览器不再直连身份认证服务或持有 Key", () => {
     expect(composefile).toContain("CLOUDBASE_ENV_ID: ${CLOUDBASE_ENV_ID}");
-    expect(composefile).toContain("CLOUDBASE_APIKEY: ${CLOUDBASE_APIKEY}");
-    expect(dockerfile).toContain("ARG VITE_CLOUDBASE_PUBLISHABLE_KEY");
+    expect(composefile).not.toContain("CLOUDBASE_APIKEY");
+    expect(composefile).not.toContain("VITE_CLOUDBASE_PUBLISHABLE_KEY");
+    expect(dockerfile).not.toContain("VITE_CLOUDBASE_PUBLISHABLE_KEY");
     expect(dockerfile).not.toContain("CLOUDBASE_APIKEY=");
   });
 });

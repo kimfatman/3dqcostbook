@@ -110,6 +110,8 @@ export class FailedAttemptLimiter {
 }
 
 export const authFailedAttemptLimiter = new FailedAttemptLimiter();
+const otpSendCooldowns = new Map<AuthRateLimitKey, number>();
+const OTP_SEND_COOLDOWN_MS = 60 * 1000;
 
 function stableIdentity(value: string) {
   return createHash("sha256").update(value).digest("hex");
@@ -144,7 +146,17 @@ export function clearAuthFailures(keys: readonly AuthRateLimitKey[]) {
   keys.forEach(key => authFailedAttemptLimiter.clear(key));
 }
 
+/** 成功发送也进入 60 秒冷却，避免仅依赖上游服务时被重复转发消耗额度。 */
+export function assertOtpSendAllowed(keys: readonly AuthRateLimitKey[], now = Date.now()) {
+  if (keys.some(key => (otpSendCooldowns.get(key) ?? 0) > now)) throw new Error("获取过于频繁，请 60 秒后再试");
+}
+
+export function recordOtpSend(keys: readonly AuthRateLimitKey[], now = Date.now()) {
+  keys.forEach(key => otpSendCooldowns.set(key, now + OTP_SEND_COOLDOWN_MS));
+}
+
 /** 仅供自动化测试重置单进程内存状态；多实例生产环境应在后续迭代接入共享限流存储。 */
 export function resetAuthSecurityForTesting() {
   authFailedAttemptLimiter.clearAll();
+  otpSendCooldowns.clear();
 }

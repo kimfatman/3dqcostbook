@@ -90,7 +90,6 @@ import { CostCardMediaEditor, CostCardThumbnail } from "@/components/CostCardMed
 import { ChartTooltip } from "@/components/ChartTooltip";
 import { AnimatedChartValue } from "@/components/AnimatedChartValue";
 import { useTheme } from "@/contexts/ThemeContext";
-import { clearCloudbaseBrowserSession } from "@/lib/cloudbase-auth";
 import "../cashflow-filter.css";
 
 type TabId = NavigationTab;
@@ -1156,7 +1155,7 @@ export default function Home() {
   }
 
   function ProfilePage() {
-    const handleLogout = async () => { if (!window.confirm("确认退出当前账号？本机账本草稿不会被删除。")) return; try { await logout.mutateAsync(); await clearCloudbaseBrowserSession(); } catch { notify("退出失败，请稍后重试"); } };
+    const handleLogout = async () => { if (!window.confirm("确认退出当前账号？本机账本草稿不会被删除。")) return; try { await logout.mutateAsync(); } catch { notify("退出失败，请稍后重试"); } };
     return <><section className="profile-identity-card profile-account-summary"><div className="profile-identity-top"><BrandAvatar assetId={meQuery.data?.avatarAssetId} preset={meQuery.data?.avatarPreset} alt="个人头像" size="large" /><div><span>当前账号</span><h1>{meQuery.data?.name || "店铺经营者"}</h1><p>{meQuery.data?.email || "已登录工作区"} · {template.label}经营者</p></div><button onClick={() => goSub("profileSettings")} aria-label="编辑个人与店铺资料"><Pencil size={17} /></button></div><div className="profile-identity-meta"><span><Check size={14} />个人已验证</span><i /><span><Store size={14} />{currentWorkspace?.name || template.storeName}</span></div></section><section className="profile-group"><h2>店铺管理</h2><div className="profile-card"><button onClick={() => goSub("profileSettings")}><span><Settings2 size={19} />个人与店铺资料</span><strong>编辑<ChevronRight size={16} /></strong></button><button onClick={() => goSub("industry")}><span><Store size={19} />经营行业</span><strong>{template.label}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("budget")}><span><WalletCards size={19} />经营预算</span><strong>{yuan(totals.budget)}<ChevronRight size={16} /></strong></button></div></section><section className="profile-group"><h2>设置</h2><div className="profile-card"><button onClick={() => goSub("appearance")}><span><Sparkles size={19} />外观设置</span><strong>{visualSkinOptions.find((option) => option.id === book.visualSkin)?.label || "外观"}<ChevronRight size={16} /></strong></button></div></section><section className="profile-group profile-account-group"><h2>账户</h2><div className="profile-session"><span><em>当前账号</em><b>{meQuery.data?.email || "已登录工作区"}</b></span><button onClick={handleLogout} disabled={logout.isPending}><LogOut size={17} />{logout.isPending ? "正在退出…" : "退出登录"}</button></div></section></>;
   }
 

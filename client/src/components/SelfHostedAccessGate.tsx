@@ -1,21 +1,12 @@
 import { FormEvent, ReactNode, useState } from "react";
 import { ArrowRight, Check, LockKeyhole, Mail, Phone, ShieldCheck, Store } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { getCloudbaseAuth } from "@/lib/cloudbase-auth";
 
 type Mode = "login" | "register" | "recover";
 type VerificationMethod = "password" | "email" | "sms";
-type OtpChallenge = { verifyOtp: (params: { token: string }) => Promise<any> };
+type OtpChallenge = { id: string };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function otpErrorMessage(error: unknown, fallback: string) {
-  const message = error && typeof error === "object" && "message" in error && typeof error.message === "string" ? error.message : "";
-  if (/rate|频率|too many/i.test(message)) return "获取过于频繁，请 60 秒后再试";
-  if (/captcha|人机|安全验证/i.test(message)) return "请先完成安全验证后再获取验证码";
-  if (/expired|过期/i.test(message)) return "验证码已过期，请重新获取";
-  return fallback;
-}
 
 function normalizePhone(value: string) {
   const compact = value.replace(/[\s-]/g, "");
@@ -43,9 +34,10 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const bootstrap = trpc.auth.bootstrap.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); await utils.auth.setupStatus.invalidate(); } });
   const login = trpc.auth.login.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
   const register = trpc.auth.registerAndCreateWorkspace.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
-  const loginWithCloudbase = trpc.auth.loginWithCloudbase.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
-  const registerWithCloudbase = trpc.auth.registerWithCloudbase.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
-  const resetPasswordWithCloudbase = trpc.auth.resetPasswordWithCloudbase.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
+  const requestCloudbaseOtp = trpc.auth.requestCloudbaseOtp.useMutation();
+  const loginWithCloudbaseOtp = trpc.auth.loginWithCloudbaseOtp.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
+  const registerWithCloudbaseOtp = trpc.auth.registerWithCloudbaseOtp.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
+  const resetPasswordWithCloudbaseOtp = trpc.auth.resetPasswordWithCloudbaseOtp.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
 
   if (setup.isLoading || me.isLoading) return <div className="selfhost-loading"><ShieldCheck size={20} />正在连接安全账本…</div>;
   if (me.data) return <>{children}</>;
@@ -54,7 +46,7 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const isRegistering = !isBootstrap && mode === "register";
   const isRecovering = !isBootstrap && mode === "recover";
   const isOtp = !isBootstrap && method !== "password";
-  const isPending = bootstrap.isPending || login.isPending || register.isPending || loginWithCloudbase.isPending || registerWithCloudbase.isPending || resetPasswordWithCloudbase.isPending;
+  const isPending = bootstrap.isPending || login.isPending || register.isPending || requestCloudbaseOtp.isPending || loginWithCloudbaseOtp.isPending || registerWithCloudbaseOtp.isPending || resetPasswordWithCloudbaseOtp.isPending;
   const title = isBootstrap ? "初始化管理员" : isRegistering ? "创建你的店铺" : isRecovering ? "重设登录密码" : "欢迎回到店铺";
   const intro = isBootstrap ? "使用仅在服务器环境中保存的初始化令牌，完成首个管理员工作区设置。" : isRegistering ? "先完成邮箱或手机号验证，再创建你的专属账本。" : isRecovering ? "验证已绑定的邮箱或手机号后，即可设置新的登录密码。" : "可使用密码、邮箱验证码或短信验证码安全登录。";
   const canUseOtp = isRegistering || isRecovering || isOtp;
@@ -91,12 +83,12 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
     const normalizedPhone = method === "sms" ? normalizePhone(phone) : null;
     if (method === "sms" && !normalizedPhone) throw new Error("请输入中国大陆手机号，例如 138 0000 0000");
     if (isRegistering) validateRegistrationFields();
-    const auth = getCloudbaseAuth();
-    const response = await auth.signInWithOtp(method === "sms"
-      ? { phone: normalizedPhone!, options: { shouldCreateUser: true } }
-      : { email: email.trim().toLowerCase(), options: { shouldCreateUser: true } });
-    if (response.error || !response.data.verifyOtp) throw new Error(otpErrorMessage(response.error, "验证码发送失败，请稍后再试"));
-    setOtpChallenge({ verifyOtp: response.data.verifyOtp });
+    const response = await requestCloudbaseOtp.mutateAsync({
+      method: method === "sms" ? "sms" : "email",
+      purpose: isRegistering ? "register" : isRecovering ? "recover" : "login",
+      ...(method === "sms" ? { phoneNumber: normalizedPhone! } : { email: email.trim().toLowerCase() }),
+    });
+    setOtpChallenge({ id: response.challengeId });
     setCooldown(60);
     const timer = window.setInterval(() => setCooldown(current => {
       if (current <= 1) {
@@ -115,12 +107,9 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
       if (!password) throw new Error("请设置新的登录密码");
       if (password.length < 8) throw new Error("密码至少需要 8 个字符");
     }
-    const verified = await otpChallenge.verifyOtp({ token: verificationCode });
-    const accessToken = verified.data?.session?.access_token;
-    if (verified.error || !accessToken) throw new Error(otpErrorMessage(verified.error, "验证码错误或已过期，请重新获取"));
-    if (isRegistering) await registerWithCloudbase.mutateAsync({ accessToken, name: name.trim(), password, workspaceName: workspaceName.trim(), industryId });
-    else if (isRecovering) await resetPasswordWithCloudbase.mutateAsync({ accessToken, password });
-    else await loginWithCloudbase.mutateAsync({ accessToken });
+    if (isRegistering) await registerWithCloudbaseOtp.mutateAsync({ challengeId: otpChallenge.id, verificationCode, name: name.trim(), password, workspaceName: workspaceName.trim(), industryId });
+    else if (isRecovering) await resetPasswordWithCloudbaseOtp.mutateAsync({ challengeId: otpChallenge.id, verificationCode, password });
+    else await loginWithCloudbaseOtp.mutateAsync({ challengeId: otpChallenge.id, verificationCode });
   };
 
   const submit = async (event: FormEvent) => {
