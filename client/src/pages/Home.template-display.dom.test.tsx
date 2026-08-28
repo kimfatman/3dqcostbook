@@ -139,11 +139,14 @@ describe("首页第一期经营总览", () => {
     renderHome();
 
     const home = document.querySelector(".home-redesign") as HTMLElement;
+    expect(document.querySelector(".brand-seal")?.getAttribute("src")).toBe("/brand-assets/SDQ_Logo_Mark.png");
     const directSections = Array.from(home.children).map((node) => node.className);
     expect(directSections[0]).toContain("home-identity-context");
     expect(directSections[1]).toContain("home-decision");
     expect(directSections[2]).toContain("home-operational-metrics");
-    expect(directSections).toHaveLength(3);
+    expect(directSections[3]).toContain("analysis-profit-trend");
+    expect(directSections[4]).toContain("home-reminders");
+    expect(directSections).toHaveLength(5);
 
     const decisionCard = home.querySelector(".operating-snapshot.home-decision") as HTMLElement;
     expect(decisionCard).toBeTruthy();
@@ -174,9 +177,10 @@ describe("首页第一期经营总览", () => {
 
     expect(screen.queryByText("销售额 / 订单数")).toBeNull();
     expect(screen.queryByTestId("home-recent-activity")).toBeNull();
-    expect(screen.queryByText("本月经营提醒")).toBeNull();
-    expect(screen.getByRole("button", { name: /消息中心/ })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: /消息中心/ }));
+    expect(home.querySelector('[data-chart-template="profit-line"]')).toBeTruthy();
+    expect(home.querySelector(".home-reminders")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: /消息中心/ }).length).toBeGreaterThan(0);
+    await user.click(screen.getAllByRole("button", { name: /消息中心/ })[0]);
     expect(screen.getAllByText("消息中心").length).toBeGreaterThan(0);
   });
 
@@ -628,7 +632,7 @@ describe("第一批范围、待办与成本快照表达", () => {
     renderHome();
 
     expect(screen.getByRole("button", { name: /消息中心/ })).toBeTruthy();
-    expect(screen.queryByText("本月经营提醒")).toBeNull();
+    expect(screen.getByText("本月经营提醒")).toBeTruthy();
     expect(screen.queryByText("本月待办")).toBeNull();
     expect(screen.queryByText("优先处理")).toBeNull();
 

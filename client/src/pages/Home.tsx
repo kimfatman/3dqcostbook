@@ -977,10 +977,13 @@ export default function Home() {
     const IndustryIcon = iconByIndustry[book.activeIndustryId];
     const costRate = homeRangeTotals.revenue > 0 ? Number((homeRangeTotals.totalCost / homeRangeTotals.revenue * 100).toFixed(1)) : null;
     const profitMarginRate = homeRangeTotals.revenue > 0 ? Number((homeRangeTotals.operatingProfit / homeRangeTotals.revenue * 100).toFixed(1)) : null;
+    const openHomeMonthRecords = (month: string) => { setRecordFilter("all"); setRecordSearch(""); setRecordMonth(month); setRecordChannelFilter("all"); setRecordSupplierFilter(""); setRecordCategoryFilter(""); setRecordSkuFilter(""); goSub("records"); };
     return <div className="prototype-home home-redesign" data-chart-role={chartRole("home").primary}>
       <section className="dashboard-kicker home-context home-identity-context"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{template.storeName}</b><em>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</em></span></section>
       <OperatingSnapshot decision={homeRangeDecision} range={homeRange} hasData={homeRangeHasData} costRate={costRate} profitMarginRate={profitMarginRate} profitDelta={homeRangeProfitDelta} onSelectRange={setHomeTimeRange} />
       <HomeOperationalMetrics rangeLabel={homeRange.label} orderCount={homeRangeOrders.length} averageOrderValue={homeRangeAverageOrderValue} refundAmount={homeRangeRefundAmount} refundCount={homeRangeRefunds.length} />
+      <ProfitTrend items={trend} events={profitTrendEvents} onOpen={openHomeMonthRecords} />
+      {notificationItems.length ? <HomeReminderList items={notificationItems} onOpen={openNotificationTarget} onOpenAll={() => goSub("notifications")} /> : <section className="home-reminders home-chart-card" data-testid="home-reminders-empty"><div className="home-chart-head"><span>经营待办</span><button type="button" onClick={() => goSub("notifications")}>消息中心 <ChevronRight size={14} /></button></div><HomeChartEmpty title="暂无经营待办" copy="有新的利润、成本或退款提醒时，会在这里出现" action="查看消息中心" onClick={() => goSub("notifications")} /></section>}
     </div>;
   }
 
