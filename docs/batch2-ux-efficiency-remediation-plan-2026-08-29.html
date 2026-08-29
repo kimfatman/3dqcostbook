@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>算得清 · 第二批体验与效率整改开发计划（2026-08-29）</title>
+<style>
+:root{--blue:#087ff5;--navy:#0b1836;--ink:#172033;--sub:#5b6b82;--line:#e3eaf3;--bg:#f5f8fc;--card:#ffffff;--ok:#118a55;--warn:#b25e09;--bad:#d92d20;--chip:#e9f3ff;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"MiSans","PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;padding:32px 16px}
+.wrap{max-width:960px;margin:0 auto}
+header.hero{background:linear-gradient(140deg,var(--navy),#1756a6);color:#fff;border-radius:18px;padding:30px 30px 26px;margin-bottom:24px}
+header.hero h1{font-size:25px;letter-spacing:-.02em;margin-bottom:8px}
+header.hero p{color:#b7cae9;font-size:13px}
+header.hero .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+header.hero .meta span{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:99px;padding:4px 12px;font-size:12px}
+section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:20px}
+h2{font-size:18px;color:var(--navy);margin-bottom:14px;padding-left:12px;border-left:4px solid var(--blue)}
+h3{font-size:14px;color:var(--ink);margin:18px 0 8px}
+p{font-size:13.5px;color:#33415a;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0 6px}
+th{background:#f0f5fb;color:#33415a;text-align:left;padding:8px 10px;border:1px solid var(--line);font-weight:700}
+td{padding:8px 10px;border:1px solid var(--line);vertical-align:top}
+tr:nth-child(even) td{background:#fafcfe}
+.tag{display:inline-block;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:700}
+.tag.p0{background:#fde8e8;color:var(--bad)}.tag.p1{background:#fff2dd;color:var(--warn)}.tag.p2{background:#eef1f6;color:var(--sub)}
+.tag.done{background:#e2f6ec;color:var(--ok)}.tag.part{background:#fff2dd;color:var(--warn)}.tag.open{background:#fde8e8;color:var(--bad)}
+.tag.gate{background:#087ff5;color:#fff}
+.num{font-family:"IBM Plex Mono",Consolas,monospace}
+.timeline{display:flex;flex-direction:column;gap:0;margin-top:6px}
+.step{display:flex;gap:14px;position:relative;padding-bottom:18px}
+.step:not(:last-child):before{content:"";position:absolute;left:15px;top:34px;bottom:0;width:2px;background:var(--line)}
+.marker{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;color:#fff;background:var(--blue)}
+.step.gate .marker{background:var(--navy)}
+.step.pending .marker{background:#b9c6d8}
+.step-body{flex:1;background:#f8fafd;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.step-body h4{font-size:13.5px;margin-bottom:4px}
+.step-body h4 small{color:var(--sub);font-weight:400;margin-left:8px;font-size:11.5px}
+.step-body p{font-size:12.5px;margin:0;color:#44536b}
+.ws{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.ws h4{font-size:13.5px;color:var(--navy);margin-bottom:6px}
+.ws p{margin:0 0 6px;font-size:12.5px}
+.ws .scope{color:var(--sub);font-size:11.5px}
+.callout{background:var(--chip);border:1px solid #cfe4fb;border-radius:12px;padding:12px 14px;font-size:12.5px;color:#1d4e89;margin:10px 0}
+.redline{background:#fff7f7;border:1px solid #f4d4d4;border-radius:12px;padding:12px 14px;font-size:12.5px;color:#8a2b25;margin:10px 0}
+.checklist{list-style:none}
+.checklist li{padding:6px 0 6px 26px;position:relative;font-size:13px;border-bottom:1px dashed var(--line)}
+.checklist li:last-child{border-bottom:0}
+.checklist li:before{content:"";position:absolute;left:2px;top:11px;width:14px;height:14px;border:2px solid var(--blue);border-radius:4px}
+.checklist li.q:before{border-color:var(--warn)}
+footer{text-align:center;color:var(--sub);font-size:12px;padding:10px 0 30px}
+code{background:#eef2f8;border-radius:6px;padding:1px 6px;font-size:12px;font-family:"IBM Plex Mono",Consolas,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>算得清 · 第二批体验与效率整改开发计划</h1>
+  <p>分析代码库与历史验收记录 → 产出第二批整改 PRD → 用户确认方向 → 任务分解 → 工程实现（pi + DeepSeek）→ QA 回归 → 生产发布</p>
+  <div class="meta">
+    <span>制定日期 2026-08-29</span><span>状态：PRD 草案完成 · 等待确认方向</span><span>仓库 kimfatman/3dqcostbook</span><span>基线 49 测试文件 / 193 项测试</span>
+  </div>
+</header>
+
+<section>
+  <h2>阶段一 · 代码库与历史验收分析（已完成）</h2>
+  <h3>代码库概况</h3>
+  <table>
+    <tr><th style="width:110px">维度</th><th>结论</th></tr>
+    <tr><td>技术栈</td><td>React 19 + Vite 7 + Tailwind 4 + Radix + recharts/wouter；Express 4 + tRPC 11 + Drizzle + MySQL2；pnpm 10 monorepo</td></tr>
+    <tr><td>质量门禁</td><td><code>pnpm check</code> / <code>pnpm test</code>（vitest）/ <code>pnpm build</code> / Playwright e2e / GitHub Actions CI</td></tr>
+    <tr><td>生产部署</td><td>腾讯云 <code>app.3dq.site</code> / <code>api.3dq.site</code>；Docker 非 root（UID 10001）+ Caddy；healthz 验收惯例</td></tr>
+    <tr><td>数据架构</td><td>BookState 整本 JSON + revision 乐观锁（v6）；金额分存储两位展示；订单按成交日、退款按退款日归属</td></tr>
+    <tr><td>关键热点</td><td>页面容器高度集中在 <code>client/src/pages/Home.tsx</code>（约 23.8 万字符）→ 任务必须按改动区域切分，避免冲突</td></tr>
+  </table>
+  <h3>整改候选池（已对照 2026-08-29 代码逐项核实）</h3>
+  <table>
+    <tr><th style="width:52px">编号</th><th>整改项（来源）</th><th style="width:70px">优先级</th><th style="width:150px">代码核对</th></tr>
+    <tr><td class="num">R1</td><td>记一笔表单分层 + 记住上次 + 保存并继续（记一笔审计 P1）</td><td><span class="tag p1">P1</span></td><td><span class="tag open">未实现</span></td></tr>
+    <tr><td class="num">R2</td><td>凭证先传后弃的未保存提示（记一笔审计 P2）</td><td><span class="tag p2">P2</span></td><td><span class="tag open">未实现</span></td></tr>
+    <tr><td class="num">R3</td><td>成本诊断收束：标题去重 / 结构变化 Top3 / 趋势摘要 / 参考估算"未入账"标识</td><td><span class="tag p1">P1</span></td><td><span class="tag part">部分已做</span></td></tr>
+    <tr><td class="num">R4</td><td>四类详情无上下文空态统一"结果—原因—回列表"（全量审计 P0-2）</td><td><span class="tag p0">P0</span></td><td><span class="tag part">待核对</span></td></tr>
+    <tr><td class="num">R5</td><td>成本卡详情删除降级 + 抽屉二次确认（全量审计 P0-3）</td><td><span class="tag p0">P0</span></td><td><span class="tag part">待核对</span></td></tr>
+    <tr><td class="num">R6</td><td>二级表单统一规范：头/字段组/帮助/提交区（全量审计 P1-7）</td><td><span class="tag p1">P1</span></td><td><span class="tag open">未实现</span></td></tr>
+    <tr><td class="num">R7</td><td>商品排行字段契约回归 + ￥/% 单元样式 + 目标&gt;120% 建议（用户补充核验）</td><td><span class="tag p0">P0/P1</span></td><td><span class="tag open">未实现</span></td></tr>
+    <tr><td class="num">R8</td><td>首页近 7 日趋势区分"无数据"与"为零"（全面审计 P2）</td><td><span class="tag p2">P2</span></td><td><span class="tag open">未实现</span></td></tr>
+    <tr><td class="num">R9</td><td>生产验收闭环：CSV/XLSX 下载 / 安全头 / 非 root / 登录输入问题 / 真机安全区</td><td><span class="tag p1">P1</span></td><td><span class="tag open">未闭合</span></td></tr>
+  </table>
+  <div class="callout">已在近期修复、不再列入：分类下钻 categoryKey 化与筛选复位、已选标签白字、跨行业复选整行 label、"其他收入 / 手工退款"改名与提示。<br>暂缓池（防蔓延）：依赖升级矩阵、皮肤收敛、流水长列表虚拟化、账本 JSON 拆表。</div>
+</section>
+
+<section>
+  <h2>阶段二 · 第二批整改 PRD（草案）</h2>
+  <p><b>目标一句话：</b>把"三秒读懂经营结论、危险操作不出错、连续录入不烦人"补齐到消费级标准；全部为展示与交互层改动，<b>账本口径零变化</b>。</p>
+  <div class="ws"><h4>W1 记账效率 <span class="tag p1">M 规模</span></h4><p>R1 + R2：表单分层折叠、"保存并继续"、记住上次标签/对象、未保存凭证提示。</p><p class="scope">红线：不改事件类型映射、不改凭证上传接口。</p></div>
+  <div class="ws"><h4>W2 成本诊断收束 <span class="tag p1">M 规模</span></h4><p>R3：标题去重、结构变化 Top3+查看全部、趋势风险摘要首行、行业参考估算"未入账"标识。</p><p class="scope">红线：不改聚合计算、成本回冲口径、供应商归属。</p></div>
+  <div class="ws"><h4>W3 空态与危险操作 <span class="tag p0">S~M 规模 · 含两个 P0</span></h4><p>R4 + R5：统一详情空态模式；删除降级 + 抽屉二次确认。</p><p class="scope">红线：不改删除校验与不可删除保护逻辑。</p></div>
+  <div class="ws"><h4>W4 表单与指标规范 <span class="tag p1">M 规模</span></h4><p>R6 + R7 + R8：二级表单规范；排行字段契约回归；￥/% 单元样式；目标超 120% 建议；首页趋势空态。</p><p class="scope">红线：不改字段、验证逻辑、排行聚合。</p></div>
+  <div class="ws"><h4>W5 生产验收闭环 <span class="tag p1">S 规模 · 测试为主</span></h4><p>R9：生产登录态下载验收、安全头/非 root 链路复核、登录输入问题排查、真机安全区复核。可与 W1–W4 并行。</p><p class="scope">红线：不改生产配置，只做验收记录。</p></div>
+  <p><b>建议顺序：</b>W3 → W1 → W2 → W4，W5 并行。<b>明确不做：</b>批量改价/退款/删除、账本拆表、依赖大版本升级、皮肤收敛、虚构经营事件、全局隐式周期联动。</p>
+  <h3>全局验收标准</h3>
+  <table>
+    <tr><th style="width:110px">层</th><th>通过条件</th></tr>
+    <tr><td>静态门禁</td><td>check 0 错误；test 全绿（49 文件/193 项基线只增不减）；build 通过</td></tr>
+    <tr><td>DOM 回归</td><td>每个工作流新增真实组件/DOM 回归，覆盖新增交互与空态</td></tr>
+    <tr><td>视觉复核</td><td>375 / 390 / 430 / 768 / 1280px × 浅色 / 深色皮肤</td></tr>
+    <tr><td>业务不变量</td><td>金额分存储两位展示；成交日/退款日归属；SKU 冻结快照；乐观锁；语义令牌不回退</td></tr>
+    <tr><td>生产验收</td><td>healthz OK / app 200 / UID 10001；R9 逐项闭环</td></tr>
+    <tr><td>归档</td><td>实施记录文档 + todo.md 勾选 + GitHub main 同步</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>阶段三 · 用户确认方向（当前 GATE）</h2>
+  <ul class="checklist">
+    <li>范围：W1–W5 全做，还是裁剪？（默认建议：全做，W5 并行）</li>
+    <li>顺序：是否接受 W3 → W1 → W2 → W4 的推荐顺序？</li>
+    <li>配合项：W5 需要你配合生产登录态操作与真机复测（登录输入、底部导航安全区）</li>
+    <li class="q">DeepSeek：提供 API key（工程实现阶段 pi agent 使用 deepseek-v4-flash / deepseek-v4-pro）</li>
+  </ul>
+</section>
+
+<section>
+  <h2>阶段四 ~ 六 · 分解、实现与回归</h2>
+  <div class="timeline">
+    <div class="step"><div class="marker">4</div><div class="step-body"><h4>架构任务分解 <small>0.5 天</small></h4><p>按 Home.tsx 改动区域切任务卡（目标/边界/文件触点/测试要求/验收标准）；分支 <code>agent/batch2/&lt;task&gt;</code> → PR → CI → main；模糊项先做 15 分钟代码确认再排卡。</p></div></div>
+    <div class="step"><div class="marker">5</div><div class="step-body"><h4>工程实现 <small>2–3 天 · pi + DeepSeek</small></h4><p>每卡循环：pi 实现 → check → test → build → 新增 DOM 回归 → 390px 自查 → PR → CI 绿 → 合并。模型：deepseek-v4-flash（常规任务卡）/ deepseek-v4-pro（架构判断）；经 pi CLI 或 pi-web-ui 监督。</p></div></div>
+    <div class="step"><div class="marker">6</div><div class="step-body"><h4>QA 回归与发布 <small>1 天</small></h4><p>全量门禁 + Playwright e2e；5 视口 × 8 组页面 × 浅/深矩阵；腾讯云发布 + healthz/HTTPS/UID 验收；R9 逐项闭环；归档实施记录 + todo.md 勾选 + main 同步。</p></div></div>
+  </div>
+  <div class="redline"><b>账本红线清单（每张任务卡强制自带）：</b>金额精度、订单成交日/退款日归属、SKU 冻结快照、revision 乐观锁、语义令牌、不新增运行时依赖。</div>
+</section>
+
+<section>
+  <h2>排期总览</h2>
+  <table>
+    <tr><th>阶段</th><th>产出</th><th style="width:120px">前置</th><th style="width:130px">预估</th></tr>
+    <tr><td>① 分析</td><td>计划 §1（代码库 + 候选池核实）</td><td>—</td><td class="num">✅ 已完成</td></tr>
+    <tr><td>② PRD 草案</td><td>计划 §2（五个工作流 + 验收标准）</td><td>①</td><td class="num">✅ 已完成</td></tr>
+    <tr><td>③ 用户确认</td><td>方向拍板（范围/顺序/配合项/DeepSeek key）</td><td>②</td><td class="num"><span class="tag gate">当前 GATE</span></td></tr>
+    <tr><td>④ 任务分解</td><td>任务卡列表 + 分支规划</td><td>③</td><td class="num">0.5 天</td></tr>
+    <tr><td>⑤ 工程实现</td><td>W1–W4 代码 + 回归</td><td>④</td><td class="num">2–3 天</td></tr>
+    <tr><td>⑥ QA 回归发布</td><td>全量门禁 + 生产验收 + 归档</td><td>⑤</td><td class="num">1 天</td></tr>
+  </table>
+  <p style="margin-top:8px"><b>确认后合计约 3.5–4.5 个工作日。</b></p>
+</section>
+
+<footer>算得清 · 第二批体验与效率整改开发计划 · 2026-08-29 · 生成于项目仓库 docs/ 目录</footer>
+</div>
+</body>
+</html>
+
