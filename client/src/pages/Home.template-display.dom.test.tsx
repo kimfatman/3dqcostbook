@@ -85,6 +85,10 @@ async function openProfile(user: ReturnType<typeof userEvent.setup>) {
   await user.click(mainNavigation().getByRole("button", { name: "我的" }));
 }
 
+async function expandRecordMoreInfo(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: /更多信息/ }));
+}
+
 describe("五行业模板的真实页面显示", () => {
   it("沿实际导航切换五个行业，并在成本卡/SKU、资料、预算和分析页显示对应实体、分类与单位", async () => {
     const user = userEvent.setup();
@@ -190,6 +194,7 @@ describe("首页第一期经营总览", () => {
     renderHome();
 
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
     await user.clear(screen.getByPlaceholderText("0.00"));
     await user.type(screen.getByPlaceholderText("0.00"), "99");
     await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
@@ -280,6 +285,7 @@ describe("统一账本的真实页面路径", () => {
     renderHome();
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
     expect(screen.getByRole("heading", { name: "记录一笔收支" })).toBeTruthy();
+    await expandRecordMoreInfo(user);
     await user.clear(screen.getByPlaceholderText("0.00"));
     await user.type(screen.getByPlaceholderText("0.00"), "123.45");
     await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
@@ -364,6 +370,7 @@ describe("流水私有凭证图片", () => {
     renderHome();
 
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
     const voucherInput = screen.getByLabelText("上传凭证图片") as HTMLInputElement;
     const voucher = new File(["proof"], "voucher.png", { type: "image/png" });
     await user.upload(voucherInput, voucher);
@@ -397,6 +404,7 @@ describe("流水私有凭证图片", () => {
     renderHome();
 
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
     await user.upload(screen.getByLabelText("上传凭证图片"), new File(["proof"], "voucher.png", { type: "image/png" }));
 
     expect((await screen.findByRole("alert")).textContent).toContain("凭证图片上传失败");
@@ -445,6 +453,7 @@ describe("成本分析供应商排行与结构对照", () => {
     renderHome();
 
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
     await user.clear(screen.getByPlaceholderText("0.00"));
     await user.type(screen.getByPlaceholderText("0.00"), "66.60");
     await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
@@ -952,5 +961,132 @@ describe("第二批 T2 成本卡删除降级", () => {
     await user.click(screen.getByRole("button", { name: "返回" }));
     expect(screen.getByText(card.name)).toBeTruthy();
     confirmSpy.mockRestore();
+  });
+});
+
+describe("第二批 T3 记一笔表单分层与连续录入", () => {
+  function renderEmptyLedgerHome() {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    saved.entries = [];
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+    return renderHome();
+  }
+
+  it("支出场景更多信息默认收起，展开后供应商、备注与凭证齐全可填写，并能走既有保存路径", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    expect(screen.queryByPlaceholderText("例如：平台服务商")).toBeNull();
+    expect(screen.queryByRole("combobox", { name: /关联供应商/ })).toBeNull();
+    expect(screen.queryByLabelText("上传凭证图片")).toBeNull();
+    const trigger = screen.getByRole("button", { name: /更多信息/ });
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+
+    await expandRecordMoreInfo(user);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByPlaceholderText("例如：平台服务商")).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: /关联供应商/ })).toBeTruthy();
+    expect(screen.getByPlaceholderText("例如：货品 / 补货")).toBeTruthy();
+    expect(screen.getByLabelText("上传凭证图片")).toMatchObject({ accept: "image/jpeg,image/png,image/webp", type: "file" });
+
+    await user.clear(screen.getByPlaceholderText("0.00"));
+    await user.type(screen.getByPlaceholderText("0.00"), "31.40");
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "折叠区保存回归");
+    await user.type(screen.getByPlaceholderText("例如：货品 / 补货"), "展开后填写备注");
+    await user.selectOptions(screen.getByRole("combobox", { name: /关联供应商/ }), "ecommerce-supplier-1");
+    await user.click(screen.getByRole("checkbox", { name: "此笔已有线下凭证（仅标记）" }));
+    await user.click(screen.getByRole("button", { name: "平台佣金" }));
+    await user.click(screen.getByRole("button", { name: "保存记录" }));
+
+    const search = screen.getByPlaceholderText("搜索商户、备注或分类");
+    await user.type(search, "折叠区保存回归");
+    expect(screen.getByText("已找到 1 笔流水")).toBeTruthy();
+    expect(screen.getByText(/展开后填写备注/)).toBeTruthy();
+    expect(screen.getByText(/有凭证/)).toBeTruthy();
+  });
+
+  it("保存并继续后清空金额、对象、备注与凭证，保留日期、类型与标签选择并聚焦金额", async () => {
+    const user = userEvent.setup();
+    renderEmptyLedgerHome();
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
+
+    const amountInput = screen.getByPlaceholderText("0.00") as HTMLInputElement;
+    const merchantInput = screen.getByPlaceholderText("例如：平台服务商") as HTMLInputElement;
+    const noteInput = screen.getByPlaceholderText("例如：货品 / 补货") as HTMLInputElement;
+    const dateInput = screen.getByLabelText("日期") as HTMLInputElement;
+    const voucherCheckbox = screen.getByRole("checkbox", { name: "此笔已有线下凭证（仅标记）" }) as HTMLInputElement;
+    const dateBefore = dateInput.value;
+
+    await user.clear(amountInput);
+    await user.type(amountInput, "55.50");
+    await user.clear(merchantInput);
+    await user.type(merchantInput, "连续录入供应商");
+    await user.type(noteInput, "连续录入备注");
+    await user.click(screen.getByRole("button", { name: "广告投放" }));
+    await user.selectOptions(screen.getByRole("combobox", { name: /关联供应商/ }), "ecommerce-supplier-4");
+    await user.click(voucherCheckbox);
+
+    await user.click(screen.getByRole("button", { name: "保存并继续" }));
+
+    expect(screen.getByText("已保存，可继续录入")).toBeTruthy();
+    expect(amountInput.value).toBe("");
+    expect(merchantInput.value).toBe("");
+    expect(noteInput.value).toBe("");
+    expect(voucherCheckbox.checked).toBe(false);
+    expect(dateInput.value).toBe(dateBefore);
+    expect(document.querySelector(".record-form .type-switch button.selected")?.textContent).toBe("支出");
+    expect(document.querySelector(".record-form .category-chips button.selected")?.textContent).toBe("广告投放");
+    expect(document.activeElement).toBe(amountInput);
+
+    // 保存已真实入账：再次进入表单时记住上一笔的标签与供应商
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await screen.findByRole("navigation", { name: "主导航" });
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
+    expect(document.querySelector(".record-form .category-chips button.selected")?.textContent).toBe("广告投放");
+    expect((screen.getByRole("combobox", { name: /关联供应商/ }) as HTMLSelectElement).value).toBe("ecommerce-supplier-4");
+  });
+
+  it("手工退款类型不折叠更多信息，手续费与回收成本保留首屏", async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await user.click(screen.getByRole("button", { name: "手工退款" }));
+
+    expect(screen.getByRole("button", { name: /更多信息/ }).getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText("退款金额")).toBeTruthy();
+    expect(screen.getByText("退款手续费（可选）")).toBeTruthy();
+    expect(screen.getByText("退货可回收成本（可选）")).toBeTruthy();
+    expect(screen.getByPlaceholderText("例如：退款客户 / 平台订单")).toBeTruthy();
+  });
+
+  it("再次进入表单时默认选中上一次支出使用的标签与供应商", async () => {
+    const user = userEvent.setup();
+    renderEmptyLedgerHome();
+
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
+    await user.clear(screen.getByPlaceholderText("0.00"));
+    await user.type(screen.getByPlaceholderText("0.00"), "77.70");
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "记住上次标签支出");
+    await user.click(screen.getByRole("button", { name: "履约物流" }));
+    await user.selectOptions(screen.getByRole("combobox", { name: /关联供应商/ }), "ecommerce-supplier-3");
+    await user.click(screen.getByRole("button", { name: "保存记录" }));
+
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    await screen.findByRole("navigation", { name: "主导航" });
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
+
+    expect(document.querySelector(".record-form .category-chips button.selected")?.textContent).toBe("履约物流");
+    expect((screen.getByRole("combobox", { name: /关联供应商/ }) as HTMLSelectElement).value).toBe("ecommerce-supplier-3");
   });
 });
