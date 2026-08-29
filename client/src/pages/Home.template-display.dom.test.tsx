@@ -879,3 +879,78 @@ describe("T1 统一详情空态：结果—原因—主行动", () => {
     expect(screen.getByRole("heading", { name: "商品成本卡" })).toBeTruthy();
   });
 });
+
+describe("第二批 T2 成本卡删除降级", () => {
+  async function openCardDetail(user: ReturnType<typeof userEvent.setup>, cardName: string | RegExp) {
+    await user.click(mainNavigation().getByRole("button", { name: "商品" }));
+    await user.click(screen.getByRole("button", { name: new RegExp(cardName) }));
+    expect(screen.getByRole("button", { name: "编辑成本" })).toBeTruthy();
+  }
+
+  it("详情主操作区收敛为编辑与测算定价，删除入口默认不在主操作区", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await openCardDetail(user, "轻盈收纳盒");
+
+    expect(screen.getByRole("button", { name: "编辑成本" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "测算定价" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "更多" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "删除成本卡" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "删除" })).toBeNull();
+  });
+
+  it("展开更多后可见删除，取消二次确认不触发删除", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderHome();
+    await openCardDetail(user, "轻盈收纳盒");
+
+    await user.click(screen.getByRole("button", { name: "更多" }));
+    const deleteButton = screen.getByRole("button", { name: "删除成本卡" });
+    expect(deleteButton).toBeTruthy();
+    await user.click(deleteButton);
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("确认删除成本卡“轻盈收纳盒”"));
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("删除仅影响成本卡本身，历史订单成本快照不受影响"));
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    expect(screen.getByText("轻盈收纳盒")).toBeTruthy();
+    confirmSpy.mockRestore();
+  });
+
+  it("确认路径走既有删除逻辑，成本卡被移除并回到列表", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderHome();
+    await openCardDetail(user, "轻盈收纳盒");
+
+    await user.click(screen.getByRole("button", { name: "更多" }));
+    await user.click(screen.getByRole("button", { name: "删除成本卡" }));
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("删除仅影响成本卡本身，历史订单成本快照不受影响"));
+    expect(screen.getByRole("heading", { name: "商品成本卡" })).toBeTruthy();
+    expect(screen.queryByText("轻盈收纳盒")).toBeNull();
+    confirmSpy.mockRestore();
+  });
+
+  it("有订单成本快照的成本卡不可删除：不弹确认、展示原因且成本卡保留", async () => {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    const card = saved.cards.find((item: { industryId: string }) => item.industryId === "ecommerce");
+    const sku = saved.skus.find((item: { cardId?: string }) => item.cardId === card.id);
+    const period = new Date().toISOString().slice(0, 7);
+    saved.orders = [{ id: "protected-order-1", workspaceId: "workspace-main", industryId: "ecommerce", orderNo: "PROTECTED-001", channel: "platform", buyer: "保护快照客户", occurredAt: `${period}-18`, status: "paid", lines: [{ id: "protected-line-1", skuId: sku.id, skuCode: sku.code, skuName: sku.name, unit: sku.unit, quantity: 1, refundedQuantity: 0, unitPriceFen: sku.unitPriceFen, unitCostFen: 1234 }], pricing: saved.workspace.channelPricing.platform, saleEntryId: "", createdAt: `${period}-18T12:00:00.000Z`, updatedAt: `${period}-18T12:00:00.000Z` }];
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderHome();
+    await openCardDetail(user, card.name);
+    await user.click(screen.getByRole("button", { name: "更多" }));
+    await user.click(screen.getByRole("button", { name: "删除成本卡" }));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(screen.getByText(/已有订单成本快照，不能删除/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    expect(screen.getByText(card.name)).toBeTruthy();
+    confirmSpy.mockRestore();
+  });
+});
