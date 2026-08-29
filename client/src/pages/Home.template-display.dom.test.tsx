@@ -346,7 +346,7 @@ describe("统一账本的真实页面路径", () => {
     expect(screen.getByRole("heading", { name: "利润构成" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "利润趋势" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "商品毛利排行" })).toBeTruthy();
-    const costStructure = screen.getByText("本期钱花在哪里").closest("section");
+    const costStructure = screen.getByText("钱花在哪里").closest("section");
     expect(costStructure).toBeTruthy();
     const categoryDrilldown = within(costStructure as HTMLElement).getAllByRole("button", { name: /平台佣金/ })[0];
     await user.click(categoryDrilldown);
@@ -560,13 +560,66 @@ describe("成本诊断主题", () => {
 
     expect(screen.getByText("优先核对")).toBeTruthy();
     expect(screen.getByText(/商品采购.*占正向成本最多/)).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "本期钱花在哪里" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "钱花在哪里" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "成本结构变化" })).toBeTruthy();
-    expect(screen.getAllByText("持平").length).toBeGreaterThan(0);
+    expect(screen.queryAllByText("持平")).toHaveLength(0);
+    expect(screen.getAllByText("0pt").length).toBeGreaterThan(0);
     expect(screen.getByText("尚未关联供应商支出")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /优先核对.*商品采购/ }));
     expect(screen.getByRole("heading", { name: "收入、成本，逐笔算清" })).toBeTruthy();
+  });
+});
+
+describe("成本诊断信息收束", () => {
+  it("结构变化超过三类时默认只展示变化绝对值最大的三类，并可通过查看全部展开", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+
+    const comparison = document.querySelector(".template-grouped-structure") as HTMLElement;
+    expect(comparison).toBeTruthy();
+    expect(comparison.querySelectorAll(".analysis-grouped-copy").length).toBe(3);
+    const showAll = within(comparison).getByRole("button", { name: /查看全部 8 类/ });
+    expect(within(comparison).queryAllByText("持平")).toHaveLength(0);
+    expect(within(comparison).getAllByText("0pt").length).toBeGreaterThan(0);
+
+    await user.click(showAll);
+    expect(comparison.querySelectorAll(".analysis-grouped-copy").length).toBe(8);
+    expect(within(comparison).queryByRole("button", { name: /查看全部/ })).toBeNull();
+  });
+
+  it("结构变化少于等于三类时全量展示，不出现展开入口", async () => {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    const keptCategories = new Set(["goods_purchase", "platform_fee", "fulfillment"]);
+    saved.entries = saved.entries.map((entry: { industryId: string; categoryKey: string; amountFen: number }) => entry.industryId === "ecommerce" && !keptCategories.has(entry.categoryKey) ? { ...entry, amountFen: 0 } : entry);
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+
+    const comparison = document.querySelector(".template-grouped-structure") as HTMLElement;
+    expect(comparison).toBeTruthy();
+    expect(comparison.querySelectorAll(".analysis-grouped-copy").length).toBe(3);
+    expect(within(comparison).queryByRole("button", { name: /查看全部/ })).toBeNull();
+  });
+
+  it("行业参考估算金额同一行带未入账标识，折叠摘要保留不计入利润说明", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+
+    const detailsTrigger = screen.getByRole("button", { name: /行业参考估算/ });
+    expect(detailsTrigger.textContent).toContain("不计入利润");
+    if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
+
+    const estimate = document.querySelector(".analysis-hidden-cost-head > strong") as HTMLElement;
+    expect(estimate).toBeTruthy();
+    expect(estimate.querySelector("small")?.textContent).toBe("未入账 · 不计入利润");
+    expect(estimate.textContent).toContain("未入账 · 不计入利润");
   });
 });
 

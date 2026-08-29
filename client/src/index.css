@@ -1014,6 +1014,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 0; bo
 .analysis-structure-compare .analysis-grouped-comparison > button > strong.up { color: var(--sdq-cost); }
 .analysis-structure-compare .analysis-grouped-comparison > button > strong.down { color: var(--sdq-profit); }
 .analysis-structure-compare .analysis-grouped-comparison > button > strong.flat { color: var(--sdq-text-tertiary); }
+.analysis-structure-compare .analysis-grouped-show-all { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; min-height: 36px; margin-top: 8px; color: var(--sdq-action-primary); font-size: 11px; font-weight: 700; background: transparent; border: 1px dashed color-mix(in srgb, var(--sdq-action-primary) 35%, var(--sdq-border-subtle)); border-radius: var(--sdq-radius-md); }
 
 .analysis-structure-compare .analysis-grouped-legend { display: flex; flex-wrap: wrap; gap: 9px; justify-content: flex-end; }
 .analysis-structure-compare .analysis-grouped-legend span { display: inline-flex; gap: 4px; align-items: center; color: var(--sdq-text-secondary); font-size: 10px; }
