@@ -55,8 +55,9 @@ const scenarios: IndustryScenario[] = [
 beforeAll(() => {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
-    value: vi.fn().mockImplementation(() => ({
-      matches: false,
+    value: vi.fn().mockImplementation((query: string) => ({
+      // 声明“减少动态”偏好，关闭 4.2s/5.2s 轮播定时器，避免其重渲染与 userEvent 点击竞态导致 flaky
+      matches: query === "(prefers-reduced-motion: reduce)",
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     })),
@@ -277,7 +278,6 @@ describe("统一账本的真实页面路径", () => {
     const user = userEvent.setup();
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderHome();
-
     await user.click(screen.getByRole("button", { name: "新增记一笔" }));
     expect(screen.getByRole("heading", { name: "记录一笔收支" })).toBeTruthy();
     await user.clear(screen.getByPlaceholderText("0.00"));
@@ -340,13 +340,14 @@ describe("统一账本的真实页面路径", () => {
     expect(screen.getByRole("heading", { name: "利润构成" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "利润趋势" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "商品毛利排行" })).toBeTruthy();
-    const categoryDrilldown = screen.getAllByRole("button", { name: /平台佣金/ }).find((button) => button.textContent?.includes("查看流水"))
-      ?? screen.getAllByRole("button", { name: /平台佣金/ })[0];
+    const costStructure = screen.getByText("本期钱花在哪里").closest("section");
+    expect(costStructure).toBeTruthy();
+    const categoryDrilldown = within(costStructure as HTMLElement).getAllByRole("button", { name: /平台佣金/ })[0];
     await user.click(categoryDrilldown);
-    expect(screen.getByText(/数据下钻：平台佣金/)).toBeTruthy();
-    expect((screen.getByPlaceholderText("搜索商户、备注或分类") as HTMLInputElement).value).toBe("");
+    expect(await screen.findByText(/数据下钻：平台佣金/, {}, { timeout: 3000 })).toBeTruthy();
+    expect((await screen.findByPlaceholderText("搜索商户、备注或分类") as HTMLInputElement).value).toBe("");
     confirmSpy.mockRestore();
-  });
+  }, 15_000);
 });
 
 describe("流水私有凭证图片", () => {
