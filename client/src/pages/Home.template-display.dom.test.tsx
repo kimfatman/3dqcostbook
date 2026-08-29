@@ -704,7 +704,7 @@ describe("第一批范围、待办与成本快照表达", () => {
     expect(screen.queryByRole("button", { name: /本月经营提醒/ })).toBeNull();
   });
 
-  it("在完成率高于120%时提示复核本月目标，并复用既有目标编辑入口", async () => {
+  it("在完成率高于120%时提示目标可能偏低建议，并复用既有目标编辑入口", async () => {
     const initial = renderHome();
     initial.unmount();
     const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
@@ -715,7 +715,7 @@ describe("第一批范围、待办与成本快照表达", () => {
     renderHome();
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
-    expect(screen.getByText(/本月目标可能偏低/)).toBeTruthy();
+    expect(screen.getByText(/目标可能偏低，建议调整下月目标/)).toBeTruthy();
     const review = screen.getByRole("button", { name: /复核目标/ });
     await user.click(review);
     expect(screen.getByRole("spinbutton", { name: "目标金额（元）" })).toBeTruthy();
