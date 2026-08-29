@@ -1,4 +1,4 @@
-import { bigint, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { boolean, bigint, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * 用户、工作区和账本事实的首期云端模型。
@@ -14,6 +14,7 @@ export const appUsers = mysqlTable("app_users", {
   avatarPreset: varchar("avatarPreset", { length: 32 }),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   role: mysqlEnum("role", ["admin", "member"]).notNull().default("member"),
+  status: mysqlEnum("status", ["active", "suspended"]).notNull().default("active"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
   lastSignedInAt: timestamp("lastSignedInAt"),
@@ -41,6 +42,7 @@ export const workspaces = mysqlTable("workspaces", {
   name: varchar("name", { length: 120 }).notNull(),
   ownerId: varchar("ownerId", { length: 36 }).notNull(),
   industryId: varchar("industryId", { length: 40 }).notNull().default("restaurant"),
+  status: mysqlEnum("status", ["active", "suspended"]).notNull().default("active"),
   contactName: varchar("contactName", { length: 120 }).notNull().default(""),
   logoAssetId: varchar("logoAssetId", { length: 36 }),
   logoPreset: varchar("logoPreset", { length: 32 }),
@@ -86,10 +88,100 @@ export const auditEvents = mysqlTable("audit_events", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 }, table => [index("audit_events_workspace_created_idx").on(table.workspaceId, table.createdAt)]);
 
+/** 不绑定单一工作区的系统级管理员审计；details 只保存脱敏白名单。 */
+export const adminAuditEvents = mysqlTable("admin_audit_events", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  actorUserId: varchar("actorUserId", { length: 36 }).notNull(),
+  action: varchar("action", { length: 80 }).notNull(),
+  targetType: varchar("targetType", { length: 80 }).notNull(),
+  targetId: varchar("targetId", { length: 80 }),
+  outcome: mysqlEnum("outcome", ["success", "failure", "cancelled"]).notNull(),
+  requestId: varchar("requestId", { length: 64 }),
+  details: json("details").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, table => [index("admin_audit_events_created_idx").on(table.createdAt), index("admin_audit_events_target_idx").on(table.targetType, table.targetId)]);
+
+/** 版本化全局配置；payload 仅允许经过服务端白名单校验的非敏感配置。 */
+export const globalConfigs = mysqlTable("global_configs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  configKey: varchar("configKey", { length: 80 }).notNull(),
+  version: int("version").notNull(),
+  status: mysqlEnum("status", ["draft", "published", "archived"]).notNull().default("draft"),
+  payload: json("payload").$type<Record<string, string | number | boolean | null>>().notNull(),
+  changeSummary: varchar("changeSummary", { length: 240 }).notNull(),
+  createdByUserId: varchar("createdByUserId", { length: 36 }).notNull(),
+  publishedByUserId: varchar("publishedByUserId", { length: 36 }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
+  publishedAt: timestamp("publishedAt"),
+}, table => [uniqueIndex("global_configs_key_version_unique").on(table.configKey, table.version), index("global_configs_key_status_idx").on(table.configKey, table.status)]);
+
+/** 账本结构迁移的审核记录；只记录审核元数据，不触发迁移执行。 */
+export const adminMigrationReviews = mysqlTable("admin_migration_reviews", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  migrationId: varchar("migrationId", { length: 32 }).notNull(),
+  title: varchar("title", { length: 160 }).notNull(),
+  impactSummary: varchar("impactSummary", { length: 500 }).notNull(),
+  rollbackPlan: varchar("rollbackPlan", { length: 500 }).notNull(),
+  destructive: boolean("destructive").notNull().default(false),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).notNull().default("pending"),
+  reviewedByUserId: varchar("reviewedByUserId", { length: 36 }),
+  reviewNote: varchar("reviewNote", { length: 500 }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
+}, table => [uniqueIndex("admin_migration_reviews_migration_unique").on(table.migrationId), index("admin_migration_reviews_status_idx").on(table.status)]);
+
+/** 可聚合的系统性能指标样本；不记录请求体、凭据或用户隐私内容。 */
+export const systemMetricSamples = mysqlTable("system_metric_samples", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  metricKey: varchar("metricKey", { length: 80 }).notNull(),
+  value: int("value").notNull(),
+  unit: varchar("unit", { length: 16 }).notNull(),
+  recordedAt: timestamp("recordedAt").notNull().defaultNow(),
+}, table => [index("system_metric_samples_key_time_idx").on(table.metricKey, table.recordedAt)]);
+
+/** 定时备份计划；只保存频率与保留策略，不保存 COS/数据库等第三方凭据。 */
+export const backupSchedules = mysqlTable("backup_schedules", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  cadence: mysqlEnum("cadence", ["daily", "weekly"]).notNull(),
+  runAt: varchar("runAt", { length: 5 }).notNull(),
+  timezone: varchar("timezone", { length: 64 }).notNull().default("Asia/Shanghai"),
+  retentionDays: int("retentionDays").notNull().default(30),
+  status: mysqlEnum("status", ["enabled", "paused"]).notNull().default("enabled"),
+  createdByUserId: varchar("createdByUserId", { length: 36 }).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
+}, table => [index("backup_schedules_status_run_idx").on(table.status, table.runAt)]);
+
+/** 备份执行记录；P3 管理 API 只负责排队和展示，不在请求中执行实际备份。 */
+export const backupRuns = mysqlTable("backup_runs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  scheduleId: varchar("scheduleId", { length: 36 }).notNull(),
+  status: mysqlEnum("status", ["queued", "running", "succeeded", "failed", "cancelled"]).notNull().default("queued"),
+  attempt: int("attempt").notNull().default(0),
+  nextAttemptAt: timestamp("nextAttemptAt"),
+  leaseUntil: timestamp("leaseUntil"),
+  workerId: varchar("workerId", { length: 80 }),
+  idempotencyKey: varchar("idempotencyKey", { length: 160 }),
+  sourceSnapshot: json("sourceSnapshot").$type<Record<string, string | number | boolean | null>>(),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  bytesWritten: int("bytesWritten"),
+  errorSummary: varchar("errorSummary", { length: 240 }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, table => [index("backup_runs_schedule_created_idx").on(table.scheduleId, table.createdAt), index("backup_runs_status_attempt_idx").on(table.status, table.nextAttemptAt), uniqueIndex("backup_runs_idempotency_unique").on(table.idempotencyKey)]);
+
 export type AppUser = typeof appUsers.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Workspace = typeof workspaces.$inferSelect;
 export type WorkspaceBook = typeof workspaceBooks.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type AdminAuditEvent = typeof adminAuditEvents.$inferSelect;
+export type GlobalConfig = typeof globalConfigs.$inferSelect;
+export type AdminMigrationReview = typeof adminMigrationReviews.$inferSelect;
+export type SystemMetricSample = typeof systemMetricSamples.$inferSelect;
+export type BackupSchedule = typeof backupSchedules.$inferSelect;
+export type BackupRun = typeof backupRuns.$inferSelect;
 export type MoneyFen = bigint;

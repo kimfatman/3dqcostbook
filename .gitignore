@@ -113,3 +113,10 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+# Playwright E2E artifacts and local authenticated browser state
+test-results/
+playwright-report/
+blob-report/
+e2e/.auth/
+*.storage-state.json

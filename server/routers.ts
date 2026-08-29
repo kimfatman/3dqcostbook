@@ -3,7 +3,11 @@ import { getAppUserByCloudbaseSubject, getAppUserByEmail, getAppUserByPhoneNumbe
 import { localSessionCookieOptions, LOCAL_SESSION_COOKIE, hashPassword, signSession, verifyPassword } from "./local-auth";
 import { assertAuthAttemptAllowed, assertOtpSendAllowed, assertPasswordPolicy, clearAuthFailures, createAuthRateLimitKeys, recordAuthFailure, recordOtpSend } from "./auth-security";
 import { completeCloudbaseOtpChallenge, requestCloudbaseOtpChallenge, type CloudbaseOtpMethod, type CloudbaseOtpPurpose, type CloudbaseVerifiedIdentity } from "./cloudbase-auth";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { protectedProcedure, publicProcedure, router, adminProcedure } from "./_core/trpc";
+import { getAdminHealth, getAdminOverview, getAdminVersion } from "./admin";
+import { listAdminUsers, listAdminWorkspaces, setAdminUserStatus, setAdminWorkspaceStatus } from "./admin-data";
+import { listAdminAuditEvents, listMigrationReviews, reviewMigration, listGlobalConfigs, saveGlobalConfigDraft, publishGlobalConfig } from "./admin-platform-data";
+import { createBackupSchedule, getAdminPerformanceSummary, getRuntimeMetrics, listAdminMetricSamples, listBackupRuns, listBackupSchedules, queueBackupRun, setBackupScheduleStatus } from "./admin-operations-data";
 
 const email = z.string().trim().toLowerCase().email().max(320);
 const password = z.string().min(8, "密码至少需要 8 个字符").max(128, "密码不能超过 128 个字符");
@@ -16,6 +20,93 @@ const cloudbaseOtpPurpose = z.enum(["login", "register", "recover"]);
 const cloudbaseChallengeId = z.string().uuid();
 const cloudbaseVerificationCode = z.string().regex(/^\d{6}$/, "请输入 6 位验证码");
 const phoneNumber = z.string().regex(/^\+861\d{10}$/, "请输入中国大陆手机号，例如 138 0000 0000");
+const adminPageInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  query: z.string().trim().max(80).optional(),
+  status: z.enum(["active", "suspended"]).optional(),
+});
+const adminStatusChangeInput = z.object({
+  status: z.enum(["active", "suspended"]),
+  reason: z.string().trim().min(2).max(240),
+  confirm: z.literal(true, "必须完成二次确认后才能执行状态变更"),
+  requestId: z.string().uuid().optional(),
+});
+const adminAuditListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  action: z.string().trim().max(80).optional(),
+  outcome: z.enum(["success", "failure", "cancelled"]).optional(),
+  targetType: z.string().trim().max(80).optional(),
+});
+const migrationListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
+});
+const migrationReviewInput = z.object({
+  migrationId: z.string().trim().regex(/^\d{4}_[a-z0-9_]+$/).max(32),
+  title: z.string().trim().min(1).max(160),
+  impactSummary: z.string().trim().min(1).max(500),
+  rollbackPlan: z.string().trim().min(1).max(500),
+  destructive: z.boolean(),
+  status: z.enum(["approved", "rejected"]),
+  reviewNote: z.string().trim().max(500).optional(),
+  confirm: z.literal(true, "必须完成二次确认后才能提交迁移审核结论"),
+  requestId: z.string().uuid().optional(),
+});
+const configListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  configKey: z.string().trim().regex(/^[a-z][a-z0-9_.-]{0,79}$/).optional(),
+  status: z.enum(["draft", "published", "archived"]).optional(),
+});
+const configPayload = z.record(z.string().trim().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,79}$/), z.union([z.string().max(500), z.number().finite(), z.boolean(), z.null()]))
+  .refine(value => Object.keys(value).length <= 40, "配置字段不能超过 40 个")
+  .refine(value => Object.keys(value).every(key => !/password|secret|token|verification|authorization|cookie|credential|connection|string|key/i.test(key)), "配置不能包含敏感字段");
+const configDraftInput = z.object({
+  configKey: z.string().trim().regex(/^[a-z][a-z0-9_.-]{0,79}$/),
+  payload: configPayload,
+  changeSummary: z.string().trim().min(2).max(240),
+  requestId: z.string().uuid().optional(),
+});
+const configPublishInput = z.object({
+  configId: z.string().uuid(),
+  confirm: z.literal(true, "必须完成二次确认后才能发布配置"),
+  requestId: z.string().uuid().optional(),
+});
+const metricListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(50),
+  metricKey: z.string().trim().regex(/^[a-z][a-z0-9_.-]{0,79}$/).optional(),
+  periodMinutes: z.number().int().min(5).max(10_080).default(1_440),
+});
+const backupScheduleCreateInput = z.object({
+  name: z.string().trim().min(1).max(120),
+  cadence: z.enum(["daily", "weekly"]),
+  runAt: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),
+  timezone: z.string().trim().regex(/^[A-Za-z_]+(?:\/[A-Za-z_]+)+$/).max(64).default("Asia/Shanghai"),
+  retentionDays: z.number().int().min(1).max(365),
+  confirm: z.literal(true, "必须完成二次确认后才能创建备份计划"),
+  requestId: z.string().uuid().optional(),
+});
+const backupScheduleStatusInput = z.object({
+  scheduleId: z.string().uuid(),
+  status: z.enum(["enabled", "paused"]),
+  confirm: z.literal(true, "必须完成二次确认后才能修改备份计划"),
+  requestId: z.string().uuid().optional(),
+});
+const backupRunInput = z.object({
+  scheduleId: z.string().uuid(),
+  confirm: z.literal(true, "必须完成二次确认后才能排队备份"),
+  requestId: z.string().uuid().optional(),
+});
+const backupRunListInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  scheduleId: z.string().uuid().optional(),
+  status: z.enum(["queued", "running", "succeeded", "failed", "cancelled"]).optional(),
+});
 
 async function getLinkedCloudbaseUser(identity: CloudbaseVerifiedIdentity) {
   return (await getAppUserByCloudbaseSubject(identity.subject))
@@ -166,6 +257,45 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       ctx.res.clearCookie(LOCAL_SESSION_COOKIE, { ...localSessionCookieOptions(), maxAge: -1 });
       return { success: true } as const;
+    }),
+  }),
+  admin: router({
+    health: adminProcedure.query(() => getAdminHealth()),
+    version: adminProcedure.query(() => getAdminVersion()),
+    overview: adminProcedure.query(() => getAdminOverview()),
+    users: router({
+      list: adminProcedure.input(adminPageInput).query(({ input }) => listAdminUsers(input)),
+      setStatus: adminProcedure.input(adminStatusChangeInput.extend({ userId: z.string().uuid() })).mutation(({ input, ctx }) => setAdminUserStatus({ ...input, targetUserId: input.userId, actorUserId: ctx.user.id })),
+    }),
+    workspaces: router({
+      list: adminProcedure.input(adminPageInput).query(({ input }) => listAdminWorkspaces(input)),
+      setStatus: adminProcedure.input(adminStatusChangeInput.extend({ workspaceId: z.string().uuid() })).mutation(({ input, ctx }) => setAdminWorkspaceStatus({ ...input, actorUserId: ctx.user.id })),
+    }),
+    audit: router({
+      list: adminProcedure.input(adminAuditListInput).query(({ input }) => listAdminAuditEvents(input)),
+    }),
+    migrations: router({
+      list: adminProcedure.input(migrationListInput).query(({ input }) => listMigrationReviews(input)),
+      review: adminProcedure.input(migrationReviewInput).mutation(({ input, ctx }) => reviewMigration({ ...input, actorUserId: ctx.user.id })),
+    }),
+    configs: router({
+      list: adminProcedure.input(configListInput).query(({ input }) => listGlobalConfigs(input)),
+      saveDraft: adminProcedure.input(configDraftInput).mutation(({ input, ctx }) => saveGlobalConfigDraft({ ...input, actorUserId: ctx.user.id })),
+      publish: adminProcedure.input(configPublishInput).mutation(({ input, ctx }) => publishGlobalConfig({ ...input, actorUserId: ctx.user.id })),
+    }),
+    metrics: router({
+      summary: adminProcedure.query(() => getAdminPerformanceSummary()),
+      runtime: adminProcedure.query(() => getRuntimeMetrics()),
+      list: adminProcedure.input(metricListInput).query(({ input }) => listAdminMetricSamples(input)),
+    }),
+    backups: router({
+      schedules: router({
+        list: adminProcedure.query(() => listBackupSchedules()),
+        create: adminProcedure.input(backupScheduleCreateInput).mutation(({ input, ctx }) => createBackupSchedule({ ...input, actorUserId: ctx.user.id })),
+        setStatus: adminProcedure.input(backupScheduleStatusInput).mutation(({ input, ctx }) => setBackupScheduleStatus({ ...input, actorUserId: ctx.user.id })),
+        runNow: adminProcedure.input(backupRunInput).mutation(({ input, ctx }) => queueBackupRun({ ...input, actorUserId: ctx.user.id })),
+      }),
+      runs: adminProcedure.input(backupRunListInput).query(({ input }) => listBackupRuns(input)),
     }),
   }),
   profile: router({
