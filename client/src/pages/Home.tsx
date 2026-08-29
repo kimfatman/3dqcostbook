@@ -1016,7 +1016,7 @@ export default function Home() {
   }
 
   function OrderDetailPage() {
-    if (!activeOrder) return <div className="empty-state">订单不存在或不属于当前行业。</div>;
+    if (!activeOrder) return <div className="empty-state detail-empty-state"><b>订单不存在</b><p>该订单可能已被删除，或不属于当前行业。</p><button type="button" className="empty-action" onClick={() => goSub("orders")}>回到订单列表</button></div>;
     const refundsForOrder = refunds.filter((refund) => refund.orderId === activeOrder.id);
     const afterSales = getOrderAfterSalesMetrics(activeOrder, refundsForOrder);
     const warning = orderWarnings.find((item) => item.orderId === activeOrder.id);
@@ -1199,7 +1199,7 @@ export default function Home() {
   }
 
   function RecordDetailPage() {
-    if (!activeRecord) return <div className="empty-state">记录不存在或已被删除。</div>;
+    if (!activeRecord) return <div className="empty-state detail-empty-state"><b>记录不存在</b><p>该笔流水可能已被删除，或当前行业不可见。</p><button type="button" className="empty-action" onClick={() => goSub("records")}>回到流水列表</button></div>;
     const category = categoryByKey.get(activeRecord.categoryKey);
     const hasImageVoucher = Boolean(activeRecord.attachmentAssetId);
     return <><section className="detail-hero"><span className="detail-dot" style={{ background: category?.color || "#1677FF" }} /><span>{activeRecord.type === "income" ? "收入记录" : activeRecord.type === "refund" ? "退款记录" : "支出记录"}</span><h1>{activeRecord.merchant}</h1><strong>{activeRecord.type === "income" ? "+" : "-"}{yuan(activeRecord.amount)}</strong><p>{activeRecord.date} · {category?.label || "未分类"} · {activeRecord.status === "accounted" ? "已核算" : activeRecord.status === "pending" ? "待核算" : "异常"}</p></section><section className="detail-breakdown"><h2>记录说明</h2><div><span className="tip-icon"><ReceiptText size={18} /></span><p>{activeRecord.note || "未填写备注"}{hasImageVoucher ? " · 已附图片凭证" : activeRecord.hasAttachment ? " · 已附凭证" : " · 未附凭证"}</p></div>{hasImageVoucher && <a className="record-voucher-preview" href={`/api/media/${activeRecord.attachmentAssetId}`} target="_blank" rel="noreferrer"><img src={`/api/media/${activeRecord.attachmentAssetId}`} alt={`${activeRecord.merchant}的凭证图片`} /><span>查看受保护凭证图片 <ChevronRight size={15} /></span></a>}<button onClick={editRecord}>编辑记录 <Pencil size={16} /></button><button className="danger-button" onClick={deleteRecord}>删除记录 <Trash2 size={16} /></button></section></>;
@@ -1212,7 +1212,7 @@ export default function Home() {
   }
 
   function CardDetailPage() {
-    if (!activeCard || !cardCost) return <div className="empty-state">成本卡不存在或已归档。</div>;
+    if (!activeCard || !cardCost) return <div className="empty-state detail-empty-state"><b>成本卡不存在</b><p>该成本卡可能已被删除或归档，无法继续查看。</p><button type="button" className="empty-action" onClick={() => goSub("cards")}>回到成本卡列表</button></div>;
     const max = Math.max(...activeCard.history, cardCost.cost, 1);
     const linkedSku = skuMetrics.find((sku) => sku.cardId === activeCard.id);
     const unitProfit = activeCard.salePrice - cardCost.cost;
@@ -1279,7 +1279,7 @@ export default function Home() {
   }
 
   function PricingPage() {
-    if (!activeCard || !cardCost) return <div className="empty-state">请先选择一张成本卡。</div>;
+    if (!activeCard || !cardCost) return <div className="empty-state detail-empty-state"><b>请先选择一张成本卡</b><p>智能测算定价需要先打开一张成本卡，再开始试算。</p><button type="button" className="empty-action" onClick={() => goSub("cards")}>回到成本卡列表</button></div>;
     const pricingInputsReady = [pricingPlatformRate, pricingFulfillmentCost, pricingTargetMargin].every(isNonNegativeNumber);
     const base = { unitCost: cardCost.cost, platformRatePct: toNumber(pricingPlatformRate), fulfillmentCost: toNumber(pricingFulfillmentCost) };
     const targetMargin = toNumber(pricingTargetMargin);
