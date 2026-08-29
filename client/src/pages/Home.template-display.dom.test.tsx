@@ -1090,3 +1090,125 @@ describe("第二批 T3 记一笔表单分层与连续录入", () => {
     expect((screen.getByRole("combobox", { name: /关联供应商/ }) as HTMLSelectElement).value).toBe("ecommerce-supplier-3");
   });
 });
+
+describe("第二批 T4 凭证未保存离开提示", () => {
+  function prepareAuthenticatedWorkspace() {
+    trpcMocks.authData = { id: "user-1", name: "测试经营者" };
+    trpcMocks.workspaceData = [{ id: "workspace-test", name: "测试店铺", industryId: "ecommerce", contactName: "测试经营者", role: "owner" }];
+  }
+
+  async function uploadVoucher(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "voucher-asset-1", url: "/api/media/voucher-asset-1" }) });
+    vi.stubGlobal("fetch", fetchMock);
+    await user.upload(screen.getByLabelText("上传凭证图片"), new File(["proof"], "voucher.png", { type: "image/png" }));
+    expect(await screen.findByAltText("已附凭证图片")).toBeTruthy();
+    return fetchMock;
+  }
+
+  it("上传凭证后尝试返回被拦截：确认层出现且含两个动作，留在本页可继续编辑", async () => {
+    prepareAuthenticatedWorkspace();
+    const user = userEvent.setup();
+    renderHome();
+    await uploadVoucher(user);
+
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).getByText("放弃未保存的凭证？")).toBeTruthy();
+    expect(within(dialog).getByText(/已上传的凭证图片尚未随流水保存，离开后将不保留/)).toBeTruthy();
+    expect(within(dialog).getByText(/服务器暂存文件将按策略自动清理/)).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: "留在本页" })).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: "放弃凭证并离开" })).toBeTruthy();
+
+    await user.click(within(dialog).getByRole("button", { name: "留在本页" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(screen.getByRole("heading", { name: "记录一笔收支" })).toBeTruthy();
+    expect(screen.getByAltText("已附凭证图片")).toBeTruthy();
+
+    // 表单内类型切换不离开页面，不触发保护也不清空凭证
+    const recordTypeButtons = Array.from(document.querySelectorAll(".record-form .type-switch > button")) as HTMLButtonElement[];
+    await user.click(recordTypeButtons[1]);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    await user.click(recordTypeButtons[0]);
+    await expandRecordMoreInfo(user);
+    expect(screen.getByAltText("已附凭证图片")).toBeTruthy();
+  });
+
+  it("goSub 跳转其他子页同样被拦截；确认放弃后正常导航且凭证状态清空", async () => {
+    prepareAuthenticatedWorkspace();
+    const user = userEvent.setup();
+    renderHome();
+    await uploadVoucher(user);
+
+    // 商品销售入口（goSub 到订单表单）同样触发保护
+    await user.click(screen.getByRole("button", { name: "商品销售" }));
+    expect(await screen.findByRole("alertdialog")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "留在本页" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(screen.getByRole("heading", { name: "记录一笔收支" })).toBeTruthy();
+
+    // 返回被拦截后确认放弃：清空凭证状态并正常导航
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    expect(await screen.findByRole("alertdialog")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "放弃凭证并离开" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    await screen.findByRole("navigation", { name: "主导航" });
+
+    // 重新进入记一笔：凭证状态已清空，回到选择凭证图片
+    await user.click(screen.getByRole("button", { name: "新增记一笔" }));
+    await expandRecordMoreInfo(user);
+    expect(screen.getByLabelText("上传凭证图片")).toBeTruthy();
+    expect(screen.queryByAltText("已附凭证图片")).toBeNull();
+  });
+
+  it("保存记录成功后直接导航不再提示，凭证已随流水关联", async () => {
+    prepareAuthenticatedWorkspace();
+    const user = userEvent.setup();
+    renderHome();
+    await uploadVoucher(user);
+
+    await user.clear(screen.getByPlaceholderText("0.00"));
+    await user.type(screen.getByPlaceholderText("0.00"), "66.60");
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "凭证保存后离开回归");
+    await user.click(screen.getByRole("button", { name: "保存记录" }));
+
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    const search = screen.getByPlaceholderText("搜索商户、备注或分类");
+    await user.type(search, "凭证保存后离开回归");
+    await user.click(screen.getByRole("button", { name: /凭证保存后离开回归/ }));
+    expect(screen.getByText(/已附图片凭证/)).toBeTruthy();
+  });
+
+  it("保存并继续后凭证已随流水关联，返回不再提示", async () => {
+    prepareAuthenticatedWorkspace();
+    const user = userEvent.setup();
+    renderHome();
+    await uploadVoucher(user);
+
+    await user.clear(screen.getByPlaceholderText("0.00"));
+    await user.type(screen.getByPlaceholderText("0.00"), "88.80");
+    await user.clear(screen.getByPlaceholderText("例如：平台服务商"));
+    await user.type(screen.getByPlaceholderText("例如：平台服务商"), "凭证保存并继续回归");
+    await user.click(screen.getByRole("button", { name: "保存并继续" }));
+
+    expect(screen.getByText("已保存，可继续录入")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    await screen.findByRole("navigation", { name: "主导航" });
+  });
+
+  it("用户手动移除凭证图片后返回不再提示", async () => {
+    prepareAuthenticatedWorkspace();
+    const user = userEvent.setup();
+    renderHome();
+    await uploadVoucher(user);
+
+    await user.click(screen.getByRole("button", { name: "移除图片" }));
+    expect(screen.queryByAltText("已附凭证图片")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "返回" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    await screen.findByRole("navigation", { name: "主导航" });
+  });
+});
