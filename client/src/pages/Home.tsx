@@ -453,6 +453,7 @@ export default function Home() {
   const [cardId, setCardId] = useState<string | null>(() => ["cardDetail", "pricing"].includes(requestedScreen || "") ? book.cards[0]?.id ?? null : null);
   const [bomItemId, setBomItemId] = useState<string | null>(null);
   const [cardSearch, setCardSearch] = useState("");
+  const [cardMoreOpen, setCardMoreOpen] = useState(false);
   const [reportId, setReportId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
   const [analysisPeriod, setAnalysisPeriod] = useState<"current" | "last">("current");
@@ -762,7 +763,7 @@ export default function Home() {
   }
 
   function openRecordDetail(id: string) { setRecordId(id); goSub("recordDetail"); }
-  function openCard(id: string) { setCardId(id); goSub("cardDetail"); }
+  function openCard(id: string) { setCardId(id); setCardMoreOpen(false); goSub("cardDetail"); }
   function openNewCard() { setCardId(null); setCardFormDirty(false); setDraftMaterials([createDraftMaterial(template.unitLabel, { name: "直接材料" })]); goSub("cardForm"); }
   function editCard() { if (!activeCard) return; setCardFormDirty(false); setDraftMaterials(activeCard.items.map((item) => createDraftMaterial(template.unitLabel, { id: item.id, name: item.name, spec: item.spec, quantity: item.quantity, amount: item.amount }))); goSub("cardForm"); }
   function openPricing() { if (!activeCard) return; const config = channelTemplates.platform; setPricingChannel("platform"); setPricingPlatformRate(config.commissionRatePct); setPricingFulfillmentCost(config.fulfillmentCost); setPricingTargetMargin(config.targetContributionMarginPct); setPricingPreviewPrice(null); setCompetitorLow(0); setCompetitorHigh(0); setPromotionDiscount(0); goSub("pricing"); }
@@ -937,10 +938,17 @@ export default function Home() {
   }
 
   function deleteCard() {
-    if (!activeCard || !window.confirm(`确认删除成本卡“${activeCard.name}”吗？`)) return;
+    if (!activeCard || !window.confirm(`确认删除成本卡“${activeCard.name}”吗？删除仅影响成本卡本身，历史订单成本快照不受影响。`)) return;
     const result = book.removeCard(activeCard.id);
     notify(result.ok ? "成本卡和未使用 SKU 已删除" : result.reason || "无法删除成本卡");
     if (result.ok) { setCardId(null); replaceSubPage("cards"); }
+  }
+
+  function requestDeleteCard() {
+    if (!activeCard) return;
+    const blockReason = book.cardDeleteBlockReason(activeCard.id);
+    if (blockReason) { notify(blockReason); return; }
+    deleteCard();
   }
 
   function saveSupplier(event: FormEvent<HTMLFormElement>) {
@@ -1227,7 +1235,7 @@ export default function Home() {
       <section className="cost-formula"><span>成本构成</span><div><b>{template.formulaLabel} {yuan(cardCost.material)}</b><i>＋</i><b>人工 {yuan(activeCard.labor)}</b><i>＋</i><b>固定/项目分摊 {yuan(activeCard.overhead + activeCardIndirectCost)}</b><i>＝</i><strong>{yuan(cardCost.cost)} / {activeCard.unit}</strong></div></section>
       <section className="cost-snapshot-compare" aria-label="订单成本快照对比"><div><span>订单成本快照</span><em>只读</em></div><dl><div><dt>当前单位成本</dt><dd>{yuan(currentSkuUnitCost)} / {activeCard.unit}</dd></div><div><dt>最近成交冻结成本</dt><dd>{latestCostSnapshot ? `${yuan(latestCostSnapshot.line.unitCostFen / 100)} / ${latestCostSnapshot.line.unit}` : "暂无历史成交成本快照"}</dd></div></dl><p>{latestCostSnapshot ? `${latestCostSnapshot.order.occurredAt.replaceAll("-", "/")} 的订单已冻结当时单位成本；后续订单才使用当前成本。` : "尚无关联 SKU 的成交订单；后续订单才会冻结当前成本。"}</p></section>
       {activeCard.salePrice > 0 ? <EquationResult firstLabel="当前售价" firstValue={yuan(activeCard.salePrice)} secondLabel="单位成本" secondValue={yuan(cardCost.cost)} resultLabel={cardCopy.unitProfitLabel} resultValue={yuan(unitProfit)} detail={`毛利率 ${cardCost.marginRate}% · ${unitProfit >= 0 ? "当前售价可覆盖单位成本" : "当前售价低于单位成本，请优先调整"}`} /> : <button className="pricing-empty-tip" onClick={openPricing}><Calculator size={18} /><span><b>尚未填写售价，毛利率无法计算</b><em>使用智能测算定价，先设定目标毛利再一键写入。</em></span><ChevronRight size={16} /></button>}
-      <section className="detail-actions"><button onClick={editCard}><Pencil size={16} />编辑成本</button><button onClick={openPricing}><Calculator size={16} />测算定价</button><button className="danger" onClick={deleteCard}><Trash2 size={16} />删除</button></section>
+      <section className="detail-actions"><button className="primary" onClick={editCard}><Pencil size={16} />编辑成本</button><button onClick={openPricing}><Calculator size={16} />测算定价</button><button type="button" className="more-trigger" aria-expanded={cardMoreOpen} aria-controls="card-more-actions" onClick={() => setCardMoreOpen((open) => !open)}><MoreHorizontal size={16} />更多</button>{cardMoreOpen && <div className="detail-more-menu" id="card-more-actions"><button type="button" className="danger" onClick={requestDeleteCard}><Trash2 size={16} />删除成本卡</button></div>}</section>
       {linkedSku && <section className="detail-breakdown"><h2>订单 SKU 实绩</h2><div><span className="tip-icon"><ShoppingCart size={18} /></span><p>售出 {linkedSku.soldQuantity}{linkedSku.unit}，退款 {linkedSku.refundedQuantity}{linkedSku.unit}，净营收 {yuan(linkedSku.netRevenue)}，真实毛利率 {linkedSku.grossMarginRate}% 。</p></div><button onClick={() => goSub("skus")}>查看 SKU 经营 <ChevronRight size={16} /></button></section>}
       <section className="detail-breakdown"><h2>{template.formulaLabel}明细</h2><div className="bom-list">{activeCard.items.map((item) => <div key={item.id}><span><b>{item.name}</b><em>{item.spec || "规格待补充"} · {item.quantity}</em></span><strong>{yuan(item.amount)}</strong><span className="bom-row-actions"><button onClick={() => { setBomItemId(item.id); goSub("bomForm"); }} aria-label="编辑成本项"><Pencil size={14} /></button><button onClick={() => { book.removeBomItem(activeCard.id, item.id); notify("已删除成本项，单位成本和 SKU 已同步重算"); }} aria-label="删除成本项"><Trash2 size={15} /></button></span></div>)}</div><button onClick={() => { setBomItemId(null); goSub("bomForm"); }}>＋ 添加{template.formulaLabel}项</button></section>
       <section className="detail-breakdown"><h2>近 6 月单位成本趋势</h2><div className="weekly-bars cost-history">{activeCard.history.map((amount, index) => <span key={`${amount}-${index}`}><i style={{ height: `${amount / max * 100}%`, background: index === activeCard.history.length - 1 ? "#087FF5" : "#cfe2ff" }} /><em>{index + 2} 月</em></span>)}</div></section>

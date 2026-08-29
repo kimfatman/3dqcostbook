@@ -342,6 +342,7 @@ body, .mobile-shell, .app-frame { background: var(--app-bg); }.app-frame { box-s
 /* UI 最高标准复核：确保小屏信息块完整、关键操作可稳定触达。 */
 .back-button, .header-icon { width: 44px; height: 44px; }
 .detail-actions button, .pricing-recommend button, .pricing-plans .report-breakdown button { min-height: 44px; }
+.detail-actions .primary { color: #fff; background: #087ff5; border-color: #087ff5; box-shadow: 0 6px 14px rgba(8,127,245,.22); }.detail-actions .primary:hover { background: #0572dd; border-color: #0572dd; }.detail-more-menu { grid-column: 1 / -1; display: grid; gap: 8px; padding: 8px; background: #f7f9fc; border: 1px solid #e7ebf2; border-radius: 12px; }
 .template-head button { min-height: 36px; }
 .channel-template-preview { display: block; padding: 12px; }
 .channel-template-preview span { display: flex; gap: 6px; align-items: center; color: #1677ff; font-size: 11px; font-weight: 800; }
