@@ -139,11 +139,21 @@ describe("首页第一期经营总览", () => {
     renderHome();
 
     const home = document.querySelector(".home-redesign") as HTMLElement;
+    expect(document.querySelector(".brand-seal")?.getAttribute("src")).toBe("/brand-assets/SDQ_Logo_Mark.png");
     const directSections = Array.from(home.children).map((node) => node.className);
     expect(directSections[0]).toContain("home-identity-context");
     expect(directSections[1]).toContain("home-decision");
     expect(directSections[2]).toContain("home-operational-metrics");
-    expect(directSections).toHaveLength(3);
+    expect(directSections[3]).toContain("analysis-profit-trend");
+    expect(directSections[4]).toContain("home-reminders");
+    expect(directSections).toHaveLength(5);
+
+    const decisionCard = home.querySelector(".operating-snapshot.home-decision") as HTMLElement;
+    expect(decisionCard).toBeTruthy();
+    expect(decisionCard.classList.contains("is-empty")).toBe(true);
+    expect(within(decisionCard).getByText("今天尚无已入账数据")).toBeTruthy();
+    expect(within(decisionCard).getByText("从一笔流水或订单开始")).toBeTruthy();
+    expect(within(decisionCard).getByRole("group", { name: "经营概览时间范围" })).toBeTruthy();
 
     const metricStrip = screen.getByTestId("home-operational-metrics");
     expect(within(metricStrip).getByText("订单数")).toBeTruthy();
@@ -167,9 +177,10 @@ describe("首页第一期经营总览", () => {
 
     expect(screen.queryByText("销售额 / 订单数")).toBeNull();
     expect(screen.queryByTestId("home-recent-activity")).toBeNull();
-    expect(screen.queryByText("本月经营提醒")).toBeNull();
-    expect(screen.getByRole("button", { name: /消息中心/ })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: /消息中心/ }));
+    expect(home.querySelector('[data-chart-template="profit-line"]')).toBeTruthy();
+    expect(home.querySelector(".home-reminders")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: /消息中心/ }).length).toBeGreaterThan(0);
+    await user.click(screen.getAllByRole("button", { name: /消息中心/ })[0]);
     expect(screen.getAllByText("消息中心").length).toBeGreaterThan(0);
   });
 
@@ -418,8 +429,10 @@ describe("成本分析供应商排行与结构对照", () => {
     expect(document.querySelector(".template-cost-pie .analysis-cost-pie")).toBeTruthy();
     const comparison = document.querySelector(".template-grouped-structure");
     expect(comparison).toBeTruthy();
+    expect(within(comparison as HTMLElement).getByText("对比结论")).toBeTruthy();
+    expect(within(comparison as HTMLElement).getByText(/点击任一分类可查看/)).toBeTruthy();
     const priorBar = comparison?.querySelector(".analysis-grouped-bars > i.previous") as HTMLElement;
-    expect(priorBar.style.height).toBe("0%");
+    expect(priorBar.style.width).toBe("0%");
     const firstCategory = within(comparison as HTMLElement).getAllByRole("button")[0];
     expect(firstCategory.textContent).toContain("上期 0%");
     await user.click(firstCategory);
@@ -619,7 +632,7 @@ describe("第一批范围、待办与成本快照表达", () => {
     renderHome();
 
     expect(screen.getByRole("button", { name: /消息中心/ })).toBeTruthy();
-    expect(screen.queryByText("本月经营提醒")).toBeNull();
+    expect(screen.getByText("本月经营提醒")).toBeTruthy();
     expect(screen.queryByText("本月待办")).toBeNull();
     expect(screen.queryByText("优先处理")).toBeNull();
 

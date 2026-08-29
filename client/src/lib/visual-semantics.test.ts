@@ -40,6 +40,17 @@ describe("第二批全站视觉语义", () => {
     expect(css).toContain("text-overflow: clip");
   });
 
+  it("P2 核心模块使用 SDQ 语义令牌和移动端触控尺寸", () => {
+    expect(readFileSync(resolve(process.cwd(), "client/src/sd-design-tokens.css"), "utf8")).toContain("--sdq-action-primary:");
+    expect(baseCss).toContain(".record-filter > button.active");
+    expect(baseCss).toContain(".record-row > strong.income");
+    expect(baseCss).toContain(".prototype-products .product-cost-list > button");
+    expect(baseCss).toContain(".supplier-list > div:not(.empty-state)");
+    expect(baseCss).toContain("min-height: var(--sdq-height-control)");
+    expect(baseCss).toContain(".app-content :where(.fixed-primary, .floating-add, .sales-baseline-primary, .list-primary, .form-save)");
+    expect(baseCss).toContain("border-radius: var(--sdq-radius-sm)");
+  });
+
   it("使用中文可见上传控件和字段级校验，不触发英文浏览器原生提示", () => {
     expect(css).toContain(".identity-inline-upload input[type=\"file\"], .identity-upload input[type=\"file\"]");
     expect(css).toContain("content: \"选择图片\"");
