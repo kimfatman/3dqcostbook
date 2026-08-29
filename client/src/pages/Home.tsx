@@ -249,10 +249,10 @@ function VisualSkinPicker({ skin, onChange }: { skin: VisualSkin; onChange: (ski
   return <section className="visual-skin-picker" aria-labelledby="visual-skin-title"><div className="visual-skin-heading"><span><em>视觉皮肤</em><b id="visual-skin-title">选择你的经营工作台</b></span><small>切换不影响账本数据</small></div><div className="visual-skin-options">{visualSkinOptions.map((option) => <button key={option.id} className={`skin-option ${option.material} ${skin === option.id ? "active" : ""}`} aria-pressed={skin === option.id} onClick={() => onChange(option.id)}><i aria-hidden="true"><span /><span /><span /></i><span><b>{option.label}</b><em>{option.detail}</em></span>{skin === option.id ? <Check size={17} /> : <ChevronRight size={16} />}</button>)}</div><button className="chart-theme-toggle" type="button" onClick={toggleTheme}><span>{theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}<b>图表深色模式</b><em>{theme === "dark" ? "深色已开启" : "跟随浅色界面"}</em></span><strong>{theme === "dark" ? "切换浅色" : "切换深色"}<ChevronRight size={16} /></strong></button></section>;
 }
 
-function SalesOrdersTrend({ items, onOpenOrders, onRecordOrder }: { items: ReturnType<typeof buildDailySalesOrders>; onOpenOrders: () => void; onRecordOrder: () => void }) {
+function SalesOrdersTrend({ items, hasWindowTransactions, onOpenOrders, onRecordOrder, onRecordEntry }: { items: ReturnType<typeof buildDailySalesOrders>; hasWindowTransactions: boolean; onOpenOrders: () => void; onRecordOrder: () => void; onRecordEntry: () => void }) {
   const salesTotal = items.reduce((sum, item) => sum + item.sales, 0);
   const orderTotal = items.reduce((sum, item) => sum + item.orders, 0);
-  if (!orderTotal) return <section className="home-chart-card home-sales-orders"><div className="home-chart-head"><span>销售动能 <ChartTooltip label="销售额与订单数" value="暂无订单" detail="销售额按订单成交日汇总；订单数为同一日期内已录入订单数。退款仍按实际退款日单独影响净营收。" /></span><b>近 7 日</b></div><HomeChartEmpty title="销售额 / 订单数" copy="近 7 日还没有订单数据" action="记录订单" onClick={onRecordOrder} /></section>;
+  if (!hasWindowTransactions) return <section className="home-chart-card home-sales-orders" data-testid="home-sales-orders-empty"><div className="home-chart-head"><span>销售动能 <ChartTooltip label="销售额与订单数" value="暂无交易" detail="销售额按订单成交日汇总；订单数为同一日期内已录入订单数。退款仍按实际退款日单独影响净营收。" /></span><b>近 7 日</b></div><div className="home-sales-orders-empty-actions"><HomeChartEmpty title="近 7 日暂无已入账交易" copy="近 7 日没有订单成交或流水入账，趋势图暂不生成" action="记录订单" onClick={onRecordOrder} /><button type="button" className="home-sales-orders-record-entry" onClick={onRecordEntry}>记一笔 <ChevronRight size={15} /></button></div></section>;
   const maxSales = Math.max(...items.map((item) => item.sales), 1);
   const orderValues = items.map((item) => item.orders);
   const maxOrders = Math.max(...orderValues);
@@ -633,6 +633,12 @@ export default function Home() {
   const salesTargetProgress = useMemo(() => buildSalesTargetProgress({ revenue: totals.revenue, targetFen: Math.round(salesTarget * 100), dayOfMonth: currentDay, daysInMonth: daysInCurrentPeriod }), [currentDay, daysInCurrentPeriod, salesTarget, totals.revenue]);
   const salesRunRateForecast = useMemo(() => Number((Math.max(0, totals.revenue) / Math.max(currentDay, 1) * daysInCurrentPeriod).toFixed(2)), [currentDay, daysInCurrentPeriod, totals.revenue]);
   const profitTrendEvents = useMemo(() => buildProfitTrendEvents({ months: trend.map((item) => item.month), industryId: book.activeIndustryId, orders, refunds, entries: book.state.entries }), [book.activeIndustryId, book.state.entries, orders, refunds, trend]);
+  const salesOrdersTrend = useMemo(() => buildDailySalesOrders({ orders, endDate: today, days: 7 }), [orders, today]);
+  const trendWindowHasTransactions = useMemo(() => {
+    if (salesOrdersTrend.some((item) => item.orders > 0 || item.sales > 0)) return true;
+    const windowDates = new Set(salesOrdersTrend.map((item) => item.date));
+    return activeLedgerEntries.some((entry) => entry.status === "posted" && windowDates.has(entry.occurredAt.slice(0, 10)));
+  }, [activeLedgerEntries, salesOrdersTrend]);
 
   useEffect(() => {
     if (reducedMotion) return;
@@ -1041,6 +1047,7 @@ export default function Home() {
       <section className="dashboard-kicker home-context home-identity-context"><span><i><IndustryIcon size={15} aria-hidden="true" /></i><b>{template.storeName}</b><em>{homeDecision.context.industryLabel} · {homeDecision.context.period.replace("-", " 年 ")} 月</em></span></section>
       <OperatingSnapshot decision={homeRangeDecision} range={homeRange} hasData={homeRangeHasData} costRate={costRate} profitMarginRate={profitMarginRate} profitDelta={homeRangeProfitDelta} onSelectRange={setHomeTimeRange} />
       <HomeOperationalMetrics rangeLabel={homeRange.label} orderCount={homeRangeOrders.length} averageOrderValue={homeRangeAverageOrderValue} refundAmount={homeRangeRefundAmount} refundCount={homeRangeRefunds.length} />
+      <SalesOrdersTrend items={salesOrdersTrend} hasWindowTransactions={trendWindowHasTransactions} onOpenOrders={() => openOrdersContext("all")} onRecordOrder={openNewOrder} onRecordEntry={openNewRecord} />
       <ProfitTrend items={trend} events={profitTrendEvents} onOpen={openHomeMonthRecords} />
       {notificationItems.length ? <HomeReminderList items={notificationItems} onOpen={openNotificationTarget} onOpenAll={() => goSub("notifications")} /> : <section className="home-reminders home-chart-card" data-testid="home-reminders-empty"><div className="home-chart-head"><span>经营待办</span><button type="button" onClick={() => goSub("notifications")}>消息中心 <ChevronRight size={14} /></button></div><HomeChartEmpty title="暂无经营待办" copy="有新的利润、成本或退款提醒时，会在这里出现" action="查看消息中心" onClick={() => goSub("notifications")} /></section>}
     </div>;

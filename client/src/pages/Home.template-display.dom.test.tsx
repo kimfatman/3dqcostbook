@@ -149,9 +149,10 @@ describe("首页第一期经营总览", () => {
     expect(directSections[0]).toContain("home-identity-context");
     expect(directSections[1]).toContain("home-decision");
     expect(directSections[2]).toContain("home-operational-metrics");
-    expect(directSections[3]).toContain("analysis-profit-trend");
-    expect(directSections[4]).toContain("home-reminders");
-    expect(directSections).toHaveLength(5);
+    expect(directSections[3]).toContain("home-sales-orders");
+    expect(directSections[4]).toContain("analysis-profit-trend");
+    expect(directSections[5]).toContain("home-reminders");
+    expect(directSections).toHaveLength(6);
 
     const decisionCard = home.querySelector(".operating-snapshot.home-decision") as HTMLElement;
     expect(decisionCard).toBeTruthy();
@@ -212,7 +213,7 @@ describe("首页第一期经营总览", () => {
     expect(screen.queryByText("优先处理")).toBeNull();
   });
 
-  it("录入真实订单后保留订单账本与洞察中的利润趋势入口，工作台不重复承载趋势和动态", async () => {
+  it("录入真实订单后工作台展示近 7 日销售趋势卡，最近动态仍收敛到流水页", async () => {
     const user = userEvent.setup();
     renderHome();
 
@@ -227,7 +228,7 @@ describe("首页第一期经营总览", () => {
     expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "利润趋势" })).toBeTruthy();
     await user.click(mainNavigation().getByRole("button", { name: "工作台" }));
-    expect(screen.queryByTestId("home-sales-orders-trend")).toBeNull();
+    expect(screen.getByTestId("home-sales-orders-trend")).toBeTruthy();
     expect(screen.queryByTestId("home-recent-activity")).toBeNull();
   });
 });
