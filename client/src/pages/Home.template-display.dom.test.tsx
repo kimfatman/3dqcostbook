@@ -820,3 +820,62 @@ describe("全站排版舒展感与本地化", () => {
     expect(screen.getByText("记录商品销售后，将自动归集销售收入与已售成本。")).toBeTruthy();
   });
 });
+
+describe("T1 统一详情空态：结果—原因—主行动", () => {
+  async function openScreenDirectly(screenName: string) {
+    window.history.replaceState({}, "", `/?screen=${screenName}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+
+  it("订单详情无上下文时展示结果文案、原因说明与回列表按钮，点击后回到订单列表", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await openScreenDirectly("orderDetail");
+
+    expect(await screen.findByText("订单不存在")).toBeTruthy();
+    expect(screen.getByText(/该订单可能已被删除，或不属于当前行业/)).toBeTruthy();
+    const back = screen.getByRole("button", { name: "回到订单列表" });
+    expect(back.className).toContain("empty-action");
+    await user.click(back);
+    expect(screen.getByRole("heading", { name: "订单" })).toBeTruthy();
+  });
+
+  it("流水详情无上下文时展示结果文案、原因说明与回列表按钮，点击后回到流水列表", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await openScreenDirectly("recordDetail");
+
+    expect(await screen.findByText("记录不存在")).toBeTruthy();
+    expect(screen.getByText(/该笔流水可能已被删除，或当前行业不可见/)).toBeTruthy();
+    const back = screen.getByRole("button", { name: "回到流水列表" });
+    expect(back.className).toContain("empty-action");
+    await user.click(back);
+    expect(screen.getByRole("heading", { name: "收入、成本，逐笔算清" })).toBeTruthy();
+  });
+
+  it("成本卡详情无上下文时展示结果文案、原因说明与回列表按钮，点击后回到成本卡列表", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await openScreenDirectly("cardDetail");
+
+    expect(await screen.findByText("成本卡不存在")).toBeTruthy();
+    expect(screen.getByText(/该成本卡可能已被删除或归档/)).toBeTruthy();
+    const back = screen.getByRole("button", { name: "回到成本卡列表" });
+    expect(back.className).toContain("empty-action");
+    await user.click(back);
+    expect(screen.getByRole("heading", { name: "商品成本卡" })).toBeTruthy();
+  });
+
+  it("智能定价无选中成本卡时展示结果文案、原因说明与回列表按钮，点击后回到成本卡列表", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await openScreenDirectly("pricing");
+
+    expect(await screen.findByText("请先选择一张成本卡")).toBeTruthy();
+    expect(screen.getByText(/需要先打开一张成本卡/)).toBeTruthy();
+    const back = screen.getByRole("button", { name: "回到成本卡列表" });
+    expect(back.className).toContain("empty-action");
+    await user.click(back);
+    expect(screen.getByRole("heading", { name: "商品成本卡" })).toBeTruthy();
+  });
+});
