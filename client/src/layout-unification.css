@@ -88,3 +88,18 @@
 .record-save-continue:disabled { opacity: .55; }
 .record-save-continue:active { transform: scale(.98); }
 .skin-deep .record-save-continue { color: #8ed2ff; background: rgba(99, 190, 255, .12); border-color: rgba(143, 210, 255, .3); }
+
+/* T6 二级表单统一规格（batch2 T6 · W4/R6）：
+ * 页头统一 sub-intro compact；表单外壳保留各自卡片类并追加 secondary-form 规格标记；
+ * 字段标签间距 12px、帮助文本 small 10px 次要色；底部提交区统一 .form-actions：
+ * 主按钮 .fixed-primary.form-save（必选）+ 可选次按钮 .form-secondary（置于主按钮前）。
+ * 仅结构与视觉约束：不改字段、校验、提交处理函数与账本写入路径。 */
+.app-content .secondary-form { display: grid; gap: 12px; }
+.app-content .secondary-form > label { display: grid; gap: 6px; color: var(--sdq-text-secondary); font-size: 11px; font-weight: 750; }
+.app-content .secondary-form > label > small { color: var(--sdq-text-tertiary); font-size: 10px; font-weight: 500; line-height: 1.5; }
+.app-content .secondary-form .form-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-items: stretch; padding-top: 14px; margin-top: 2px; border-top: 1px solid var(--sdq-border-subtle); }
+.app-content .secondary-form .form-actions:has(.form-secondary) { grid-template-columns: minmax(0, 1fr) 1.7fr; }
+.app-content .secondary-form .form-actions > .form-save { width: 100%; min-height: var(--sdq-height-control); margin: 0; }
+.app-content .secondary-form .form-actions > .form-secondary { display: flex; gap: 6px; align-items: center; justify-content: center; min-height: var(--sdq-height-control); padding: 12px 14px; color: var(--sdq-text-secondary); font-size: 13px; font-weight: 750; background: var(--sdq-bg-surface-subtle); border: 1px solid var(--sdq-border-subtle); border-radius: var(--sdq-radius-md); }
+.app-content .secondary-form .form-actions > .form-secondary:active { transform: scale(.98); }
+.skin-deep .secondary-form .form-actions > .form-secondary { color: #a9c3db; }
