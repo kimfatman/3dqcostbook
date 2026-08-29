@@ -466,6 +466,7 @@ export default function Home() {
   const [recordAttachmentSubjectId, setRecordAttachmentSubjectId] = useState<string | null>(null);
   const [isUploadingVoucher, setIsUploadingVoucher] = useState(false);
   const [voucherUploadError, setVoucherUploadError] = useState("");
+  const [unsavedVoucherLeave, setUnsavedVoucherLeave] = useState<{ proceed: () => void } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderLineId, setOrderLineId] = useState<string | null>(null);
   const [draftOrderLines, setDraftOrderLines] = useState<{ skuId: string; quantity: EditableNumber }[]>([]);
@@ -687,9 +688,26 @@ export default function Home() {
     window.setTimeout(() => setToast(""), 2200);
   }
 
-  function goSub(page: SubPage) { if (page === subPage) return; setPageStack((current) => [...current, { tab, subPage, recordContext: { filter: recordFilter, month: recordMonth, query: recordSearch, categoryKey: recordCategoryFilter, skuId: recordSkuFilter } }]); setSubPage(page); }
+  function guardUnsavedVoucher(leave: () => void) {
+    if (subPage !== "record" || recordId || !attachmentAssetId) return false;
+    setUnsavedVoucherLeave({ proceed: leave });
+    return true;
+  }
+  function cancelVoucherLeave() { setUnsavedVoucherLeave(null); }
+  function discardVoucherAndLeave() {
+    const proceed = unsavedVoucherLeave?.proceed;
+    setUnsavedVoucherLeave(null);
+    setAttachmentAssetId(null);
+    setRecordAttachmentSubjectId(null);
+    setHasAttachment(false);
+    setVoucherUploadError("");
+    proceed?.();
+  }
+  function goSub(page: SubPage) { if (page === subPage) return; if (guardUnsavedVoucher(() => navigateToSubPage(page))) return; navigateToSubPage(page); }
+  function navigateToSubPage(page: SubPage) { setPageStack((current) => [...current, { tab, subPage, recordContext: { filter: recordFilter, month: recordMonth, query: recordSearch, categoryKey: recordCategoryFilter, skuId: recordSkuFilter } }]); setSubPage(page); }
   function replaceSubPage(page: SubPage) { historyNavigationMode.current = "replace"; setPageStack((current) => current.slice(0, -1)); setSubPage(page); }
-  function openRootTab(nextTab: TabId) { setPageStack([]); setSubPage(null); setTab(nextTab); }
+  function openRootTab(nextTab: TabId) { if (guardUnsavedVoucher(() => switchRootTab(nextTab))) return; switchRootTab(nextTab); }
+  function switchRootTab(nextTab: TabId) { setPageStack([]); setSubPage(null); setTab(nextTab); }
   function openOrdersContext(filter: "all" | "low_profit" | "refund" = "all") {
     setOrderStatusFilter(filter);
     setOrderSearchOpen(false);
@@ -715,6 +733,10 @@ export default function Home() {
   function goBack() {
     if (shouldConfirmDiscard(cardFormDirty) && !window.confirm("当前成本卡修改尚未保存，确认放弃并返回吗？")) return;
     if (subPage === "cardForm") setCardFormDirty(false);
+    if (guardUnsavedVoucher(performGoBack)) return;
+    performGoBack();
+  }
+  function performGoBack() {
     if (pageStack.length) { window.history.back(); return; }
     if (subPage === "bomForm") { setSubPage("cardDetail"); return; }
     if (subPage === "pricing") { setSubPage("cardDetail"); return; }
@@ -820,6 +842,7 @@ export default function Home() {
       notify(continueEntry ? "已保存，可继续录入" : `已新增 ${yuan(amount)} 记录`);
     }
     setRecordId(null);
+    setUnsavedVoucherLeave(null);
     setAttachmentAssetId(null);
     setRecordAttachmentSubjectId(null);
     setVoucherUploadError("");
@@ -1520,7 +1543,7 @@ export default function Home() {
 
   const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [{ id: "home", label: "工作台", icon: HomeIcon }, { id: "orders", label: "订单", icon: ReceiptText }, { id: "cards", label: cardCopy.tabLabel, icon: PackageOpen }, { id: "analysis", label: "洞察", icon: BarChart3 }, { id: "profile", label: "我的", icon: WalletCards }];
   const showQuickRecord = !isSub && tab !== "profile";
-  return <div className="mobile-shell"><div className="app-frame">{renderHeader()}<main className={isSub ? "app-content sub-content" : "app-content"}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}</div></div>;
+  return <div className="mobile-shell"><div className="app-frame">{renderHeader()}<main className={isSub ? "app-content sub-content" : "app-content"}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}{unsavedVoucherLeave && <div className="voucher-guard-layer" role="alertdialog" aria-modal="true" aria-labelledby="voucher-guard-title" aria-describedby="voucher-guard-copy"><div className="voucher-guard-scrim" aria-hidden="true" onClick={cancelVoucherLeave} /><div className="voucher-guard-card"><CircleAlert size={22} aria-hidden="true" /><h2 id="voucher-guard-title">放弃未保存的凭证？</h2><p id="voucher-guard-copy">已上传的凭证图片尚未随流水保存，离开后将不保留。服务器暂存文件将按策略自动清理。</p><div className="voucher-guard-actions"><button type="button" className="voucher-guard-stay" onClick={cancelVoucherLeave}>留在本页</button><button type="button" className="voucher-guard-leave" onClick={discardVoucherAndLeave}>放弃凭证并离开</button></div></div></div>}</div></div>;
 }
 
 function useCloudBookSync(book: ReturnType<typeof useCostBook>) {
