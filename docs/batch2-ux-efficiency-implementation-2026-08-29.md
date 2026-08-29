@@ -40,13 +40,24 @@
 | --- | --- |
 | B 安全响应头关键链路 | ✅ 2026-08-29 已脚本化复核：app/api/静态资源 HTTP 200，HSTS/CSP/XFO/nosniff/Referrer/Permissions 齐全（证据 `t9b-header-evidence.txt`） |
 | A 生产登录态 CSV/XLSX 下载验收 | ⏳ 需用户登录生产操作 |
-| C 非 root 容器链路验收 | ⏳ 需服务器访问（本机无 .ssh） |
+| C 非 root 容器链路验收 | ◐ C1 容器身份 ✅、C2 迁移链路 ✅；C3 会话 / C4 COS 媒体需登录态操作 |
 | D 生产登录页输入问题排查 | ⏳ 需用户受影响环境 |
 | E 真机底部导航安全区复核 | ⏳ 需用户真机 |
 
 ## 生产发布
 
-本机无服务器访问通道，发布未执行。发布方式沿用既有流程：将 `main@07f22d7` 源码归档解包至 `/opt/cost-book/app`，运行既有发布脚本完成镜像构建、迁移与应用重启，随后验收 healthz / HTTPS 200 / 容器 UID 10001 / 源码标记（含 `form-actions`、`detail-empty-state`、`cardDeleteBlockReason` 等本批标记）。可在用户提供服务器访问方式后由本侧执行，或用户自行运行发布脚本后回填验收结果。
+发布已于 2026-08-29 22:06 由本侧通过 SSH（root@115.159.72.183，用户授权的专用密钥 batch2-deploy@autoclaw）执行完成：
+
+| 步骤 | 结果 |
+| --- | --- |
+| 源码同步 | `main@547c1a7` 归档（LF 规范化，规避 Windows git archive 的 CRLF 转换）解包至 `/opt/cost-book/app`；旧树保留于 `app.old` 供回滚 |
+| release.sh | `deploy/release.sh` 先行规范化为 LF 行尾并提交；服务器端执行成功：镜像构建 47.4s → drizzle migrations applied successfully → app/caddy 重建启动 |
+| 容器验收 | `docker exec deploy-app-1 id` → uid=10001(costbook)；compose ps 三容器 + 既有 site 容器均运行 |
+| 迁移日志 | 仅存在既有 P1 项 OAuth 未配置提示，无迁移错误 |
+| 源码标记 | `form-actions`（layout-unification.css）、`detail-empty-state`×4、`cardDeleteBlockReason`×3、bundle 内 `放弃未保存的凭证`/`保存并继续`/`未入账`/`目标可能偏低` 全部在场 |
+| HTTPS | `api.3dq.site/healthz` → 200 {"status":"ok"}；`app.3dq.site` → 200；新 bundle `index-gDX1IzB_.js` 生效 |
+
+T9-C 容器链路复核：C1 容器身份（UID 10001）✅、C2 迁移后启动正常 ✅；C3 登录态会话与 C4 COS 媒体需登录态操作，与 A 一并待用户配合。
 
 ## QA 证据汇总
 
@@ -59,4 +70,5 @@
 1. 生产发布后按上文标记做源码级验收并回填本记录。
 2. T9 A/C/D/E 四项随用户配合逐项闭环。
 3. 暂缓池（依赖升级矩阵、皮肤收敛、长列表虚拟化、账本拆表）建议作为下一批次输入。
+
 
