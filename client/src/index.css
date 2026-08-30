@@ -1,6 +1,25 @@
 /* 移动端数据优先：首页 Banner 仅承载产品宣传，Logo 旁文字跑马灯仅承载经营提醒，二者不替代经营利润—趋势—预算主线。 */
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
 
+/* ----------------------------------------------------------------------------
+ * Tailwind v4 @theme 桥（与 sd-design-tokens.css 层三同内容，值完全一致，不重复定义冲突工具类）。
+ * 配置核实：main.tsx 以 JS import 先引入 sd-design-tokens.css 再引入本文件；本文件目前未含
+ * `@import "tailwindcss"`，@tailwindcss/vite 会把 @theme 块原样编译进产物，待 CSS 入口接入
+ * Tailwind 时工具类（bg-brand-500 / text-ink / text-muted / bg-surface / bg-canvas /
+ * text-profit / text-cost / text-risk）即由本块与令牌层块合并生效。
+ * -------------------------------------------------------------------------- */
+@theme {
+  --color-brand-500: var(--sdq-blue-500);
+  --color-brand-600: var(--sdq-blue-600);
+  --color-ink: var(--sdq-text-primary);
+  --color-muted: var(--sdq-text-secondary);
+  --color-surface: var(--sdq-bg-surface);
+  --color-canvas: var(--sdq-bg-canvas);
+  --color-profit: var(--sdq-profit);
+  --color-cost: var(--sdq-cost);
+  --color-risk: var(--sdq-risk);
+}
+
 /* 全局数字排版：数字采用等宽特性，避免纵向金额、数量、百分比列随字形产生参差。 */
 :root { --app-copy-muted: #5d738b; --app-copy-subtle: #6b829a; --app-heading-strong: #0b1f3a; }
 .app-content, .selfhost-access { font-variant-numeric: tabular-nums lining-nums; }
