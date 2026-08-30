@@ -225,7 +225,7 @@ describe("首页第一期经营总览", () => {
     renderHome();
 
     await user.click(mainNavigation().getByRole("button", { name: "订单" }));
-    await user.click(screen.getByRole("button", { name: "记录订单" }));
+    await user.click(within(screen.getByTestId("orders-empty")).getByRole("button", { name: "记录订单" }));
     await user.click(screen.getByRole("button", { name: "确认订单并入账" }));
     await user.click(screen.getByRole("button", { name: "返回" }));
     await screen.findByRole("navigation", { name: "主导航" });
@@ -876,7 +876,7 @@ describe("信息架构与入口收口", () => {
     const user = userEvent.setup();
     renderHome();
     await user.click(mainNavigation().getByRole("button", { name: "订单" }));
-    await user.click(screen.getByRole("button", { name: "记录订单" }));
+    await user.click(within(screen.getByTestId("orders-empty")).getByRole("button", { name: "记录订单" }));
 
     expect(screen.getByRole("heading", { name: "记录订单" })).toBeTruthy();
     expect(screen.getByText("请先建商品成本卡")).toBeTruthy();
