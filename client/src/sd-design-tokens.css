@@ -1,35 +1,82 @@
-/* 算得清 SDQ 语义令牌层。
+/* ============================================================================
+ * 算得清 SDQ 设计令牌层（sd-design-tokens.css）
+ * 分层：
+ *   层一 原色阶原语（primitives）——品牌蓝 11 阶 / 中性灰 11 阶 / 语义色 mini 阶
+ *   层二 语义令牌（semantic）——页面消费 --sdq-*，指向层一（视觉近等效 ΔE00≤25）
+ *   层三 Tailwind v4 @theme 桥——把关键令牌暴露为工具类色
  * 仅承载视觉语义，不参与账本、订单、库存或成本计算。
  * VisualSkin 的持久化值保持兼容：soft=清蓝、deep=深蓝、aurora=有限场景增强。
- */
+ * ========================================================================== */
+
+/* ============ 层一：原色阶原语 ============ */
+:root {
+  /* 品牌蓝（11 阶，源 #087ff5 h210，blue-500 #0880f7 与品牌色 Δ2） */
+  --sdq-blue-50: #f3f5f6;
+  --sdq-blue-100: #e5ebf0;
+  --sdq-blue-200: #bfd6ee;
+  --sdq-blue-300: #86bdf3;
+  --sdq-blue-400: #439ef9;
+  --sdq-blue-500: #0880f7;
+  --sdq-blue-600: #056dd4;
+  --sdq-blue-700: #0861ba;
+  --sdq-blue-800: #0e4f90;
+  --sdq-blue-900: #15406b;
+  --sdq-blue-950: #152b42;
+
+  /* 中性灰（11 阶，源 #5d738b 灰系聚类 h215） */
+  --sdq-neutral-50: #f5f7fa;
+  --sdq-neutral-100: #ebf0f4;
+  --sdq-neutral-200: #d9e0e8;
+  --sdq-neutral-300: #bcc6d2;
+  --sdq-neutral-400: #8f9dae;
+  --sdq-neutral-500: #697a8c;
+  --sdq-neutral-600: #576575;
+  --sdq-neutral-700: #45515f;
+  --sdq-neutral-800: #333d47;
+  --sdq-neutral-900: #212830;
+  --sdq-neutral-950: #14191f;
+
+  /* 语义色 mini 阶（success=利润绿 / warning=成本橙 / danger=风险红 / info=信息蓝） */
+  --sdq-success-500: #20a779;
+  --sdq-success-600: #1b8f68;
+  --sdq-warning-500: #f6a623;
+  --sdq-warning-600: #d98d12;
+  --sdq-danger-500: #e8534f;
+  --sdq-danger-600: #d43f3b;
+  --sdq-info-500: #5acbfa;
+  --sdq-info-600: #3cb4ec;
+}
+
+/* ============ 层二：语义令牌（默认浅色） ============ */
+/* 语义色一律指向层一原色阶：与目标色阶 ΔE00≤25 则改用 var() 引用，否则保留原值（行内注明原值便于复核）。 */
 :root {
   color-scheme: light;
-  --sdq-bg-canvas: #f7f9fc;
-  --sdq-bg-surface: #ffffff;
+  --sdq-bg-canvas: var(--sdq-neutral-50);         /* 原 #f7f9fc */
+  --sdq-bg-surface: #ffffff;                       /* 保持纯白，不映射 */
   --sdq-bg-surface-subtle: #f2f7ff;
   --sdq-bg-elevated: #ffffff;
-  --sdq-bg-brand: #087aff;
+  --sdq-bg-brand: var(--sdq-blue-500);             /* 原 #087aff */
   --sdq-bg-brand-soft: #e6f1ff;
   --sdq-bg-warning-soft: #fff4e1;
   --sdq-bg-success-soft: #e8f8f2;
   --sdq-bg-danger-soft: #fdedec;
-  --sdq-text-primary: #1c1c1e;
-  --sdq-text-secondary: #586174;
-  --sdq-text-tertiary: #8b95a7;
+  --sdq-text-primary: var(--sdq-neutral-900);      /* 原 #1c1c1e */
+  --sdq-text-secondary: var(--sdq-neutral-600);    /* 原 #586174 */
+  --sdq-text-tertiary: var(--sdq-neutral-400);     /* 原 #8b95a7 */
   --sdq-text-on-brand: #ffffff;
-  --sdq-border-subtle: #eaecef;
-  --sdq-border-strong: #c9d4e6;
+  --sdq-border-subtle: var(--sdq-neutral-100);     /* 原 #eaecef */
+  --sdq-border-strong: var(--sdq-neutral-300);     /* 原 #c9d4e6 */
   --sdq-shadow-card: 0 4px 16px rgba(20, 50, 90, 0.08);
   --sdq-overlay-scrim: rgba(18, 31, 53, 0.42);
-  --sdq-action-primary: #087aff;
-  --sdq-action-primary-pressed: #0569de;
-  --sdq-income: #087aff;
-  --sdq-cost: #f6a623;
-  --sdq-profit: #20a779;
-  --sdq-risk: #e8534f;
-  --sdq-info: #5acbfa;
-  --sdq-icon-default: #8b95a7;
-  --sdq-icon-disabled: #c9cfd9;
+  --sdq-action-primary: var(--sdq-blue-500);       /* 原 #087aff */
+  --sdq-action-primary-pressed: var(--sdq-blue-600); /* 原 #0569de */
+  --sdq-income: var(--sdq-blue-500);               /* 原 #087aff */
+  --sdq-cost: var(--sdq-warning-500);              /* 原 #f6a623（同值） */
+  --sdq-profit: var(--sdq-success-500);            /* 原 #20a779（同值） */
+  --sdq-risk: var(--sdq-danger-500);               /* 原 #e8534f（同值） */
+  --sdq-info: var(--sdq-info-500);                 /* 原 #5acbfa（同值） */
+  --sdq-icon-default: var(--sdq-neutral-400);      /* 原 #8b95a7 */
+  --sdq-icon-disabled: var(--sdq-neutral-200);     /* 原 #c9cfd9 */
   --sdq-radius-xs: 6px;
   --sdq-radius-sm: 8px;
   --sdq-radius-md: 12px;
@@ -45,33 +92,34 @@
   --sdq-motion-card: 220ms;
 }
 
+/* ============ 层二：语义令牌（skin-deep 深色皮肤，同理重指向层一，ΔE00≤25 才改） ============ */
 .mobile-shell.skin-deep {
   color-scheme: dark;
-  --sdq-bg-canvas: #0b1220;
-  --sdq-bg-surface: #151f31;
+  --sdq-bg-canvas: var(--sdq-neutral-950);         /* 原 #0b1220 */
+  --sdq-bg-surface: #151f31;                        /* 与浅色 bg-surface 同理保留原值（深色表面带品牌蓝调，不落中性阶） */
   --sdq-bg-surface-subtle: #1b2940;
   --sdq-bg-elevated: #202e45;
-  --sdq-bg-brand: #328fff;
+  --sdq-bg-brand: var(--sdq-blue-400);              /* 原 #328fff */
   --sdq-bg-brand-soft: #123b70;
   --sdq-bg-warning-soft: #4a3514;
   --sdq-bg-success-soft: #123b32;
   --sdq-bg-danger-soft: #4a2023;
-  --sdq-text-primary: #f5f8ff;
-  --sdq-text-secondary: #bac5d7;
-  --sdq-text-tertiary: #7f8ba0;
-  --sdq-border-subtle: #2d3a50;
-  --sdq-border-strong: #49607d;
+  --sdq-text-primary: var(--sdq-neutral-50);        /* 原 #f5f8ff */
+  --sdq-text-secondary: var(--sdq-neutral-300);     /* 原 #bac5d7：深色皮肤次级文字近 neutral-300（Δ3.2），非浅色对应的 neutral-600 步 */
+  --sdq-text-tertiary: var(--sdq-neutral-400);      /* 原 #7f8ba0 */
+  --sdq-border-subtle: var(--sdq-neutral-800);      /* 原 #2d3a50 */
+  --sdq-border-strong: var(--sdq-neutral-600);      /* 原 #49607d */
   --sdq-shadow-card: 0 6px 20px rgba(0, 0, 0, 0.24);
   --sdq-overlay-scrim: rgba(0, 0, 0, 0.62);
-  --sdq-action-primary: #328fff;
-  --sdq-action-primary-pressed: #1c79e8;
-  --sdq-income: #5ca7ff;
-  --sdq-cost: #f7ba4b;
-  --sdq-profit: #45c99b;
-  --sdq-risk: #f06b69;
-  --sdq-info: #6bcbfa;
-  --sdq-icon-default: #7f8ba0;
-  --sdq-icon-disabled: #526176;
+  --sdq-action-primary: var(--sdq-blue-400);        /* 原 #328fff */
+  --sdq-action-primary-pressed: var(--sdq-blue-500); /* 原 #1c79e8 */
+  --sdq-income: var(--sdq-blue-400);                /* 原 #5ca7ff */
+  --sdq-cost: var(--sdq-warning-500);               /* 原 #f7ba4b */
+  --sdq-profit: var(--sdq-success-500);             /* 原 #45c99b */
+  --sdq-risk: var(--sdq-danger-500);                /* 原 #f06b69 */
+  --sdq-info: var(--sdq-info-500);                  /* 原 #6bcbfa */
+  --sdq-icon-default: var(--sdq-neutral-400);       /* 原 #7f8ba0 */
+  --sdq-icon-disabled: var(--sdq-neutral-600);      /* 原 #526176 */
 }
 
 /* aurora 保留历史皮肤入口，但只允许改变场景材质，不改变业务语义色。 */
@@ -123,4 +171,23 @@
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }
+}
+
+/* ============ 层三：Tailwind v4 @theme 桥 ============ */
+/* 把关键令牌暴露为工具类色（bg-brand-500 / bg-brand-600 / text-ink / text-muted /
+ * bg-surface / bg-canvas / text-profit / text-cost / text-risk）。
+ * 配置核实：main.tsx 以 JS import 先引入本文件再引入 index.css；index.css 目前未含
+ * `@import "tailwindcss"`（@tailwindcss/vite 将本块原样编译进产物，待入口接入 Tailwind
+ * 即生效）。为避免入口链路问题，index.css 的 @import 之后已镜像同内容（值一致，工具类名
+ * 不重复定义、由 Tailwind 合并去重）。 */
+@theme {
+  --color-brand-500: var(--sdq-blue-500);
+  --color-brand-600: var(--sdq-blue-600);
+  --color-ink: var(--sdq-text-primary);
+  --color-muted: var(--sdq-text-secondary);
+  --color-surface: var(--sdq-bg-surface);
+  --color-canvas: var(--sdq-bg-canvas);
+  --color-profit: var(--sdq-profit);
+  --color-cost: var(--sdq-cost);
+  --color-risk: var(--sdq-risk);
 }
