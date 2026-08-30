@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI 设计升级 · 技能选用建议（算得清，2026-08-30）</title>
+<style>
+:root{--blue:#087ff5;--navy:#0b1836;--ink:#172033;--sub:#5b6b82;--line:#e3eaf3;--bg:#f5f8fc;--ok:#118a55;--warn:#b25e09;--bad:#d92d20}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"MiSans","PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;padding:26px 14px}
+.wrap{max-width:1000px;margin:0 auto}
+.hero{background:linear-gradient(140deg,var(--navy),#1756a6);color:#fff;border-radius:18px;padding:26px;margin-bottom:20px}
+.hero h1{font-size:23px}
+.hero p{color:#c9d9ef;font-size:12.5px;margin-top:6px}
+.hero .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.hero .chips span{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.24);border-radius:99px;padding:3px 12px;font-size:12px}
+section{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
+h2{font-size:16px;color:var(--navy);margin-bottom:12px;padding-left:10px;border-left:4px solid var(--blue)}
+p,li{font-size:13px;color:#33415a}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0}
+th{background:#f0f5fb;text-align:left;padding:7px 10px;border:1px solid var(--line);color:#33415a}
+td{padding:7px 10px;border:1px solid var(--line);vertical-align:top}
+code{background:#eef2f8;border-radius:6px;padding:1px 6px;font-size:11.5px;font-family:Consolas,monospace}
+.tag{display:inline-block;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:700}
+.tag.core{background:#e2f6ec;color:var(--ok)}.tag.aux{background:#e9f3ff;color:#1d4e89}.tag.no{background:#fde8e8;color:var(--bad)}
+.step{display:flex;gap:12px;position:relative;padding-bottom:14px}
+.step:not(:last-child):before{content:"";position:absolute;left:14px;top:30px;bottom:0;width:2px;background:var(--line)}
+.mk{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background:var(--blue)}
+.sb{flex:1;background:#f8fafd;border:1px solid var(--line);border-radius:10px;padding:10px 13px}
+.sb b{font-size:13px;color:var(--navy)}
+.sb p{font-size:12px;margin-top:3px;color:#44536b}
+.decision{background:#fff7f0;border:1px solid #f4ddc2;border-radius:12px;padding:12px 14px;font-size:12.5px;color:#8a5a20;margin-top:14px}
+footer{text-align:center;color:var(--sub);font-size:11.5px;padding:6px 0 20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <h1>UI 设计升级 · 技能选用建议</h1>
+  <p>为「算得清 App 全局 UI 设计升级」筛选可用的 Agent 技能：扫描目录初筛 12 个候选，逐一读取 SKILL.md 确认真实能力，按项目栈（Tailwind 4 + 语义色令牌 + 移动优先产品 UI）映射。</p>
+  <div class="chips"><span>核心 5 个</span><span>辅助 3 个</span><span>不推荐 3 个</span><span>建议四步实施</span></div>
+</div>
+
+<section>
+  <h2>核心推荐（5 个）</h2>
+  <table>
+    <tr><th style="width:210px">技能</th><th>能力</th><th>在算得清升级中的用法</th><th style="width:70px">优先级</th></tr>
+    <tr><td class="num">stitch::extract-design-md</td><td>从现有代码库反向提取设计系统文档（组件/样式/Tailwind 配置/令牌 → DESIGN.md）</td><td><b>第一步基线</b>：生成「设计系统现状」与 docs/design-manual/ 手册对照，找「手册说的 vs 代码做的」差距</td><td><span class="tag core">第 1 步</span></td></tr>
+    <tr><td class="num">color-palette</td><td>从单一品牌色生成 11 阶色阶 + 语义令牌 + 深色变体 + WCAG 对比检查 + Tailwind v4 CSS</td><td>用品牌蓝 #087ff5 生成完整色板，收编散落 CSS 的语义令牌（登录页对比度问题的根治方案）</td><td><span class="tag core">第 2 步</span></td></tr>
+    <tr><td class="num">tailwind-design-system</td><td>Tailwind v4 设计系统：CSS-first 配置、令牌、组件变体、响应式</td><td>本项目正是 Tailwind 4——色阶落成 CSS-first 令牌与组件变体规范</td><td><span class="tag core">第 2 步</span></td></tr>
+    <tr><td class="num">ui-ux-pro-max</td><td>改进现有 UI/UX、设计令牌、组件规格、微文案、a11y、具体代码改动</td><td><b>主工作流</b>：覆盖全量审计 P1 遗留（洞察页渐进信息架构、流水扫描效率、二级表单统一）</td><td><span class="tag core">第 3 步</span></td></tr>
+    <tr><td class="num">accessibility-review</td><td>WCAG 2.1 AA 审计：对比度/键盘/触控目标/读屏</td><td>升级后验收：全站系统化巡检（登录页发现的对比度/触控问题同类复查）</td><td><span class="tag core">第 4 步</span></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>辅助推荐（3 个）</h2>
+  <table>
+    <tr><th style="width:210px">技能</th><th>用法</th><th style="width:190px">备注</th></tr>
+    <tr><td class="num">web-design-engineer</td><td>桌面端左右分栏等高视觉页面改造实施 + 浏览器 QA</td><td>设计工程师视角，React/HTML 产物</td></tr>
+    <tr><td class="num">web-design-reviewer</td><td>升级完成后视觉巡检回归（截图 + DOM 审计 + 修复）</td><td>已在登录页评审验证好用</td></tr>
+    <tr><td class="num">web-perf</td><td>主 bundle >500kB 警告治理（Core Web Vitals：LCP/INP/CLS）</td><td>依赖 Chrome DevTools MCP，本机 mcporter 为空需先配置</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>明确不推荐（3 个）</h2>
+  <table>
+    <tr><th style="width:210px">技能</th><th>原因</th></tr>
+    <tr><td class="num">frontend-page-design</td><td>自述排除 dashboards/产品 UI/多步产品界面，专攻落地页作品集；算得清是产品 UI，不适配</td></tr>
+    <tr><td class="num">motion-graphics</td><td>动态文字/logo 动画属营销物料；产品内受 prefers-reduced-motion 约束价值低</td></tr>
+    <tr><td class="num">muapi-ui-design</td><td>生成高保真 mockup 需外部 muapi.ai API；项目已有明确设计语言与手册</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>建议实施顺序（四步，每步有验收）</h2>
+  <div class="step"><div class="mk">1</div><div class="sb"><b>基线提取（~0.5 天）</b><p>extract-design-md 生成 DESIGN.md 现状 → 与 docs/design-manual/ 手册逐项对照，输出差距清单</p></div></div>
+  <div class="step"><div class="mk">2</div><div class="sb"><b>令牌系统化（~1 天）</b><p>color-palette（品牌蓝 #087ff5 色阶）+ tailwind-design-system（CSS-first 落地）→ 散落 CSS 语义令牌收编</p></div></div>
+  <div class="step"><div class="mk">3</div><div class="sb"><b>页面级改造（2–3 天）</b><p>ui-ux-pro-max 按全量审计 P1 遗留逐页改造（洞察页/流水/二级表单），frontend-design 把质量关，web-design-engineer 做桌面分栏</p></div></div>
+  <div class="step"><div class="mk">4</div><div class="sb"><b>三重验收（~1 天）</b><p>accessibility-review（WCAG AA 全站）+ web-design-reviewer（视觉回归）+ web-perf（bundle/Lighthouse）</p></div></div>
+  <div class="note">执行引擎沿用既有闭环：pi + DeepSeek 逐卡实现 + 主线独立复验 + 三门禁 + Runbook 发布。输入基线：ui-ux-full-audit-2026-08-27（P0 已清、P1/P3 遗留）+ login-page-design-review（方案 A 已上线）+ docs/design-manual/ 设计手册。</div>
+</section>
+
+<section>
+  <h2>决策待定</h2>
+  <div class="decision">升级范围二选一：<b>只做令牌系统化</b>（第 1–2 步，~1 天）或 <b>令牌 + 全站 P1 遗留改造</b>（第 1–4 步，3–5 天）。web-perf 是否纳入取决于是否先配置 Chrome DevTools MCP。</div>
+</section>
+
+<footer>UI 设计升级 · 技能选用建议 · 2026-08-30 · 算得清 docs/</footer>
+</div>
+</body>
+</html>
