@@ -1140,16 +1140,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 0; bo
 .record-export-actions button { min-height: 34px; padding: 0 9px; color: var(--sdq-action-primary); font-size: 10px; font-weight: 750; background: var(--sdq-bg-surface); border: 1px solid var(--sdq-border-strong); border-radius: var(--sdq-radius-sm); }
 .record-list { display: grid; gap: 14px; padding: 0 var(--sdq-space-page-x) 96px; }
 .record-group { overflow: hidden; background: var(--sdq-bg-surface); border: 1px solid var(--sdq-border-subtle); border-radius: var(--sdq-radius-lg); box-shadow: var(--sdq-shadow-card); }
-.record-group h3 { display: flex; justify-content: space-between; padding: 12px 14px 8px; margin: 0; color: var(--sdq-text-primary); font-size: 12px; border-bottom: 1px solid var(--sdq-border-subtle); }
-.record-group h3 span { color: var(--sdq-text-tertiary); font-family: var(--sdq-financial-font); font-size: 10px; font-weight: 500; }
+.record-group h3 { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 14px 8px; margin: 0; color: var(--sdq-text-primary); font-size: 12px; border-bottom: 1px solid var(--sdq-border-subtle); }
+.record-group h3 .record-group-date { font-weight: 700; }
+.record-group h3 .record-group-meta { display: inline-flex; gap: 6px; align-items: baseline; color: var(--sdq-neutral-500); font-family: var(--sdq-financial-font); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.record-group h3 .record-group-meta b { color: var(--sdq-neutral-600); font-weight: 700; }
 .record-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto 16px; gap: 9px; align-items: center; width: 100%; min-height: 70px; padding: 10px 13px; color: var(--sdq-text-primary); text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--sdq-border-subtle); }
 .record-row:last-child { border-bottom: 0; }
 .record-row .record-icon { display: grid; width: 34px; height: 34px; place-items: center; border-radius: var(--sdq-radius-sm); }
-.record-row > span:nth-child(2) { display: grid; gap: 4px; min-width: 0; }
-.record-row > span:nth-child(2) b, .record-row > span:nth-child(2) em { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.record-row > span:nth-child(2) b { font-size: 13px; }
-.record-row > span:nth-child(2) em { color: var(--sdq-text-secondary); font-size: 10px; font-style: normal; }
-.record-row > strong { color: var(--sdq-cost); font-family: var(--sdq-financial-font); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.record-row > .record-main { display: grid; gap: 4px; min-width: 0; }
+.record-row > .record-main b, .record-row > .record-main em { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.record-row > .record-main b { color: var(--sdq-neutral-500); font-size: 12px; font-weight: 600; }
+.record-row > .record-main em { margin-top: 0; color: var(--sdq-neutral-400); font-size: 11px; font-style: normal; }
+.record-row > .record-amount { min-width: 78px; color: var(--sdq-cost); font-family: var(--sdq-financial-font); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-align: right; white-space: nowrap; }
 .record-row > strong.income { color: var(--sdq-income); }
 
 /* 商品：成本卡负责扫描，完整 BOM 与定价继续通过详情下钻。 */
@@ -1191,7 +1193,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 0; bo
   .record-filter, .record-page-heading ~ .search-field, .supplier-search { margin-right: 13px; margin-left: 13px; }
   .record-list, .supplier-list, .app-content :where(.record-form, .profile-settings-form) { padding-right: 13px; padding-left: 13px; }
   .record-row { grid-template-columns: 34px minmax(0, 1fr) auto 13px; gap: 6px; padding-right: 10px; padding-left: 10px; }
-  .record-row > strong { font-size: 11px; }
+  .record-row > .record-amount { min-width: 70px; font-size: 11px; }
   .supplier-list > div:not(.empty-state) { grid-template-columns: 34px minmax(0, 1fr) auto 25px 25px; gap: 5px; }
 }
 
@@ -1205,10 +1207,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 0; bo
 }
 .mobile-shell.skin-deep :where(.record-group h3, .record-row, .supplier-list > div > section b, .prototype-products .product-card-head > div b, .prototype-products .product-kpis label b) { color: var(--sdq-text-primary); }
 .mobile-shell.skin-deep :where(.record-group h3, .record-row, .prototype-products .product-kpis, .supplier-list > div:not(.empty-state)) { border-color: var(--sdq-border-subtle); }
-.mobile-shell.skin-deep :where(.record-group h3 span, .record-row > span:nth-child(2) em, .supplier-list > div > section em, .supplier-list > div > strong small, .prototype-products .product-card-head > div em, .prototype-products .product-kpis label em) { color: var(--sdq-text-secondary); }
+.mobile-shell.skin-deep :where(.record-group h3 span, .record-row > .record-main b, .record-row > .record-main em, .supplier-list > div > section em, .supplier-list > div > strong small, .prototype-products .product-card-head > div em, .prototype-products .product-kpis label em) { color: var(--sdq-text-secondary); }
 .mobile-shell.skin-deep :where(.record-filter, .search-field) { color: var(--sdq-text-secondary); background: var(--sdq-bg-surface); border-color: var(--sdq-border-subtle); }
 .mobile-shell.skin-deep :where(.record-filter .month-filter, .record-filter .month-filter select, .result-summary) { color: var(--sdq-text-secondary); border-color: var(--sdq-border-subtle); }
-.mobile-shell.skin-deep :where(.record-row > strong, .record-row > strong.income, .supplier-list > div > strong, .prototype-products .product-kpis label b) { color: var(--sdq-income); }
+.mobile-shell.skin-deep :where(.record-row > .record-amount, .record-row > strong.income, .supplier-list > div > strong, .prototype-products .product-kpis label b) { color: var(--sdq-income); }
 .mobile-shell.skin-deep :where(.record-row .record-icon, .supplier-list > div > span, .prototype-products .product-card-head > i) { background: var(--sdq-bg-brand-soft); }
 
 
