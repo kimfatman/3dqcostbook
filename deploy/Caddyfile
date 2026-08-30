@@ -20,3 +20,10 @@
   encode zstd gzip
   reverse_proxy app:3000
 }
+
+# 算得清宣传网站（suandeqing-miniprogram-site，容器加入 costbook 网络）
+www.3dq.site {
+  import security_headers
+  encode zstd gzip
+  reverse_proxy site:3000
+}
