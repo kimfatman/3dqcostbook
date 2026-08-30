@@ -43,7 +43,7 @@ function F(parent, name, w, o = {}) {
     f.itemSpacing = o.gap ?? 12;
     f.paddingLeft = f.paddingRight = o.px ?? 16;
     f.paddingTop = f.paddingBottom = o.py ?? 16;
-    if (o.wrap) f.layoutWrap = 'WRAP';
+    if (o.wrap) { f.layoutWrap = 'WRAP'; f.counterAxisSizingMode = 'AUTO'; }
     if (o.align) f.counterAxisAlignItems = o.align;
   }
   f.cornerRadius = o.r ?? 12;
@@ -175,8 +175,8 @@ async function main() {
   const d3 = F(p3, 'dataviz', 900, { gap: 24, px: 0, py: 0 });
   const chartCard = (name, w) => { const c = F(d3, name, w || 400, { gap: 10, fill: '#ffffff', stroke: H.neutral[100], shadow: true }); T(c, name, { size: 12, style: 'Bold', color: H.navy }); return c; };
   // 趋势
-  const t1 = chartCard('趋势图 · 平滑曲线 + 面积 + 关键点');
-  const tv = figma.createVector(); tv.vectorPaths = [{ windingRule: 'NONE', data: 'M 0 60 C 40 40 70 70 100 45 C 130 20 160 55 190 30 C 210 18 230 40 260 25' }]; tv.strokes = solid(H.success); tv.strokeWeight = 3; tv.fills = []; t1.appendChild(tv); tv.resize(260, 70); tv.x = 16; tv.y = 40;
+  const vt1 = chartCard('趋势图 · 平滑曲线 + 面积 + 关键点');
+  const tv = figma.createVector(); tv.vectorPaths = [{ windingRule: 'NONE', data: 'M 0 60 C 40 40 70 70 100 45 C 130 20 160 55 190 30 C 210 18 230 40 260 25' }]; tv.strokes = solid(H.success); tv.strokeWeight = 3; tv.fills = []; vt1.appendChild(tv); tv.resize(260, 70); tv.x = 16; tv.y = 40;
   // 柱状
   const b1 = chartCard('柱状图 · 圆角柱 + 零基线');
   const brow2 = F(b1, 'bars', 340, { dir: 'HORIZONTAL', gap: 13, py: 0, px: 4, align: 'MAX' });
