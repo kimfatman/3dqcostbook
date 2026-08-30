@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>算得清 · 素材图鉴（14 张）</title>
+<style>
+:root{--blue:#087ff5;--navy:#0b1836;--ink:#172033;--sub:#5b6b82;--line:#e3eaf3;--bg:#f5f8fc}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"MiSans","PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;padding:26px 14px}
+.wrap{max-width:1080px;margin:0 auto}
+.hero{background:linear-gradient(140deg,var(--navy),#1756a6);color:#fff;border-radius:18px;padding:24px;margin-bottom:20px}
+.hero h1{font-size:22px}
+.hero p{color:#c9d9ef;font-size:12.5px;margin-top:6px}
+.hero .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.hero .chips span{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.24);border-radius:99px;padding:3px 12px;font-size:12px}
+section{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px}
+h2{font-size:16px;color:var(--navy);margin-bottom:12px;padding-left:10px;border-left:4px solid var(--blue)}
+h2 small{color:var(--sub);font-weight:400;font-size:12px;margin-left:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.card img{width:100%;display:block;background:#f0f3f8;aspect-ratio:auto}
+.card .meta{padding:10px 12px}
+.card .meta b{font-size:12.5px;color:var(--navy);display:block}
+.card .meta span{font-size:11.5px;color:var(--sub)}
+.card .meta code{font-size:10.5px;background:#eef2f8;border-radius:5px;padding:1px 5px}
+.manuals{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.manuals .m{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#f8fafd}
+.manuals .m b{font-size:13px;color:var(--navy)}
+.manuals .m p{font-size:11.5px;color:var(--sub);margin-top:4px}
+.note{background:#f0f7ff;border:1px solid #dceaf7;border-radius:12px;padding:11px 13px;font-size:12px;color:#1d4e89;margin:14px 0}
+footer{text-align:center;color:var(--sub);font-size:11.5px;padding:6px 0 20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <h1>算得清 · 素材图鉴</h1>
+  <p>完整设计手册与素材包（14 张，与 client/public/brand-assets/ 字节级一致，已全部注册于 brand-assets.ts）。分五个分组：品牌 / 图标皮肤 / 应用商店 / 朋友圈 / 公众号。</p>
+  <div class="chips"><span>brand ×3</span><span>ui-reference ×2</span><span>app-store ×5</span><span>moments ×5</span><span>wechat ×1</span></div>
+</div>
+
+<section>
+  <h2>设计文档（本目录 Markdown）</h2>
+  <div class="manuals">
+    <div class="m"><b>设计手册 · 完整版</b><p>品牌、产品、运营与传播一体化总规范。口号：生意算得清，老板更轻松。</p></div>
+    <div class="m"><b>品牌设计规范手册</b><p>蓝色「店铺+加号+等号+微笑曲线」标志与吉祥物「算小胖」。</p></div>
+    <div class="m"><b>UI 图标与交互动效规范</b><p>图标系统与核心动效，iOS/Android/小程序/H5/Web 通用。</p></div>
+    <div class="m"><b>运营海报文案与排版方案</b><p>公众号封面、朋友圈九宫格、社群海报的文案与视觉排版。</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>品牌 brand <small>3 张 · 品牌总览 / 印鉴 / 启动页</small></h2>
+  <div class="grid">
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_整套VI展示板_高清版.png" alt="整套VI展示板"><div class="meta"><b>整套 VI 展示板（高清版）</b><span>viMasterBoard · 品牌总览、Logo、VI、图标和吉祥物参考</span><br><code>2176×1632</code></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_Logo_Mark.png" alt="Logo 印鉴"><div class="meta"><b>Logo 印鉴</b><span>logoMark · 顶部栏、店铺身份卡、小尺寸品牌入口（登录页印鉴即此）</span><br><code>423×402</code></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_Splash_Blue.png" alt="蓝色启动页"><div class="meta"><b>蓝色启动页</b><span>splashBlue · 蓝色渐变启动页与纵向 Logo 组合</span><br><code>1440×2560</code></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>图标 / 皮肤 ui-reference <small>2 张 · 规范板</small></h2>
+  <div class="grid">
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_UI图标与交互动效规范板.png" alt="UI图标与交互动效规范板"><div class="meta"><b>UI 图标与交互动效规范板</b><span>iconMotionBoard · 图标结构、状态色和交互动效参考</span><br><code>2176×1632</code></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_UI皮肤规范展示板.png" alt="UI皮肤规范展示板"><div class="meta"><b>UI 皮肤规范展示板</b><span>skinBoard · 清蓝/深蓝皮肤、数据卡、按钮、状态和图表参考</span><br><code>2176×1632</code></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>应用商店 app-store <small>5 张 · 1440×2560</small></h2>
+  <div class="grid">
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_AppStore_01_经营总览.png" alt="应用商店 经营总览"><div class="meta"><b>01 经营总览</b><span>appstore_overview · 收入/利润</span></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_AppStore_02_库存提醒.png" alt="应用商店 库存提醒"><div class="meta"><b>02 库存提醒</b><span>appstore_inventory · 库存/预警</span></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_AppStore_03_经营趋势.png" alt="应用商店 经营趋势"><div class="meta"><b>03 经营趋势</b><span>appstore_trend · 趋势/图表</span></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_AppStore_04_多门店管理.png" alt="应用商店 多门店管理"><div class="meta"><b>04 多门店管理</b><span>appstore_multistore · 汇总</span></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_AppStore_05_经营提醒.png" alt="应用商店 经营提醒"><div class="meta"><b>05 经营提醒</b><span>appstore_reminder · 提醒/待办</span></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>朋友圈 moments <small>5 张 · 1632×2176</small></h2>
+  <div class="grid">
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_Moments_01_经营总览.png" alt="朋友圈 经营总览"><div class="meta"><b>01 经营总览</b><span>moments_overview · 私域</span></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_Moments_02_库存预警.png" alt="朋友圈 库存预警"><div class="meta"><b>02 库存预警</b><span>moments_inventory · 私域</span></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_Moments_03_经营趋势.png" alt="朋友圈 经营趋势"><div class="meta"><b>03 经营趋势</b><span>moments_trend · 私域</span></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_Moments_04_多门店管理.png" alt="朋友圈 多门店管理"><div class="meta"><b>04 多门店管理</b><span>moments_multistore · 私域</span></div></div>
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_Moments_05_经营提醒.png" alt="朋友圈 经营提醒"><div class="meta"><b>05 经营提醒</b><span>moments_reminder · 私域</span></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>公众号 wechat <small>1 张 · 2560×1440</small></h2>
+  <div class="grid">
+    <div class="card"><img src="../../client/public/brand-assets/SDQ_WeChat_ArticleCover_经营总览.png" alt="公众号文章封面"><div class="meta"><b>公众号文章封面 · 经营总览</b><span>wechat_article_cover</span></div></div>
+  </div>
+</section>
+
+<div class="note">图片本体在 <code>client/public/brand-assets/</code>（与本图鉴相对路径 <code>../../client/public/brand-assets/</code> 引用），注册表在 <code>client/src/lib/brand-assets.ts</code>。本目录只归档设计文档与索引，未重复存放图片。</div>
+
+<footer>算得清 · 设计手册与素材包索引 · 2026-08-30 归档</footer>
+</div>
+</body>
+</html>
