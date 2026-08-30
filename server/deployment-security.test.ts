@@ -16,7 +16,7 @@ describe("生产部署安全基线", () => {
     expect(caddyfile).toContain('Referrer-Policy "strict-origin-when-cross-origin"');
     expect(caddyfile).toContain("frame-ancestors 'none'");
     expect(caddyfile).toContain("object-src 'none'");
-    expect(caddyfile.match(/import security_headers/g)).toHaveLength(2);
+    expect(caddyfile.match(/import security_headers/g)).toHaveLength(3);
   });
 
   it("在构建完成后以受限专用用户运行应用与迁移命令", () => {

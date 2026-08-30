@@ -11,6 +11,9 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script defer src="%VITE_ANALYTICS_ENDPOINT%/umami" data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+    <!-- 接入 umami 访问分析时：不要使用百分号包裹的占位符（如 VITE_ANALYTICS_ENDPOINT，Vite 不替换该语法，
+         会原样进入产物导致每页请求非法 URL 报 ERR_HTTP2_PROTOCOL_ERROR）。
+         应改用 import.meta.env.VITE_ANALYTICS_ENDPOINT 并在 vite 配置中做构建期注入，
+         且未配置时整段脚本不输出。 -->
   </body>
 </html>

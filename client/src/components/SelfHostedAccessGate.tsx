@@ -1,6 +1,7 @@
 import { FormEvent, ReactNode, useState } from "react";
-import { ArrowRight, Check, LockKeyhole, Mail, Phone, ShieldCheck, Store } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, Phone, ShieldCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { brandAssets } from "@/lib/brand-assets";
 
 type Mode = "login" | "register" | "recover";
 type VerificationMethod = "password" | "email" | "sms";
@@ -31,6 +32,8 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const [otpChallenge, setOtpChallenge] = useState<OtpChallenge | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [bootstrapToken, setBootstrapToken] = useState("");
+  const [consentAgreed, setConsentAgreed] = useState(false);
+  const [consentDoc, setConsentDoc] = useState<"terms" | "privacy" | null>(null);
   const bootstrap = trpc.auth.bootstrap.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); await utils.auth.setupStatus.invalidate(); } });
   const login = trpc.auth.login.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
   const register = trpc.auth.registerAndCreateWorkspace.useMutation({ onSuccess: async () => { await utils.auth.me.invalidate(); } });
@@ -48,7 +51,7 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const isOtp = !isBootstrap && method !== "password";
   const isPending = bootstrap.isPending || login.isPending || register.isPending || requestCloudbaseOtp.isPending || loginWithCloudbaseOtp.isPending || registerWithCloudbaseOtp.isPending || resetPasswordWithCloudbaseOtp.isPending;
   const title = isBootstrap ? "初始化管理员" : isRegistering ? "创建你的店铺" : isRecovering ? "重设登录密码" : "欢迎回到店铺";
-  const intro = isBootstrap ? "使用仅在服务器环境中保存的初始化令牌，完成首个管理员工作区设置。" : isRegistering ? "先完成邮箱或手机号验证，再创建你的专属账本。" : isRecovering ? "验证已绑定的邮箱或手机号后，即可设置新的登录密码。" : "可使用密码、邮箱验证码或短信验证码安全登录。";
+  const intro = isBootstrap ? "使用仅在服务器环境中保存的初始化令牌，完成首个管理员工作区设置。" : isRegistering ? "先完成邮箱或手机号验证，再创建你的专属账本。" : isRecovering ? "验证已绑定的邮箱或手机号后，即可设置新的登录密码。" : "可使用密码或验证码安全登录，验证码支持邮箱与短信两种方式。";
   const canUseOtp = isRegistering || isRecovering || isOtp;
   const identityLabel = method === "sms" ? "手机号" : "邮箱";
   const identityValue = method === "sms" ? phone : email;
@@ -116,6 +119,7 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
     event.preventDefault();
     setError("");
     try {
+      if ((isBootstrap || isRegistering) && !consentAgreed) throw new Error("请先阅读并同意服务协议与隐私政策");
       if (isBootstrap) {
         if (!bootstrapToken.trim()) throw new Error("请输入初始化令牌");
         if (!name.trim()) throw new Error("请输入您的姓名");
@@ -138,12 +142,15 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const primaryLabel = isPending ? "正在处理…" : isBootstrap ? "创建管理员并进入" : !canUseOtp ? "登录并继续经营" : !otpChallenge ? `获取${method === "sms" ? "短信" : "邮箱"}验证码` : isRecovering ? "验证并设置新密码" : isRegistering ? "验证并创建店铺" : "验证并登录";
 
   return <main className="selfhost-access">
-    <section className="selfhost-hero" aria-hidden="true"><div className="selfhost-hero-brand"><span className="selfhost-hero-mark"><Store size={19} /></span><b>算得清</b><em>商家经营账本</em></div><div className="selfhost-hero-copy"><span>今日经营，心中有数</span><strong>每一笔成本<br />都算得清楚</strong></div><div className="selfhost-hero-chips"><span><Check size={12} />专属工作区</span><span><Check size={12} />私有数据</span></div><i className="selfhost-orbit one" /><i className="selfhost-orbit two" /></section>
+    <section className="selfhost-hero" aria-hidden="true"><div className="selfhost-hero-brand"><span className="selfhost-hero-mark"><img src={brandAssets.logoMark.path} alt="算得清品牌印鉴" /></span><b>算得清</b><em>商家经营账本</em></div><div className="selfhost-hero-copy"><span>今日经营，心中有数</span><strong>每一笔成本<br />都算得清楚</strong></div><div className="selfhost-hero-chips"><span><Check size={12} />专属工作区</span><span><Check size={12} />私有数据</span></div><i className="selfhost-orbit one" /><i className="selfhost-orbit two" /></section>
     <section className="selfhost-access-card">
-      <div className="selfhost-card-head"><div className="selfhost-brand"><div className="selfhost-brand-mark"><ShieldCheck size={20} /></div><div><p>算得清</p><small>商家成本管家</small></div></div><span className="selfhost-security"><LockKeyhole size={13} />安全登录</span></div>
+      <div className="selfhost-card-head"><div className="selfhost-brand"><div className="selfhost-brand-mark"><img src={brandAssets.logoMark.path} alt="算得清品牌印鉴" /></div><div><p>算得清</p><small>商家成本管家</small></div></div><span className="selfhost-security"><LockKeyhole size={13} />安全登录</span></div>
       <div className="selfhost-title"><h1>{title}</h1><p>{intro}</p></div>
       {!isBootstrap && <div className="selfhost-methods" aria-label="登录验证方式">
         {!isRegistering && !isRecovering && <button type="button" className={method === "password" ? "is-active" : ""} onClick={() => setVerificationMethod("password")}>密码登录</button>}
+        <button type="button" className={method !== "password" ? "is-active" : ""} onClick={() => { if (method === "password") setVerificationMethod("email"); }}>验证码登录</button>
+      </div>}
+      {!isBootstrap && method !== "password" && <div className="selfhost-methods-sub" role="group" aria-label="验证码接收方式">
         <button type="button" className={method === "email" ? "is-active" : ""} onClick={() => setVerificationMethod("email")}><Mail size={14} />邮箱验证码</button>
         <button type="button" className={method === "sms" ? "is-active" : ""} onClick={() => setVerificationMethod("sms")}><Phone size={14} />短信验证码</button>
       </div>}
@@ -155,16 +162,20 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
         {(isBootstrap || isRegistering || isRecovering || method === "password") && <Field label={isRecovering ? "新密码" : "密码"} value={password} onChange={setPassword} type="password" autoComplete={isBootstrap || isRegistering || isRecovering ? "new-password" : "current-password"} placeholder={isBootstrap || isRegistering || isRecovering ? "至少 8 个字符" : "请输入密码"} minLength={isBootstrap || isRegistering || isRecovering ? 8 : undefined} icon={<LockKeyhole size={17} />} />}
         {(isBootstrap || isRegistering || isRecovering) && <p className="selfhost-field-hint">至少 8 位；建议使用长密码短语，并避免常见弱口令。</p>}
         {canUseOtp && otpChallenge && <><Field label="6 位验证码" value={verificationCode} onChange={value => setVerificationCode(value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="请输入验证码" /><p className="selfhost-field-hint">验证码已发送至{identityLabel === "邮箱" ? email.trim() : normalizePhone(phone)}，10 分钟内有效。</p></>}
+        {(isBootstrap || isRegistering) && <label className="selfhost-consent"><input type="checkbox" checked={consentAgreed} onChange={event => setConsentAgreed(event.target.checked)} /><span>我已阅读并同意《<button type="button" onClick={event => { event.preventDefault(); setConsentDoc("terms"); }}>服务协议</button>》与《<button type="button" onClick={event => { event.preventDefault(); setConsentDoc("privacy"); }}>隐私政策</button>》</span></label>}
         {error && <p role="alert" className="selfhost-access-error">{error}</p>}
         <button type="submit" disabled={isPending || (canUseOtp && !otpChallenge && cooldown > 0)} className="selfhost-access-submit"><span>{canUseOtp && !otpChallenge && cooldown > 0 ? `${cooldown} 秒后可重发` : primaryLabel}</span><ArrowRight size={18} /></button>
         {canUseOtp && otpChallenge && <button type="button" className="selfhost-access-switch" disabled={cooldown > 0 || isPending} onClick={() => { setOtpChallenge(null); setVerificationCode(""); }}>{cooldown > 0 ? `${cooldown} 秒后可重新获取` : "重新获取验证码"}</button>}
-        {!isBootstrap && <div className="selfhost-access-links">{!isRegistering && <button type="button" className="selfhost-access-switch" onClick={() => setScreenMode("register")}>还没有账号？创建你的店铺</button>}{!isRecovering && method === "password" && <button type="button" className="selfhost-access-switch" onClick={() => setScreenMode("recover")}>忘记密码？使用验证码重设</button>}{(isRegistering || isRecovering) && <button type="button" className="selfhost-access-switch" onClick={() => setScreenMode("login")}>已有账号？返回登录</button>}</div>}
+        {!isBootstrap && <div className="selfhost-access-links">{!isRegistering && <button type="button" className="selfhost-access-switch" onClick={() => setScreenMode("register")}>还没有账号？创建你的店铺</button>}{!isRegistering && !isRecovering && <button type="button" className="selfhost-access-switch" onClick={() => setScreenMode("recover")}>忘记密码？使用验证码重设</button>}{(isRegistering || isRecovering) && <button type="button" className="selfhost-access-switch" onClick={() => setScreenMode("login")}>已有账号？返回登录</button>}</div>}
       </form>
       {!isBootstrap && <p className="selfhost-card-foot">验证码由 CloudBase 安全服务发送；登录即表示你同意仅在授权设备上使用此工作区。</p>}
+      {consentDoc && <div className="selfhost-consent-dialog" role="alertdialog" aria-modal="true" aria-labelledby="selfhost-consent-title" aria-describedby="selfhost-consent-copy"><div className="selfhost-consent-scrim" aria-hidden="true" onClick={() => setConsentDoc(null)} /><div className="selfhost-consent-card"><h2 id="selfhost-consent-title">{consentDoc === "terms" ? "服务协议摘要" : "隐私政策摘要"}</h2><p id="selfhost-consent-copy">{consentDoc === "terms" ? "《服务协议》正式文本将由运营团队提供。当前为占位摘要：本服务为商家成本管理工具，您需确保提交的经营数据真实合法，并对账号下的操作负责。正式协议上线前，本摘要不构成具有约束力的条款。" : "《隐私政策》正式文本将由运营团队提供。当前为占位摘要：我们仅收集提供本服务所必需的信息（账号、邮箱、手机号与经营数据），数据存储于您部署的服务器环境，未经授权不会向第三方披露。正式政策上线前，本摘要不构成具有约束力的条款。"}</p><button type="button" className="selfhost-consent-close" onClick={() => setConsentDoc(null)}>知道了</button></div></div>}
     </section>
   </main>;
 }
 
 function Field({ label, value, onChange, type = "text", autoComplete, placeholder, minLength, icon, inputMode }: { label: string; value: string; onChange: (value: string) => void; type?: string; autoComplete?: string; placeholder: string; minLength?: number; icon?: ReactNode; inputMode?: "numeric" | "tel" }) {
-  return <label className="selfhost-field"><span>{label}</span><div className="selfhost-input-wrap">{icon}<input value={value} onChange={event => onChange(event.target.value)} type={type} autoComplete={autoComplete} placeholder={placeholder} minLength={minLength} inputMode={inputMode} required /></div></label>;
+  const [visible, setVisible] = useState(false);
+  const isSecret = type === "password" || type === "new-password";
+  return <label className="selfhost-field"><span>{label}</span><div className="selfhost-input-wrap">{icon}<input value={value} onChange={event => onChange(event.target.value)} type={isSecret && visible ? "text" : type} autoComplete={autoComplete} placeholder={placeholder} minLength={minLength} inputMode={inputMode} required />{isSecret && <button type="button" className="selfhost-field-toggle" aria-label={visible ? "隐藏密码" : "显示密码"} onClick={() => setVisible(current => !current)}>{visible ? <EyeOff size={17} /> : <Eye size={17} />}</button>}</div></label>;
 }
