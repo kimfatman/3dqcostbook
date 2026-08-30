@@ -1,0 +1,62 @@
+/* ============================================================================
+ * C7 宽屏策略（审计 P1-8）：移动壳明确居中 + 分析/流水受控双列
+ *
+ * 单一策略：
+ *   · ≥768px 起产品保持「手机」壳——居中、最大宽度 520px；画布以语义令牌
+ *     派生（color-mix 加深 canvas）形成「设备在桌面上」观感，顶部品牌位保留。
+ *   · 洞察根页与经营流水子页（.c7-expandable）在壳内从 520px 平滑过渡到最大
+ *     860px 内容宽：宽度随视口连续变化（min(calc(100% - 48px), 860px)），不新增
+ *     grid 重排，分栏沿用既有卡片的自然宽度规则。
+ *   · <768px 移动端表现零变化；断点沿用现有 media query 风格（min-width）。
+ *
+ * 仅展示层：不改账本/聚合逻辑；全部引用语义令牌（--sdq-*），不新增色值。
+ * 新增类名统一 c7- 前缀：c7-shell-center（壳标记）、c7-expandable（宽内容标记）。
+ * ========================================================================== */
+
+/* ≥768px：壳居中、最大 520px；画布加深为「设备在桌面上」底板 */
+@media (min-width: 768px) {
+  .c7-shell-center {
+    background: color-mix(in srgb, var(--sdq-bg-canvas) 90%, var(--sdq-neutral-950));
+  }
+  .c7-shell-center .app-frame,
+  .c7-shell-center .tabbar {
+    width: min(100%, 520px);
+    max-width: none;
+  }
+  .c7-shell-center .app-frame {
+    border: 1px solid var(--sdq-border-subtle);
+    box-shadow:
+      var(--sdq-shadow-card),
+      0 24px 72px color-mix(in srgb, var(--sdq-neutral-600) 18%, transparent);
+  }
+  /* 工作台在壳内保持单列（520px 下沿用既有双列会挤压），与手机观感一致 */
+  .c7-shell-center .prototype-home.home-redesign {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* 悬浮按钮跟随壳右缘（原 430px/1080px 视口参考会让按钮漂到画布上） */
+  .c7-shell-center .global-record-fab {
+    right: max(16px, calc((100vw - 520px) / 2 + 18px));
+  }
+  .c7-shell-center .floating-add {
+    right: max(20px, calc((100vw - 520px) / 2 + 18px));
+  }
+}
+
+/* ≥768px：洞察 / 流水页壳宽随视口从 520 平滑过渡到最大 860px（受控双列） */
+@media (min-width: 768px) {
+  .c7-shell-center:has(.c7-expandable) .app-frame,
+  .c7-shell-center:has(.c7-expandable) .tabbar {
+    width: min(calc(100% - 48px), 860px);
+  }
+  /* 放开分析页旧 760px 内容上限，让既有卡片按自然宽度成列（不改 grid 规则） */
+  .c7-shell-center:has(.c7-expandable) .prototype-analysis.analysis-profit-page {
+    max-width: none;
+  }
+  /* 宽页悬浮按钮对齐 860 壳右缘（floating-add 保留自身 20px 下限） */
+  .c7-shell-center:has(.c7-expandable) .global-record-fab {
+    right: max(16px, calc((100vw - 860px) / 2 + 18px));
+  }
+  .c7-shell-center:has(.c7-expandable) .floating-add {
+    right: max(20px, calc((100vw - 860px) / 2 + 18px));
+  }
+}
