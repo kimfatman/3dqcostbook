@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录页设计评审报告 · 算得清（2026-08-30）</title>
+<style>
+:root{--blue:#087ff5;--navy:#0b1836;--ink:#172033;--sub:#5b6b82;--line:#e3eaf3;--bg:#f5f8fc;--ok:#118a55;--warn:#b25e09;--bad:#d92d20}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"MiSans","PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;padding:28px 14px}
+.wrap{max-width:980px;margin:0 auto}
+.hero{background:linear-gradient(140deg,var(--navy),#1756a6);color:#fff;border-radius:18px;padding:28px;margin-bottom:20px}
+.hero h1{font-size:24px;letter-spacing:-.02em}
+.hero .sub{color:#b7cae9;font-size:13px;margin-top:6px}
+.hero .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.hero .chips span{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.24);border-radius:99px;padding:3px 12px;font-size:12px}
+section{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
+h2{font-size:17px;color:var(--navy);margin-bottom:12px;padding-left:10px;border-left:4px solid var(--blue)}
+h3{font-size:13.5px;margin:14px 0 6px;color:var(--ink)}
+p,li{font-size:13px;color:#33415a}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0}
+th{background:#f0f5fb;text-align:left;padding:7px 10px;border:1px solid var(--line);color:#33415a}
+td{padding:7px 10px;border:1px solid var(--line);vertical-align:top}
+code{background:#eef2f8;border-radius:6px;padding:1px 6px;font-size:11.5px;font-family:Consolas,monospace;word-break:break-all}
+.tag{display:inline-block;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:700}
+.tag.p1{background:#fde8e8;color:var(--bad)}.tag.p2{background:#fff2dd;color:var(--warn)}.tag.p3{background:#eef1f6;color:var(--sub)}.tag.good{background:#e2f6ec;color:var(--ok)}
+.issue{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.issue h3{margin:0 0 6px}
+.issue p{margin:4px 0;font-size:12.5px}
+.goodlist{list-style:none}
+.goodlist li{padding:7px 0 7px 24px;position:relative;font-size:12.5px;border-bottom:1px dashed var(--line)}
+.goodlist li:before{content:"✓";position:absolute;left:2px;top:6px;color:var(--ok);font-weight:800}
+.goodlist li:last-child{border-bottom:0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.split{grid-template-columns:1fr}}
+.plan{display:flex;gap:12px}
+.plan .box{flex:1;background:#f8fafd;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.plan .box b{color:var(--navy);font-size:13px}
+.plan .box p{font-size:12px;margin-top:4px}
+.note{background:#f0f7ff;border:1px solid #dceaf7;border-radius:12px;padding:11px 13px;font-size:12px;color:#1d4e89;margin-top:10px}
+footer{text-align:center;color:var(--sub);font-size:11.5px;padding:6px 0 22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <h1>登录页设计评审报告</h1>
+  <div class="sub">算得清 · app.3dq.site · SelfHostedAccessGate.tsx · 评审日期 2026-08-30</div>
+  <div class="chips">
+    <span>方法：Playwright 双视口截图 + DOM 程序化审计</span>
+    <span>源码通读 170 行</span>
+    <span>AutoGLM 图像识别（390/1280）</span>
+    <span>发现 14 项：P1×2 · P2×6 · P3×6</span>
+  </div>
+</div>
+
+<section>
+  <h2>结论概要</h2>
+  <p>登录页完成度较高、SaaS 调性正确、安全与可访问性基础扎实（autocomplete 全套、role=alert、OTP 全流程、失败冷却）。主要问题集中在三处：<b>① 一个构建缺陷</b>——分析脚本占位符未解析，全站每页报 HTTP2 协议错误且访问统计失效；<b>② 触控与对比度的可达性短板</b>——Tab 高度 34px、四处文字对比度低于 AA、无密码可见切换、无协议同意环节；<b>③ 桌面端「移动壳居中投屏」</b>——1280px 下 343px 窄卡居中，两侧大留白失衡。</p>
+  <div class="note">评审方法披露：对比度采用「文字色 vs 最近非透明祖先背景」近似计算；深蓝面板内白字的 1.07 读数属算法假阳性已剔除，仅采信浅底文字读数。注册流程未实际提交表单（避免污染生产数据）。</div>
+</section>
+
+<section>
+  <h2>P1 · 应立即修复</h2>
+  <div class="issue">
+    <h3><span class="tag p1">P1-1</span> 分析脚本占位符未解析，全站每页报 HTTP2 协议错误</h3>
+    <p><b>证据：</b>Playwright 六个页面上下文全部捕获 <code>GET https://app.3dq.site/%VITE_ANALYTICS_ENDPOINT%/umami :: net::ERR_HTTP2_PROTOCOL_ERROR</code></p>
+    <p><b>根因：</b><code>client/index.html:14</code> 使用 CRA/Vue CLI 风格的 <code>%VAR%</code> 占位符（继承自 project template，template.json 同款），<b>Vite 构建不替换该语法</b>，原样进入产物</p>
+    <p><b>影响：</b>控制台错误污染排障；umami 访问分析完全失效，运营无数据</p>
+    <p><b>修复：</b>接入 umami 前移除该行；接入时改用 <code>import.meta.env.VITE_ANALYTICS_ENDPOINT</code>（vite define 或构建期 HTML 转换），未配置时整段脚本不输出</p>
+  </div>
+  <div class="issue">
+    <h3><span class="tag p1">P1-2</span> 登录方式三 Tab 平铺拥挤，触控热区不足</h3>
+    <p><b>证据：</b>DOM 实测三 Tab 高度 34px、字号 11px（390px 视口）；图像评审判定「过于拥挤、文字压缩折行风险、点击热区过小」</p>
+    <p><b>修复：</b>合并为「密码登录 / 验证码登录」两维度（验证码内再选邮箱或短信），Tab 高度 ≥44px</p>
+  </div>
+</section>
+
+<section>
+  <h2>P2 · 体验与可达性（6 项）</h2>
+  <table>
+    <tr><th style="width:52px">编号</th><th>问题</th><th>修复建议</th></tr>
+    <tr><td class="num">P2-1</td><td>触控目标不足：方式切换按钮 36px、注册/找回入口 36px（Apple HIG ≥44px）</td><td>高度 ≥44px 或扩大热区</td></tr>
+    <tr><td class="num">P2-2</td><td>文本对比度不足 4 处（AA 4.5:1）：card-foot 10px→2.42:1、副题 10px→3.17:1、11px 标签→3.8:1×2、access-switch 品牌蓝 12px→3.91:1</td><td>文字加深一档或提升字号；switch 是注册/找回主入口必须达标</td></tr>
+    <tr><td class="num">P2-3</td><td>密码无显示/隐藏切换（8 位+长密码短语易输错）</td><td>Field 增加 eye toggle</td></tr>
+    <tr><td class="num">P2-4</td><td>注册/初始化无服务协议与隐私政策同意环节（页脚仅一句话，个保法合规缺口）</td><td>注册表单加勾选 + 协议链接</td></tr>
+    <tr><td class="num">P2-5</td><td>垂直节奏不均：标题区上下留白压抑、hero 与卡片 Z 轴关系弱</td><td>标题-Tab 间距 20→28-32px，卡片阴影加深</td></tr>
+    <tr><td class="num">P2-6</td><td>品牌资产不一致：用通用 lucide 图标（Store/ShieldCheck），未用官方品牌印鉴（app 内已落官方 mark）</td><td>替换为官方店铺印鉴，延续蓝图语言</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>P3 · 打磨项（6 项）</h2>
+  <table>
+    <tr><th style="width:52px">编号</th><th>问题与建议</th></tr>
+    <tr><td class="num">P3-1</td><td>桌面端「移动壳居中投屏」：1280px 下 343px 窄卡居中、大留白失衡（头重脚轻）。建议左右分栏：左品牌区 50–60%（产品渲染图/数据插画/社会证明），右功能区输入框加宽至 360–400px</td></tr>
+    <tr><td class="num">P3-2</td><td>Hero 卖点胶囊（专属工作区/私有数据）在转化场景属干扰信息 → 移除或下放 onboarding</td></tr>
+    <tr><td class="num">P3-3</td><td>主按钮「登录并继续经营 →」移动端偏长（7 字+图标）；桌面评审认为场景感值得保留 → 移动缩短、桌面保留</td></tr>
+    <tr><td class="num">P3-4</td><td>输入框左侧 icon 颜色较深抢 placeholder 焦点 → 透明度降至 30–40%</td></tr>
+    <tr><td class="num">P3-5</td><td>底部备案文字 10px 过小过浅（合规信息需可读）→ ≥11px 且达 AA</td></tr>
+    <tr><td class="num">P3-6</td><td>工程细节：OTP 冷却计时器卸载未清理；登录首字段无 autoFocus（桌面）；login/register/recover 为组件状态不可深链寻址</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>做得好的（改造时保留）</h2>
+  <ul class="goodlist">
+    <li><b>品牌语义呼应：</b>「算得清 ↔ 每一笔成本都算得清楚」直击商家「怕账目混不清」痛点（视觉评审点名表扬）</li>
+    <li><b>信任信号：</b>「安全登录」chip、CloudBase 验证码来源说明、hero 副语</li>
+    <li><b>状态可辨：</b>Tab 选中态色块清晰；Filled 式输入框触控面积大、圆角语言一致</li>
+    <li><b>可访问性基础：</b>autocomplete 全套（email/current-password/new-password/name/one-time-code/tel）、required、role=alert、label 包裹、SMS 自动填充支持</li>
+    <li><b>安全与流程：</b>OTP 全流程（邮箱/短信）+ 60s 冷却 + 10 分钟有效期提示 + 通用错误文案不泄露账号存在性</li>
+  </ul>
+</section>
+
+<section>
+  <h2>改造方向建议</h2>
+  <div class="plan">
+    <div class="box"><b>方案 A · 轻改造（~1 天）</b><p>P1-1 端点修复 + Tab 3→2 + 触控/对比度全达标 + 密码可见切换 + 协议勾选 + 官方印鉴替换。全部为展示层与配置改动。</p></div>
+    <div class="box"><b>方案 B · 含桌面分栏（2–3 天）</b><p>A 全部 + 桌面端左右分栏重造（左品牌叙事：产品渲染图/数据插画/社会证明；右登录区），蓝图视觉语言延伸，~860px 断点切换。</p></div>
+  </div>
+  <p style="margin-top:10px"><b>联动项：</b>改造完成后复测用户设备反馈的「生产登录页无法输入」问题（T9-D，自动化未复现——输入框未禁用/未只读/未遮挡）。</p>
+</section>
+
+<section>
+  <h2>评审覆盖与未验证项</h2>
+  <p>已覆盖：登录（密码模式）双视口截图 + DOM 审计、注册/找回模式源码走查、全部按钮与文本样式、console/网络失败采集。未覆盖：OTP 验证码发送后的真实界面（需真实邮箱/短信触发）、CloudBase 发送成功率、用户设备端输入问题复现（T9-D）。</p>
+</section>
+
+<footer>登录页设计评审报告 · 2026-08-30 · 三路证据交叉（DOM 审计 / 源码走查 / 图像识别）</footer>
+</div>
+</body>
+</html>
