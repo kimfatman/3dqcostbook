@@ -1229,3 +1229,43 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
 .voucher-guard-actions button { min-height: var(--sdq-height-control); border-radius: var(--sdq-radius-sm); font: inherit; font-size: 13px; font-weight: 750; cursor: pointer; }
 .voucher-guard-actions .voucher-guard-stay { color: var(--sdq-text-secondary); background: var(--sdq-bg-surface-subtle); border: 1px solid var(--sdq-border-subtle); }
 .voucher-guard-actions .voucher-guard-leave { color: #fff; background: var(--sdq-risk); border: 1px solid var(--sdq-risk); }
+
+/* C3 洞察页渐进信息架构：首屏两组 + 成本/结构渐进复核区。
+ * 仅做页面级编排（分组标题与可折叠复核容器），不触碰任何卡片内部样式；
+ * 颜色只引用页面语义令牌（--analysis-* → --sdq-*），深色皮肤自动同步。
+ * 同屏同权重卡片收敛为两组：经营利润、趋势与商品毛利。 */
+.analysis-group-title {
+  grid-column: 1 / -1;
+  margin: 6px 16px 0;
+  color: var(--analysis-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  line-height: 1.4;
+}
+
+/* 渐进复核容器：复用 analysis-more 卡片语言，表面/描边/阴影全部指向语义令牌。 */
+.analysis-review {
+  background: var(--analysis-surface);
+  border-color: var(--analysis-line);
+  box-shadow: var(--sdq-shadow-card);
+  overflow: visible;
+}
+.analysis-review .analysis-more-trigger { color: var(--analysis-text); }
+.analysis-review .analysis-more-trigger em { color: var(--analysis-muted); }
+.analysis-review .analysis-more-trigger svg { color: var(--analysis-brand); }
+
+/* 展开后的复核内容：保持既有 analysis-more-content 的栅格与分隔语言。 */
+.analysis-review-content {
+  display: grid;
+  gap: 12px;
+  padding: 0 0 14px;
+  border-top: 1px solid var(--analysis-line);
+}
+.analysis-review-content > .ledger-surface { margin: 0; }
+
+@media (min-width: 768px) {
+  .analysis-group-title,
+  .analysis-profit-page .analysis-waterfall-card,
+  .analysis-profit-page .analysis-profit-sku { grid-column: 1 / -1; }
+}

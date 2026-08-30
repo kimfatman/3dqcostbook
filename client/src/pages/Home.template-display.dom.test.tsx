@@ -89,6 +89,12 @@ async function expandRecordMoreInfo(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: /更多信息/ }));
 }
 
+/** 展开洞察页渐进复核区（成本诊断/结构对照/供应商归属等卡片默认收起，先展开再断言）。 */
+async function expandAnalysisReview(user: ReturnType<typeof userEvent.setup>) {
+  const trigger = screen.getByRole("button", { name: /成本与结构复核/ });
+  if (trigger.getAttribute("aria-expanded") !== "true") await user.click(trigger);
+}
+
 describe("五行业模板的真实页面显示", () => {
   it("沿实际导航切换五个行业，并在成本卡/SKU、资料、预算和分析页显示对应实体、分类与单位", async () => {
     const user = userEvent.setup();
@@ -130,6 +136,7 @@ describe("五行业模板的真实页面显示", () => {
 
       await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
       expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
+      await expandAnalysisReview(user);
       expect(screen.getAllByText(scenario.category).length).toBeGreaterThan(0);
       const detailsTrigger = screen.getByRole("button", { name: /行业参考估算/ });
       if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
@@ -343,10 +350,11 @@ describe("统一账本的真实页面路径", () => {
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
     expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "经营利润" })).toBeTruthy();
+    expect(screen.getAllByRole("heading", { name: "经营利润" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "利润构成" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "利润趋势" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "商品毛利排行" })).toBeTruthy();
+    await expandAnalysisReview(user);
     const costStructure = screen.getByText("钱花在哪里").closest("section");
     expect(costStructure).toBeTruthy();
     const categoryDrilldown = within(costStructure as HTMLElement).getAllByRole("button", { name: /平台佣金/ })[0];
@@ -419,6 +427,7 @@ describe("成本分析供应商排行与结构对照", () => {
     renderHome();
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
     expect(screen.getByText("尚未关联供应商支出")).toBeTruthy();
     expect(document.querySelector(".supplier-lollipop")).toBeNull();
     expect(screen.getByRole("button", { name: /在成本记录里关联供应商/ })).toBeTruthy();
@@ -435,6 +444,7 @@ describe("成本分析供应商排行与结构对照", () => {
     const user = userEvent.setup();
     renderHome();
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
 
     expect(document.querySelector(".template-cost-pie .analysis-cost-pie")).toBeTruthy();
     const comparison = document.querySelector(".template-grouped-structure");
@@ -466,6 +476,7 @@ describe("成本分析供应商排行与结构对照", () => {
     window.history.replaceState({}, "", "/");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
 
     expect(screen.getByRole("heading", { name: "成本归属 · 供应商" })).toBeTruthy();
     expect(document.querySelector(".template-cost-pie .analysis-cost-pie")).toBeTruthy();
@@ -501,6 +512,7 @@ describe("间接费用项与智能定价的统一布局", () => {
     renderHome();
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
     await user.click(screen.getByRole("button", { name: /间接费用项/ }));
 
     expect(screen.getByRole("heading", { name: "间接费用项" })).toBeTruthy();
@@ -545,9 +557,10 @@ describe("全站信息精简", () => {
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
     expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
+    await expandAnalysisReview(user);
     expect(screen.getByRole("button", { name: /设置本月销售目标/ })).toBeTruthy();
     expect(screen.queryByText("先看结论，再核对最需要处理的一项成本。")).toBeNull();
-    expect(screen.getByRole("heading", { name: "经营利润" })).toBeTruthy();
+    expect(screen.getAllByRole("heading", { name: "经营利润" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "成本诊断" })).toBeTruthy();
   });
 });
@@ -558,6 +571,7 @@ describe("成本诊断主题", () => {
     renderHome();
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
 
     expect(screen.getByText("优先核对")).toBeTruthy();
     expect(screen.getByText(/商品采购.*占正向成本最多/)).toBeTruthy();
@@ -577,6 +591,7 @@ describe("成本诊断信息收束", () => {
     const user = userEvent.setup();
     renderHome();
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
 
     const comparison = document.querySelector(".template-grouped-structure") as HTMLElement;
     expect(comparison).toBeTruthy();
@@ -601,6 +616,7 @@ describe("成本诊断信息收束", () => {
     const user = userEvent.setup();
     renderHome();
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
 
     const comparison = document.querySelector(".template-grouped-structure") as HTMLElement;
     expect(comparison).toBeTruthy();
@@ -612,6 +628,7 @@ describe("成本诊断信息收束", () => {
     const user = userEvent.setup();
     renderHome();
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
 
     const detailsTrigger = screen.getByRole("button", { name: /行业参考估算/ });
     expect(detailsTrigger.textContent).toContain("不计入利润");
@@ -654,6 +671,7 @@ describe("Dycharts 模板化图表信息层级", () => {
     await user.click(screen.getByRole("button", { name: "返回" }));
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
     expect(document.querySelector('[data-chart-template="rank"]')).toBeTruthy();
     expect(document.querySelector('[data-chart-template="pie"]')).toBeTruthy();
     expect(document.querySelector('[data-chart-template="grouped-bars"]')).toBeTruthy();
@@ -716,6 +734,7 @@ describe("第一批范围、待办与成本快照表达", () => {
     renderHome();
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
     expect(screen.getByText(/目标可能偏低，建议调整下月目标/)).toBeTruthy();
     const review = screen.getByRole("button", { name: /复核目标/ });
     await user.click(review);
@@ -830,6 +849,7 @@ describe("信息架构与入口收口", () => {
     renderHome();
 
     await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+    await expandAnalysisReview(user);
     expect(screen.getByRole("heading", { name: "经营报表" })).toBeTruthy();
     const allReportsButton = document.querySelector<HTMLButtonElement>(".analysis-report-hub .analysis-card-head > button");
     expect(allReportsButton).toBeTruthy();
