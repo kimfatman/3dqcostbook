@@ -1,7 +1,8 @@
-{
+﻿{
   "name": "算得清 Design System Builder",
   "api": "1.0.0",
   "main": "code.js",
   "editorType": ["figma"],
-  "networkAccess": "none"
+  "networkAccess": { "allowedDomains": [], "reasoning": "Plugin runs fully offline; no network access needed." }
 }
+
