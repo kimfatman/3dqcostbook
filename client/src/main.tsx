@@ -9,6 +9,7 @@ import { startLogin } from "./const";
 import "./sd-design-tokens.css";
 import "./index.css";
 import "./layout-unification.css";
+import "./widescreen-c7.css";
 
 const queryClient = new QueryClient();
 const isSelfHosted = import.meta.env.VITE_SELF_HOSTED === "true";
