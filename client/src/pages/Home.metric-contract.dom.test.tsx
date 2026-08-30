@@ -172,6 +172,9 @@ describe("销售目标超额建议", () => {
       const user = userEvent.setup();
       renderHome();
       await user.click(mainNavigation().getByRole("button", { name: "洞察" }));
+      // 销售目标卡位于渐进复核区，先展开再断言数据（展开不影响数据本身）
+      const reviewTrigger = screen.getByRole("button", { name: /成本与结构复核/ });
+      if (reviewTrigger.getAttribute("aria-expanded") !== "true") await user.click(reviewTrigger);
 
       const ringRate = document.querySelector(".sales-target-ring b")?.textContent;
       expect(ringRate).toBe(`${rate}%`);
