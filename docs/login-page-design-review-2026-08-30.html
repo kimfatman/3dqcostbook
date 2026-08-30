@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -51,7 +51,7 @@ footer{text-align:center;color:var(--sub);font-size:11.5px;padding:6px 0 22px}
     <span>方法：Playwright 双视口截图 + DOM 程序化审计</span>
     <span>源码通读 170 行</span>
     <span>AutoGLM 图像识别（390/1280）</span>
-    <span>发现 14 项：P1×2 · P2×6 · P3×6</span>
+    <span>发现 15 项：P1×2 · P2×7 · P3×6</span>
   </div>
 </div>
 
@@ -87,6 +87,7 @@ footer{text-align:center;color:var(--sub);font-size:11.5px;padding:6px 0 22px}
     <tr><td class="num">P2-4</td><td>注册/初始化无服务协议与隐私政策同意环节（页脚仅一句话，个保法合规缺口）</td><td>注册表单加勾选 + 协议链接</td></tr>
     <tr><td class="num">P2-5</td><td>垂直节奏不均：标题区上下留白压抑、hero 与卡片 Z 轴关系弱</td><td>标题-Tab 间距 20→28-32px，卡片阴影加深</td></tr>
     <tr><td class="num">P2-6</td><td>品牌资产不一致：用通用 lucide 图标（Store/ShieldCheck），未用官方品牌印鉴（app 内已落官方 mark）</td><td>替换为官方店铺印鉴，延续蓝图语言</td></tr>
+    <tr><td class="num">P2-7</td><td><b>验证码登录模式下「忘记密码」入口消失</b>（代码条件 method==="password" 才渲染；实测 OTP 模式入口 count=0）</td><td>找回入口在所有模式常驻（找回本就依赖 OTP，验证码模式更需要它）</td></tr>
   </table>
 </section>
 
@@ -132,3 +133,4 @@ footer{text-align:center;color:var(--sub);font-size:11.5px;padding:6px 0 22px}
 </div>
 </body>
 </html>
+
