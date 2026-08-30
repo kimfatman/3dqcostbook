@@ -141,6 +141,11 @@ function Highlight({ value, query }: { value: string; query: string }) {
   const end = start + keyword.length;
   return <>{value.slice(0, start)}<mark>{value.slice(start, end)}</mark>{value.slice(end)}</>;
 }
+/** C5：管理列表行的行内『更多』菜单——复用 T2 的 more-trigger / detail-more-menu 交互语言，仅承载展示层交互。 */
+function ListRowMoreMenu({ id, editLabel, deleteLabel, onEdit, onDelete }: { id: string; editLabel: string; deleteLabel: string; onEdit: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  return <span className="row-more" data-testid={`row-more-${id}`}><button type="button" className="more-trigger row-more-trigger" aria-expanded={open} aria-controls={`row-more-${id}`} aria-label="更多操作" onClick={(event) => { event.stopPropagation(); setOpen((value) => !value); }}><MoreHorizontal size={16} /></button>{open && <div className="detail-more-menu" id={`row-more-${id}`} onClick={(event) => event.stopPropagation()}><button type="button" onClick={() => { setOpen(false); onEdit(); }}><Pencil size={15} />{editLabel}</button><button type="button" className="danger" onClick={() => { setOpen(false); onDelete(); }}><Trash2 size={15} />{deleteLabel}</button></div>}</span>;
+}
 function EquationResult({ firstLabel, firstValue, secondLabel, secondValue, resultLabel, resultValue, detail }: { firstLabel: string; firstValue: string; secondLabel: string; secondValue: string; resultLabel: string; resultValue: string; detail: string }) {
   return <section className="equation-result"><span>本期核算</span><div><label><em>{firstLabel}</em><b>{firstValue}</b></label><i>−</i><label><em>{secondLabel}</em><b>{secondValue}</b></label><i>＝</i><label className="equation-outcome"><em>{resultLabel}</em><b>{resultValue}</b></label></div><p>{detail}</p></section>;
 }
@@ -1418,7 +1423,7 @@ export default function Home() {
   }
 
   function ReportsPage() {
-    return <><section className="sub-intro compact"><span>{template.label} · 正式月度报表</span><h1>经营报表</h1><p>实时洞察用于当期经营判断；经营报表可按月封存，并保留当期行业与分类快照。</p></section><div className="report-list">{reports.map((report) => <button key={report.id} onClick={() => openReport(report.id)}><span><FileText size={20} /></span><div><b>{report.month.replace("-", " 年 ")} 月经营报表</b><em>{report.status === "closed" ? "已封存快照" : "实时草稿 · 可封存"} · 支出 {yuan(report.cost)} · 净营收 {yuan(report.revenue)}</em></div><strong>{report.grossMarginRate}%<small>毛利率</small></strong><ChevronRight size={16} /></button>)}</div></>;
+    return <><section className="sub-intro compact"><span>{template.label} · 正式月度报表</span><h1>经营报表</h1><p>实时洞察用于当期经营判断；经营报表可按月封存，并保留当期行业与分类快照。</p></section><div className="report-list">{reports.map((report) => { const operatingProfit = Number.isFinite(report.revenue) && Number.isFinite(report.cost) ? report.revenue - report.cost : Number.NaN; return <button key={report.id} className="report-row" onClick={() => openReport(report.id)}><span><FileText size={20} /></span><div><b>{report.month.replace("-", " 年 ")} 月经营报表</b><em>{report.status === "closed" ? "已封存快照" : "实时草稿 · 可封存"} · 支出 {yuan(report.cost)} · 净营收 {yuan(report.revenue)}</em><em className="report-overview" data-testid={`report-overview-${report.id}`}>净营收 {Number.isFinite(report.revenue) ? yuan(report.revenue) : "—"} · 经营利润 {Number.isFinite(operatingProfit) ? yuan(operatingProfit) : "—"}</em></div><strong>{report.grossMarginRate}%<small>毛利率</small></strong><ChevronRight size={16} /></button>; })}</div></>;
   }
 
   function exportReportCsv(report: Report) {
@@ -1479,7 +1484,7 @@ export default function Home() {
   function SuppliersPage() {
     const { own: ownSuppliers, shared: sharedSuppliers } = groupSuppliers({ suppliers, query: supplierSearch, categoryLabels: new Map(Array.from(categoryByKey.entries()).map(([key, category]) => [key, category.label])) });
     const hasVisibleSuppliers = ownSuppliers.length + sharedSuppliers.length > 0;
-    const supplierRow = (supplier: typeof suppliers[number]) => { const category = categoryByKey.get(supplier.categoryKey); return <div key={supplier.id}><span>{supplier.name.slice(0, 1)}</span><section><b>{supplier.name}</b><em>{category?.label || "未分类"} · {supplier.contact || "未设置联系人"}</em></section><strong>{yuan(supplier.spend)}<small>{supplier.orders} 笔</small></strong><button onClick={() => { setSupplierEditId(supplier.id); goSub("supplierForm"); }} aria-label={`编辑供应商 ${supplier.name}`}><Pencil size={15} /></button><button onClick={() => deleteSupplier(supplier.id, supplier.name)} aria-label={`删除供应商 ${supplier.name}`}><Trash2 size={16} /></button></div>; };
+    const supplierRow = (supplier: typeof suppliers[number]) => { const category = categoryByKey.get(supplier.categoryKey); const openEdit = () => { setSupplierEditId(supplier.id); goSub("supplierForm"); }; return <div key={supplier.id} className="manage-row" role="button" tabIndex={0} aria-label={`编辑供应商 ${supplier.name}`} onClick={openEdit} onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); openEdit(); } }}><span>{supplier.name.slice(0, 1)}</span><section><b>{supplier.name}</b><em>{category?.label || "未分类"} · {supplier.contact || "未设置联系人"}</em></section><strong>{yuan(supplier.spend)}<small>{supplier.orders} 笔</small></strong><ListRowMoreMenu id={`supplier-${supplier.id}`} editLabel="编辑供应商" deleteLabel="删除供应商" onEdit={openEdit} onDelete={() => deleteSupplier(supplier.id, supplier.name)} /></div>; };
     return <>
       <section className="sub-intro compact"><span>{template.label} · 采购协同</span><h1>供应商</h1><p>供应商按行业范围关联；共享供应商可在多个行业账本中复用。</p></section>
       <label className="search-field supplier-search"><Search size={16} /><input value={supplierSearch} onChange={(event) => setSupplierSearch(event.target.value)} placeholder="搜索供应商、联系人或分类" /></label>
@@ -1494,7 +1499,7 @@ export default function Home() {
   }
 
   function CategoriesPage() {
-    return <><section className="sub-intro compact"><span>{template.label} · 账本口径</span><h1>分类管理</h1><p>分类会同步影响记账归集、成本构成、报表和隐性成本模型。</p></section><div className="category-manage-list">{categories.map((category) => <div key={category.id}><i style={{ background: category.color }} /><span><b>{category.label}</b><em>{category.hint}</em></span><button onClick={() => { setCategoryEditId(category.id); goSub("categoryForm"); }} aria-label={`编辑分类 ${category.label}`}><Pencil size={15} /></button><button onClick={() => deleteCategory(category.id, category.label)} aria-label={`删除分类 ${category.label}`}><Trash2 size={16} /></button></div>)}</div><button className="fixed-primary" onClick={() => { setCategoryEditId(null); goSub("categoryForm"); }}><Plus size={18} />新增分类</button></>;
+    return <><section className="sub-intro compact"><span>{template.label} · 账本口径</span><h1>分类管理</h1><p>分类会同步影响记账归集、成本构成、报表和隐性成本模型。</p></section><div className="category-manage-list">{categories.map((category) => { const openEdit = () => { setCategoryEditId(category.id); goSub("categoryForm"); }; return <div key={category.id} className="manage-row" role="button" tabIndex={0} aria-label={`编辑分类 ${category.label}`} onClick={openEdit} onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); openEdit(); } }}><i style={{ background: category.color }} /><span><b>{category.label}</b><em>{category.hint}</em></span><ListRowMoreMenu id={`category-${category.id}`} editLabel="编辑分类" deleteLabel="删除分类" onEdit={openEdit} onDelete={() => deleteCategory(category.id, category.label)} /></div>; })}</div><button className="fixed-primary" onClick={() => { setCategoryEditId(null); goSub("categoryForm"); }}><Plus size={18} />新增分类</button></>;
   }
 
   function CategoryFormPage() {

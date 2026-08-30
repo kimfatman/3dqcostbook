@@ -1271,3 +1271,147 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
   .analysis-profit-page .analysis-waterfall-card,
   .analysis-profit-page .analysis-profit-sku { grid-column: 1 / -1; }
 }
+
+/* ============================================================================
+ * C5 管理列表行收敛（P1-5）：报表速览行 + 供应商/分类行主进入点与行内更多菜单。
+ * 仅展示层：整行点击进编辑/详情；编辑/删除收进 more-trigger / detail-more-menu
+ * （复用 T2 交互语言）；删除确认与占用校验行为不变。
+ * 颜色只引用语义令牌（--sdq-*），不新增色值；字号统一主 13px / 次 11px。
+ * ========================================================================== */
+
+/* 行收敛：主进入点（整行点击）+ 行内更多入口；统一 min-height 与语义主/次文字。 */
+.supplier-list > div:not(.empty-state),
+.category-manage-list > div:not(.empty-state) {
+  grid-template-columns: 38px minmax(0, 1fr) auto 44px;
+  gap: 8px;
+  min-height: 72px;
+  cursor: pointer;
+}
+.category-manage-list > div:not(.empty-state) {
+  grid-template-columns: 9px minmax(0, 1fr) 44px;
+  gap: 10px;
+}
+.report-list > button {
+  min-height: 72px;
+}
+
+/* 主文字 13px / 次文字 11px（语义令牌）。 */
+.report-list > button > div,
+.supplier-list > div:not(.empty-state) > section,
+.category-manage-list > div:not(.empty-state) > span:not(.row-more) {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.report-list > button b,
+.supplier-list > div:not(.empty-state) > section b,
+.category-manage-list > div:not(.empty-state) > span:not(.row-more) b {
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.report-list > button em,
+.supplier-list > div:not(.empty-state) > section em,
+.category-manage-list > div:not(.empty-state) > span:not(.row-more) em {
+  margin-top: 0;
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  font-style: normal;
+}
+.report-list > button b,
+.report-list > button em,
+.supplier-list > div:not(.empty-state) > section b,
+.supplier-list > div:not(.empty-state) > section em,
+.category-manage-list > div:not(.empty-state) > span:not(.row-more) b,
+.category-manage-list > div:not(.empty-state) > span:not(.row-more) em {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 报表速览行：追加在既有信息之下，等宽数字便于横向比较；空值显示 —。 */
+.report-list .report-overview {
+  color: var(--sdq-text-secondary);
+  font-family: var(--sdq-financial-font);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* 金额右对齐等宽（tabular），沿用金融数字字体。 */
+.report-list > button > strong,
+.supplier-list > div:not(.empty-state) > strong {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.report-list > button > strong small,
+.supplier-list > div:not(.empty-state) > strong small {
+  color: var(--sdq-text-tertiary);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* 行内更多菜单：触发按钮作为该行唯一次级操作；菜单展开占满整行（T2 语言）。 */
+.supplier-list > div:not(.empty-state) > .row-more,
+.category-manage-list > div:not(.empty-state) > .row-more {
+  display: contents;
+}
+.supplier-list .row-more-trigger,
+.category-manage-list .row-more-trigger {
+  color: var(--sdq-icon-default) !important;
+  background: var(--sdq-bg-surface-subtle) !important;
+  border-radius: var(--sdq-radius-sm) !important;
+}
+.supplier-list .row-more-trigger:hover,
+.supplier-list .row-more-trigger:focus-visible,
+.category-manage-list .row-more-trigger:hover,
+.category-manage-list .row-more-trigger:focus-visible {
+  color: var(--sdq-action-primary) !important;
+  background: var(--sdq-bg-brand-soft) !important;
+}
+.supplier-list .detail-more-menu,
+.category-manage-list .detail-more-menu {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  background: var(--sdq-bg-surface-subtle);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-md);
+}
+.supplier-list .detail-more-menu button,
+.category-manage-list .detail-more-menu button {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 40px;
+  padding: 0 12px !important;
+  color: var(--sdq-text-primary) !important;
+  background: var(--sdq-bg-surface) !important;
+  border: 0 !important;
+  border-radius: var(--sdq-radius-sm) !important;
+  font-size: 13px;
+  font-weight: 700;
+}
+.supplier-list .detail-more-menu button.danger,
+.category-manage-list .detail-more-menu button.danger {
+  color: var(--sdq-risk) !important;
+}
+
+/* 按压反馈与键盘焦点（沿用全站 focus-visible 语言）。 */
+.supplier-list > div:not(.empty-state):active,
+.category-manage-list > div:not(.empty-state):active {
+  transform: scale(.98);
+}
+.supplier-list > div:not(.empty-state):focus-visible,
+.category-manage-list > div:not(.empty-state):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sdq-action-primary) 24%, transparent);
+  outline-offset: -2px;
+}
