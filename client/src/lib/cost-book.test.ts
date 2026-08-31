@@ -115,3 +115,19 @@ describe("成本池状态级分摊", () => {
     expect(removed.orders[0].lines[0].unitCostFen).toBe(3290);
   });
 });
+
+describe("批次8 视觉皮肤校验", () => {
+  it("normalizeState 保留 5 种合法皮肤（soft/deep/aurora/midnight/forest）", () => {
+    for (const skin of ["soft", "deep", "aurora", "midnight", "forest"]) {
+      const state = normalizeState({ workspace: { visualSkin: skin } });
+      expect(state.workspace.visualSkin).toBe(skin);
+    }
+  });
+
+  it("normalizeState 对未知皮肤值回退默认 soft，保证兼容旧数据", () => {
+    const state = normalizeState({ workspace: { visualSkin: "neon-rainbow" } });
+    expect(state.workspace.visualSkin).toBe("soft");
+    const empty = normalizeState({ workspace: {} });
+    expect(empty.workspace.visualSkin).toBe("soft");
+  });
+});

@@ -1419,3 +1419,11 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
   outline: 3px solid color-mix(in srgb, var(--sdq-action-primary) 24%, transparent);
   outline-offset: -2px;
 }
+
+/* 皮肤切换过渡动画（批次8：统一切换机制）：仅对背景/边框/文字色做过渡，避免影响 transform/opacity 性能 */
+.mobile-shell {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.mobile-shell * {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}

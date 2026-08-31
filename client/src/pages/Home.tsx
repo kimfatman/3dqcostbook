@@ -134,6 +134,8 @@ const visualSkinOptions: VisualSkinOption[] = [
   { id: "soft", label: "柔光材质工作台", detail: "冷白矿物底板 · 陶瓷数据面 · 冰蓝焦点层", material: "mineral" },
   { id: "aurora", label: "极光玻璃工作台", detail: "冰雾玻璃 · 蓝紫折射 · 轻盈浮层", material: "aurora" },
   { id: "deep", label: "深海展示舱", detail: "深海环境 · 悬浮信息舱 · 冷光图表", material: "deep" },
+  { id: "midnight", label: "午夜黑展示舱", detail: "纯黑环境 · 极简信息舱 · 沉浸深色", material: "deep" },
+  { id: "forest", label: "森林绿工作台", detail: "森林绿品牌 · 清爽浅色 · 自然底色", material: "mineral" },
 ];
 function Highlight({ value, query }: { value: string; query: string }) {
   const keyword = query.trim();
@@ -559,11 +561,6 @@ export default function Home() {
     return data as { id: string; url: string };
   }
 
-  useEffect(() => {
-    const shell = document.querySelector(".mobile-shell");
-    shell?.classList.remove("skin-aurora", "skin-soft", "skin-deep");
-    shell?.classList.add(`skin-${book.visualSkin}`);
-  }, [book.visualSkin]);
 
   const { template, categories, records, cards, skus, skuMetrics, orders, refunds, suppliers, reports, totals, trend, currentPeriod, channelTemplates, orderWarnings, salesTarget, healthSettings, indirectCostPools, indirectCostAllocations, indirectCostUnitFenByCard } = book;
   const cardCopy = costCardDisplayCopy(template);
@@ -1567,7 +1564,7 @@ export default function Home() {
   // C7 宽屏策略（P1-8）：壳常驻 c7-shell-center（≥768px 居中、最大 520px）；
   // 洞察根页与经营流水子页附加 c7-expandable，允许壳内内容宽平滑过渡到 860px。
   const isWideContent = (!isSub && tab === "analysis") || subPage === "records";
-  return <div className="mobile-shell c7-shell-center"><div className="app-frame">{renderHeader()}<main className={`${isSub ? "app-content sub-content" : "app-content"}${isWideContent ? " c7-expandable" : ""}`}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}{unsavedVoucherLeave && <div className="voucher-guard-layer" role="alertdialog" aria-modal="true" aria-labelledby="voucher-guard-title" aria-describedby="voucher-guard-copy"><div className="voucher-guard-scrim" aria-hidden="true" onClick={cancelVoucherLeave} /><div className="voucher-guard-card"><CircleAlert size={22} aria-hidden="true" /><h2 id="voucher-guard-title">放弃未保存的凭证？</h2><p id="voucher-guard-copy">已上传的凭证图片尚未随流水保存，离开后将不保留。服务器暂存文件将按策略自动清理。</p><div className="voucher-guard-actions"><button type="button" className="voucher-guard-stay" onClick={cancelVoucherLeave}>留在本页</button><button type="button" className="voucher-guard-leave" onClick={discardVoucherAndLeave}>放弃凭证并离开</button></div></div></div>}</div></div>;
+  return <div className={`mobile-shell c7-shell-center skin-${book.visualSkin}`}><div className="app-frame">{renderHeader()}<main className={`${isSub ? "app-content sub-content" : "app-content"}${isWideContent ? " c7-expandable" : ""}`}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}{unsavedVoucherLeave && <div className="voucher-guard-layer" role="alertdialog" aria-modal="true" aria-labelledby="voucher-guard-title" aria-describedby="voucher-guard-copy"><div className="voucher-guard-scrim" aria-hidden="true" onClick={cancelVoucherLeave} /><div className="voucher-guard-card"><CircleAlert size={22} aria-hidden="true" /><h2 id="voucher-guard-title">放弃未保存的凭证？</h2><p id="voucher-guard-copy">已上传的凭证图片尚未随流水保存，离开后将不保留。服务器暂存文件将按策略自动清理。</p><div className="voucher-guard-actions"><button type="button" className="voucher-guard-stay" onClick={cancelVoucherLeave}>留在本页</button><button type="button" className="voucher-guard-leave" onClick={discardVoucherAndLeave}>放弃凭证并离开</button></div></div></div>}</div></div>;
 }
 
 function useCloudBookSync(book: ReturnType<typeof useCostBook>) {
