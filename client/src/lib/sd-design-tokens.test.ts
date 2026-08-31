@@ -117,7 +117,75 @@ describe("SDQ 设计令牌一致性（批次6 令牌收敛 + 批次7 拆分）",
     expect(midnight).toContain("--sdq-bg-canvas: #000000");
     expect(midnight).toContain("--sdq-bg-surface: #111111");
     const forest = readFileSync(join(skinsDir, "forest.css"), "utf8");
-    expect(forest).toContain("--sdq-action-primary: #20a779");
+    expect(forest).toContain("--sdq-action-primary: #17805e");
     expect(forest).toContain("--sdq-profit: #20a779");
+  });
+
+  /* ============ 批次10：WCAG AA 对比度验证 ============ */
+  function hexToLuminance(hex: string): number {
+    const h = hex.replace("#", "");
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+    const f = (v: number) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  }
+  function contrastRatio(a: string, b: string): number {
+    const la = hexToLuminance(a);
+    const lb = hexToLuminance(b);
+    const [hi, lo] = la > lb ? [la, lb] : [lb, la];
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  function buildTokenMap() {
+    const primitives = new Map<string, string>();
+    for (const m of readFileSync(join(tokensDir, "primitives.css"), "utf8").matchAll(/(--sdq-[a-z0-9-]+)\s*:\s*([^;]+);/g)) {
+      primitives.set(m[1], m[2].trim());
+    }
+    const resolve = (value: string, local: Map<string, string>): string => {
+      const m = value.match(/^var\((--sdq-[a-z0-9-]+)\)$/);
+      if (!m) return value;
+      const v = local.has(m[1]) ? local.get(m[1]) : primitives.get(m[1]);
+      if (v === undefined) return value;
+      return /^var\(/.test(v) ? resolve(v, local) : v;
+    };
+    const semantic = new Map<string, string>();
+    const root = readFileSync(join(tokensDir, "semantic.css"), "utf8").match(/:root \{[^}]*\}/ms)?.[0] ?? "";
+    for (const m of root.matchAll(/(--sdq-[a-z0-9-]+)\s*:\s*([^;]+);/g)) {
+      semantic.set(m[1], resolve(m[2].trim(), semantic));
+    }
+    const skins: Record<string, Map<string, string>> = {};
+    for (const id of ["soft", "deep"]) {
+      const block =
+        readFileSync(join(skinsDir, `${id}.css`), "utf8").match(
+          new RegExp(`\\.mobile-shell\\.skin-${id} \\{[^}]*\\}`, "ms")
+        )?.[0] ?? "";
+      const local = new Map(semantic);
+      for (const m of block.matchAll(/(--sdq-[a-z0-9-]+)\s*:\s*([^;]+);/g)) {
+        local.set(m[1], resolve(m[2].trim(), local));
+      }
+      skins[id] = local;
+    }
+    return skins;
+  }
+
+  it("批次10：soft/deep 关键令牌组合对比度达到 WCAG AA", () => {
+    const maps = buildTokenMap();
+    const combos = [
+      { fg: "--sdq-text-primary", bg: "--sdq-bg-canvas", min: 7, name: "正文" },
+      { fg: "--sdq-text-secondary", bg: "--sdq-bg-canvas", min: 4.5, name: "次级正文" },
+      { fg: "--sdq-text-tertiary", bg: "--sdq-bg-canvas", min: 3, name: "辅助文字" },
+      { fg: "--sdq-action-primary", bg: "--sdq-bg-surface", min: 4.5, name: "交互主色" },
+      { fg: "--sdq-text-on-brand", bg: "--sdq-action-primary", min: 4.5, name: "按钮文字" },
+      { fg: "--sdq-profit", bg: "--sdq-bg-surface", min: 3, name: "利润" },
+      { fg: "--sdq-cost", bg: "--sdq-bg-surface", min: 3, name: "成本" },
+      { fg: "--sdq-risk", bg: "--sdq-bg-surface", min: 3, name: "风险" },
+      { fg: "--sdq-info", bg: "--sdq-bg-surface", min: 3, name: "信息" },
+    ];
+    for (const [id, map] of Object.entries(maps)) {
+      for (const c of combos) {
+        const fg = map.get(c.fg) ?? "";
+        const bg = map.get(c.bg) ?? "";
+        const ratio = contrastRatio(fg, bg);
+        expect(ratio, `${id} 皮肤 ${c.name}(${fg} on ${bg}) 对比度 ${ratio.toFixed(2)} 需 ≥${c.min}`).toBeGreaterThanOrEqual(c.min);
+      }
+    }
   });
 });

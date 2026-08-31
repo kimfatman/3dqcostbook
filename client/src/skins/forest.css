@@ -1,7 +1,7 @@
 /* ============================================================================
  * 算得清 SDQ 皮肤 · forest（森林绿 · 浅色 · 绿色品牌）
  * 作者：SDQ Design Tokens
- * 说明：基于 soft 浅色皮肤，品牌主色改为森林绿 #20a779；
+ * 说明：基于 soft 浅色皮肤，品牌主色森林绿（批次10 调深为 #17805e 达 WCAG AA）；
  *       --sdq-profit 保持 #20a779（业务语义色保护，与品牌绿同值），
  *       --sdq-cost / --sdq-risk / --sdq-info 维持默认浅色设定。
  * ========================================================================== */
@@ -18,20 +18,20 @@
   --sdq-bg-danger-soft: #fdedec;
   --sdq-text-primary: var(--sdq-neutral-900);
   --sdq-text-secondary: var(--sdq-neutral-600);
-  --sdq-text-tertiary: var(--sdq-neutral-400);
+  --sdq-text-tertiary: var(--sdq-neutral-500); /* 批次10 调深 */
   --sdq-text-on-brand: #ffffff;
   --sdq-border-subtle: var(--sdq-neutral-100);
   --sdq-border-strong: var(--sdq-neutral-300);
   --sdq-shadow-card: 0 4px 16px rgba(20, 50, 90, 0.08);
   --sdq-overlay-scrim: rgba(18, 31, 53, 0.42);
-  --sdq-action-primary: #20a779;
-  --sdq-action-primary-pressed: #1b8f68;
-  --sdq-income: #20a779;
+  --sdq-action-primary: #17805e; /* 批次10 调深：白字按钮对比 4.90:1 达 AA */
+  --sdq-action-primary-pressed: #0f6e4c; /* 批次10 随主色同步 */
+  --sdq-income: #17805e; /* 批次10 调深至文字对比达标 */
   --sdq-cost: var(--sdq-warning-500);
   --sdq-profit: #20a779;   /* 业务语义色保护：利润绿与品牌绿同值 */
   --sdq-risk: var(--sdq-danger-500);
   --sdq-info: var(--sdq-info-500);
-  --sdq-icon-default: var(--sdq-neutral-400);
+  --sdq-icon-default: var(--sdq-neutral-500); /* 批次10 调深 */
   --sdq-icon-disabled: var(--sdq-neutral-200);
   --sdq-radius-xs: 6px;
   --sdq-radius-sm: 8px;

@@ -33,10 +33,10 @@
   /* 语义色 mini 阶（success=利润绿 / warning=成本橙 / danger=风险红 / info=信息蓝） */
   --sdq-success-500: #20a779;
   --sdq-success-600: #1b8f68;
-  --sdq-warning-500: #f6a623;
-  --sdq-warning-600: #d98d12;
+  --sdq-warning-500: #c88206; /* 批次10 调深：白底对比 3.16:1 达 WCAG AA（保持橙相） */
+  --sdq-warning-600: #b37504; /* 批次10 与 500 同步调深，保持明度梯度 */
   --sdq-danger-500: #e8534f;
   --sdq-danger-600: #d43f3b;
-  --sdq-info-500: #5acbfa;
-  --sdq-info-600: #3cb4ec;
+  --sdq-info-500: #1e93cc; /* 批次10 调深：白底对比 3.44:1 达 WCAG AA（保持蓝相） */
+  --sdq-info-600: #1d8ac2; /* 批次10 与 500 同步调深，保持明度梯度 */
 }

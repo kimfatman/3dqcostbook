@@ -2,7 +2,7 @@
  * 算得清 SDQ 皮肤 · midnight（午夜黑 · 深色 · 纯黑）
  * 作者：SDQ Design Tokens
  * 说明：基于 deep 深蓝皮肤，关键表面改为纯黑阶（canvas #000 / surface #111），
- *       品牌与业务语义色沿用 deep 深色设定。
+ *       品牌与业务语义色沿用 deep 深色设定；非颜色令牌显式声明（与 soft 一致）。
  * ========================================================================== */
 .mobile-shell.skin-midnight {
   color-scheme: dark;
@@ -18,7 +18,7 @@
   --sdq-text-primary: var(--sdq-neutral-50);
   --sdq-text-secondary: var(--sdq-neutral-300);
   --sdq-text-tertiary: var(--sdq-neutral-400);
-  --sdq-text-on-brand: #ffffff;
+  --sdq-text-on-brand: #0b1220; /* 批次10 亮蓝按钮改深字，对比达标 */
   --sdq-border-subtle: #2a2a2a;
   --sdq-border-strong: #3a3a3a;
   --sdq-shadow-card: 0 6px 20px rgba(0, 0, 0, 0.5);
@@ -32,4 +32,18 @@
   --sdq-info: var(--sdq-info-500);
   --sdq-icon-default: var(--sdq-neutral-400);
   --sdq-icon-disabled: var(--sdq-neutral-600);
+  /* ---- 非颜色令牌（批次10 补全，与 soft 一致） ---- */
+  --sdq-radius-xs: 6px;
+  --sdq-radius-sm: 8px;
+  --sdq-radius-md: 12px;
+  --sdq-radius-lg: 16px;
+  --sdq-radius-pill: 999px;
+  --sdq-space-page-x: 16px;
+  --sdq-space-section: 24px;
+  --sdq-space-card: 16px;
+  --sdq-height-control: 44px;
+  --sdq-height-nav: calc(56px + env(safe-area-inset-bottom, 0px));
+  --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --sdq-motion-press: 100ms;
+  --sdq-motion-card: 220ms;
 }
