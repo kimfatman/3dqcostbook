@@ -58,15 +58,20 @@ function renderHome() {
 async function openAppearance() {
   window.history.replaceState({}, "", "/?screen=appearance");
   window.dispatchEvent(new PopStateEvent("popstate"));
-  await screen.findByRole("heading", { name: /外观设置/ });
+  await screen.findByRole("heading", { name: /皮肤中心/ });
 }
 
 function shell() {
   return document.querySelector(".mobile-shell") as HTMLElement;
 }
 
-function skinOptions() {
-  return Array.from(document.querySelectorAll(".skin-option"));
+function skinCards() {
+  return Array.from(document.querySelectorAll(".skin-card"));
+}
+
+function applySkinCard(id: string) {
+  const card = document.querySelector(`.skin-card[data-skin-id="${id}"]`) as HTMLElement;
+  fireEvent.click(card.querySelector(".skin-card-apply") as HTMLElement);
 }
 
 describe("批次8 皮肤切换机制（统一切换 + 5 种皮肤 + 持久化）", () => {
@@ -76,11 +81,11 @@ describe("批次8 皮肤切换机制（统一切换 + 5 种皮肤 + 持久化）
     expect(shell().className).toContain("skin-soft");
   });
 
-  it("外观设置页展示 5 种皮肤选项，点击午夜黑后根组件切换到 skin-midnight", async () => {
+  it("皮肤中心展示 5 种官方皮肤，点击午夜黑应用后根组件切换到 skin-midnight", async () => {
     renderHome();
     await openAppearance();
-    expect(skinOptions()).toHaveLength(5);
-    fireEvent.click(screen.getByRole("button", { name: /午夜黑展示舱/ }));
+    expect(skinCards()).toHaveLength(5);
+    applySkinCard("midnight");
     await waitFor(() => expect(shell().className).toContain("skin-midnight"));
     expect(shell().className).not.toContain("skin-soft");
   });
@@ -88,7 +93,7 @@ describe("批次8 皮肤切换机制（统一切换 + 5 种皮肤 + 持久化）
   it("切换森林绿后持久化到 localStorage，重新加载仍保持 skin-forest", async () => {
     renderHome();
     await openAppearance();
-    fireEvent.click(screen.getByRole("button", { name: /森林绿工作台/ }));
+    applySkinCard("forest");
     await waitFor(() => {
       const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
       expect(saved.workspace?.visualSkin).toBe("forest");

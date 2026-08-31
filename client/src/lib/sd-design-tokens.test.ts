@@ -87,8 +87,11 @@ describe("SDQ 设计令牌一致性（批次6 令牌收敛 + 批次7 拆分）",
       expect(skin.name.length).toBeGreaterThan(0);
       expect(skin.description.length).toBeGreaterThan(0);
       expect(["light", "dark"]).toContain(skin.mode);
-      expect(skin.previewColors).toHaveLength(4);
-      expect(skin.previewColors.every((c) => c.length > 0)).toBe(true);
+      const pc = skin.previewColors;
+      expect(pc.primary.length).toBeGreaterThan(0);
+      expect(pc.background.length).toBeGreaterThan(0);
+      expect(pc.surface.length).toBeGreaterThan(0);
+      expect(pc.text.length).toBeGreaterThan(0);
     }
   });
 

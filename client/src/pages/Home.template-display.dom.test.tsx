@@ -490,19 +490,22 @@ describe("成本分析供应商排行与结构对照", () => {
 });
 
 describe("图表主题", () => {
-  it("允许用户在外观设置中切换图表深色模式", async () => {
+  it("允许用户在皮肤中心切换深色皮肤与浅色皮肤", async () => {
     const user = userEvent.setup();
     renderHome();
 
     await openProfile(user);
-    await user.click(screen.getByRole("button", { name: /外观设置/ }));
-    const toggle = screen.getByRole("button", { name: /图表深色模式/ });
-    await user.click(toggle);
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
-    expect(screen.getByText("深色已开启")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /皮肤中心/ }));
+    // 应用午夜黑深色皮肤
+    const midnightCard = document.querySelector('.skin-card[data-skin-id="midnight"]') as HTMLElement;
+    expect(midnightCard).toBeTruthy();
+    await user.click(midnightCard.querySelector(".skin-card-apply") as HTMLElement);
+    expect(document.querySelector(".mobile-shell")?.className).toContain("skin-midnight");
 
-    await user.click(screen.getByRole("button", { name: /图表深色模式/ }));
-    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    // 切回清蓝浅色皮肤
+    const softCard = document.querySelector('.skin-card[data-skin-id="soft"]') as HTMLElement;
+    await user.click(softCard.querySelector(".skin-card-apply") as HTMLElement);
+    expect(document.querySelector(".mobile-shell")?.className).toContain("skin-soft");
   });
 });
 
@@ -778,7 +781,7 @@ describe("第一批范围、待办与成本快照表达", () => {
 });
 
 describe("第二批导航、列表效率与真实事件", () => {
-  it("将工作台和洞察作为清晰的一级入口，并将皮肤与深色模式收进我的外观设置", async () => {
+  it("将工作台和洞察作为清晰的一级入口，并将皮肤与深色模式收进皮肤中心", async () => {
     const user = userEvent.setup();
     renderHome();
 
@@ -787,11 +790,13 @@ describe("第二批导航、列表效率与真实事件", () => {
     expect(screen.getByRole("heading", { name: /经营洞察/ })).toBeTruthy();
 
     await openProfile(user);
-    await user.click(screen.getByRole("button", { name: /外观设置/ }));
-    expect(screen.getByRole("heading", { name: "外观设置" })).toBeTruthy();
-    const toggle = screen.getByRole("button", { name: /图表深色模式/ });
-    await user.click(toggle);
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    await user.click(screen.getByRole("button", { name: /皮肤中心/ }));
+    expect(screen.getByRole("heading", { name: "皮肤中心" })).toBeTruthy();
+    // 深色模式经皮肤中心午夜黑皮肤应用
+    const midnightCard = document.querySelector('.skin-card[data-skin-id="midnight"]') as HTMLElement;
+    expect(midnightCard).toBeTruthy();
+    await user.click(midnightCard.querySelector(".skin-card-apply") as HTMLElement);
+    expect(document.querySelector(".mobile-shell")?.className).toContain("skin-midnight");
   });
 
   it("允许仅对选中订单批量标记复核并按待复核筛选，不改写订单业务数据", async () => {

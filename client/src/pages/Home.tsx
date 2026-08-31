@@ -6,6 +6,8 @@
  */
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { SkinCenter } from "./SkinCenter";
+import { loadActiveCustomSkin, saveActiveCustomSkin, type CustomSkin } from "../skins";
 import {
   ArrowLeft,
   BarChart3,
@@ -252,11 +254,6 @@ function HomeChartEmpty({ title, copy, action, onClick }: { title: string; copy:
   return <button className="home-chart-empty" onClick={onClick}><span>{title}</span><b>{copy}</b><small>{action}<ChevronRight size={15} /></small></button>;
 }
 
-function VisualSkinPicker({ skin, onChange }: { skin: VisualSkin; onChange: (skin: VisualSkin) => void }) {
-  const { theme, toggleTheme } = useTheme();
-  return <section className="visual-skin-picker" aria-labelledby="visual-skin-title"><div className="visual-skin-heading"><span><em>视觉皮肤</em><b id="visual-skin-title">选择你的经营工作台</b></span><small>切换不影响账本数据</small></div><div className="visual-skin-options">{visualSkinOptions.map((option) => <button key={option.id} className={`skin-option ${option.material} ${skin === option.id ? "active" : ""}`} aria-pressed={skin === option.id} onClick={() => onChange(option.id)}><i aria-hidden="true"><span /><span /><span /></i><span><b>{option.label}</b><em>{option.detail}</em></span>{skin === option.id ? <Check size={17} /> : <ChevronRight size={16} />}</button>)}</div><button className="chart-theme-toggle" type="button" onClick={toggleTheme}><span>{theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}<b>图表深色模式</b><em>{theme === "dark" ? "深色已开启" : "跟随浅色界面"}</em></span><strong>{theme === "dark" ? "切换浅色" : "切换深色"}<ChevronRight size={16} /></strong></button></section>;
-}
-
 function SalesOrdersTrend({ items, hasWindowTransactions, onOpenOrders, onRecordOrder, onRecordEntry }: { items: ReturnType<typeof buildDailySalesOrders>; hasWindowTransactions: boolean; onOpenOrders: () => void; onRecordOrder: () => void; onRecordEntry: () => void }) {
   const salesTotal = items.reduce((sum, item) => sum + item.sales, 0);
   const orderTotal = items.reduce((sum, item) => sum + item.orders, 0);
@@ -430,6 +427,15 @@ const HOME_RANGE_BUDGET = { amountFen: 0, basis: "operating_cost" as const };
 export default function Home() {
   const book = useCostBook();
   useCloudBookSync(book);
+  const [activeCustomSkin, setActiveCustomSkin] = useState<CustomSkin | null>(() => loadActiveCustomSkin());
+  const customStyle = useMemo(() => {
+    const style: Record<string, string> = {};
+    if (activeCustomSkin) {
+      for (const [key, value] of Object.entries(activeCustomSkin.overrides)) style[key] = value;
+    }
+    return style;
+  }, [activeCustomSkin]);
+  const commitActiveCustom = (skin: CustomSkin | null) => { setActiveCustomSkin(skin); saveActiveCustomSkin(skin); };
   const meQuery = trpc.auth.me.useQuery(undefined, { retry: false });
   const workspaceQuery = trpc.workspace.list.useQuery(undefined, { retry: false, enabled: Boolean(meQuery.data) });
   const utils = trpc.useUtils();
@@ -1236,12 +1242,7 @@ export default function Home() {
 
   function ProfilePage() {
     const handleLogout = async () => { if (!window.confirm("确认退出当前账号？本机账本草稿不会被删除。")) return; try { await logout.mutateAsync(); } catch { notify("退出失败，请稍后重试"); } };
-    return <><section className="profile-identity-card profile-account-summary"><div className="profile-identity-top"><BrandAvatar assetId={meQuery.data?.avatarAssetId} preset={meQuery.data?.avatarPreset} alt="个人头像" size="large" /><div><span>当前账号</span><h1>{meQuery.data?.name || "店铺经营者"}</h1><p>{meQuery.data?.email || "已登录工作区"} · {template.label}经营者</p></div><button onClick={() => goSub("profileSettings")} aria-label="编辑个人与店铺资料"><Pencil size={17} /></button></div><div className="profile-identity-meta"><span><Check size={14} />个人已验证</span><i /><span><Store size={14} />{currentWorkspace?.name || template.storeName}</span></div></section><section className="profile-group"><h2>店铺管理</h2><div className="profile-card"><button onClick={() => goSub("profileSettings")}><span><Settings2 size={19} />个人与店铺资料</span><strong>编辑<ChevronRight size={16} /></strong></button><button onClick={() => goSub("industry")}><span><Store size={19} />经营行业</span><strong>{template.label}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("budget")}><span><WalletCards size={19} />经营预算</span><strong>{yuan(totals.budget)}<ChevronRight size={16} /></strong></button></div></section><section className="profile-group"><h2>设置</h2><div className="profile-card"><button onClick={() => goSub("appearance")}><span><Sparkles size={19} />外观设置</span><strong>{visualSkinOptions.find((option) => option.id === book.visualSkin)?.label || "外观"}<ChevronRight size={16} /></strong></button></div></section><section className="profile-group profile-account-group"><h2>账户</h2><div className="profile-session"><span><em>当前账号</em><b>{meQuery.data?.email || "已登录工作区"}</b></span><button onClick={handleLogout} disabled={logout.isPending}><LogOut size={17} />{logout.isPending ? "正在退出…" : "退出登录"}</button></div></section></>;
-  }
-
-  function AppearanceSettingsPage() {
-    const selectedSkin = visualSkinOptions.find((option) => option.id === book.visualSkin);
-    return <div className="appearance-settings-page"><section className="sub-intro compact"><span>我的 · 设置</span><h1>外观设置</h1><p>选择阅读与图表的显示风格；切换仅影响本机界面，不会改变账本、订单或经营数据。</p></section><section className="appearance-current-state"><span><Sparkles size={18} /><b>当前工作台</b></span><strong>{selectedSkin?.label || "默认外观"}</strong></section><VisualSkinPicker skin={book.visualSkin} onChange={(skin) => { book.updateVisualSkin(skin); setToast(`已切换为${visualSkinOptions.find((option) => option.id === skin)?.label || "新皮肤"}`); }} /></div>;
+    return <><section className="profile-identity-card profile-account-summary"><div className="profile-identity-top"><BrandAvatar assetId={meQuery.data?.avatarAssetId} preset={meQuery.data?.avatarPreset} alt="个人头像" size="large" /><div><span>当前账号</span><h1>{meQuery.data?.name || "店铺经营者"}</h1><p>{meQuery.data?.email || "已登录工作区"} · {template.label}经营者</p></div><button onClick={() => goSub("profileSettings")} aria-label="编辑个人与店铺资料"><Pencil size={17} /></button></div><div className="profile-identity-meta"><span><Check size={14} />个人已验证</span><i /><span><Store size={14} />{currentWorkspace?.name || template.storeName}</span></div></section><section className="profile-group"><h2>店铺管理</h2><div className="profile-card"><button onClick={() => goSub("profileSettings")}><span><Settings2 size={19} />个人与店铺资料</span><strong>编辑<ChevronRight size={16} /></strong></button><button onClick={() => goSub("industry")}><span><Store size={19} />经营行业</span><strong>{template.label}<ChevronRight size={16} /></strong></button><button onClick={() => goSub("budget")}><span><WalletCards size={19} />经营预算</span><strong>{yuan(totals.budget)}<ChevronRight size={16} /></strong></button></div></section><section className="profile-group"><h2>设置</h2><div className="profile-card"><button onClick={() => goSub("appearance")}><span><Sparkles size={19} />皮肤中心</span><strong>{visualSkinOptions.find((option) => option.id === book.visualSkin)?.label || "外观"}<ChevronRight size={16} /></strong></button></div></section><section className="profile-group profile-account-group"><h2>账户</h2><div className="profile-session"><span><em>当前账号</em><b>{meQuery.data?.email || "已登录工作区"}</b></span><button onClick={handleLogout} disabled={logout.isPending}><LogOut size={17} />{logout.isPending ? "正在退出…" : "退出登录"}</button></div></section></>;
   }
 
   function AvatarStylePage() {
@@ -1549,7 +1550,7 @@ export default function Home() {
     if (subPage === "skus") return SkusPage();
     if (subPage === "indirectCosts") return IndirectCostsPage();
     if (subPage === "profileSettings") return ProfileSettingsPage();
-    if (subPage === "appearance") return AppearanceSettingsPage();
+    if (subPage === "appearance") return <SkinCenter visualSkin={book.visualSkin} activeCustomSkin={activeCustomSkin} onApplyOfficial={(skin) => { commitActiveCustom(null); book.updateVisualSkin(skin); }} onApplyCustom={(skin) => { commitActiveCustom(skin); book.updateVisualSkin(skin.baseSkin); }} onBack={() => goSub(null)} />;
     if (subPage === "avatarStyle") return AvatarStylePage();
     if (subPage === "storeBrand") return StoreBrandPage();
     if (tab === "orders") return OrdersPage();
@@ -1564,7 +1565,7 @@ export default function Home() {
   // C7 宽屏策略（P1-8）：壳常驻 c7-shell-center（≥768px 居中、最大 520px）；
   // 洞察根页与经营流水子页附加 c7-expandable，允许壳内内容宽平滑过渡到 860px。
   const isWideContent = (!isSub && tab === "analysis") || subPage === "records";
-  return <div className={`mobile-shell c7-shell-center skin-${book.visualSkin}`}><div className="app-frame">{renderHeader()}<main className={`${isSub ? "app-content sub-content" : "app-content"}${isWideContent ? " c7-expandable" : ""}`}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}{unsavedVoucherLeave && <div className="voucher-guard-layer" role="alertdialog" aria-modal="true" aria-labelledby="voucher-guard-title" aria-describedby="voucher-guard-copy"><div className="voucher-guard-scrim" aria-hidden="true" onClick={cancelVoucherLeave} /><div className="voucher-guard-card"><CircleAlert size={22} aria-hidden="true" /><h2 id="voucher-guard-title">放弃未保存的凭证？</h2><p id="voucher-guard-copy">已上传的凭证图片尚未随流水保存，离开后将不保留。服务器暂存文件将按策略自动清理。</p><div className="voucher-guard-actions"><button type="button" className="voucher-guard-stay" onClick={cancelVoucherLeave}>留在本页</button><button type="button" className="voucher-guard-leave" onClick={discardVoucherAndLeave}>放弃凭证并离开</button></div></div></div>}</div></div>;
+  return <div className={`mobile-shell c7-shell-center skin-${book.visualSkin}`} style={customStyle}><div className="app-frame">{renderHeader()}<main className={`${isSub ? "app-content sub-content" : "app-content"}${isWideContent ? " c7-expandable" : ""}`}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}{unsavedVoucherLeave && <div className="voucher-guard-layer" role="alertdialog" aria-modal="true" aria-labelledby="voucher-guard-title" aria-describedby="voucher-guard-copy"><div className="voucher-guard-scrim" aria-hidden="true" onClick={cancelVoucherLeave} /><div className="voucher-guard-card"><CircleAlert size={22} aria-hidden="true" /><h2 id="voucher-guard-title">放弃未保存的凭证？</h2><p id="voucher-guard-copy">已上传的凭证图片尚未随流水保存，离开后将不保留。服务器暂存文件将按策略自动清理。</p><div className="voucher-guard-actions"><button type="button" className="voucher-guard-stay" onClick={cancelVoucherLeave}>留在本页</button><button type="button" className="voucher-guard-leave" onClick={discardVoucherAndLeave}>放弃凭证并离开</button></div></div></div>}</div></div>;
 }
 
 function useCloudBookSync(book: ReturnType<typeof useCostBook>) {
