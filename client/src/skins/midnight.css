@@ -1,0 +1,35 @@
+/* ============================================================================
+ * 算得清 SDQ 皮肤 · midnight（午夜黑 · 深色 · 纯黑）
+ * 作者：SDQ Design Tokens
+ * 说明：基于 deep 深蓝皮肤，关键表面改为纯黑阶（canvas #000 / surface #111），
+ *       品牌与业务语义色沿用 deep 深色设定。
+ * ========================================================================== */
+.mobile-shell.skin-midnight {
+  color-scheme: dark;
+  --sdq-bg-canvas: #000000;
+  --sdq-bg-surface: #111111;
+  --sdq-bg-surface-subtle: #1a1a1a;
+  --sdq-bg-elevated: #1f1f1f;
+  --sdq-bg-brand: var(--sdq-blue-400);              /* 品牌按钮保持亮蓝可辨识 */
+  --sdq-bg-brand-soft: #123b70;
+  --sdq-bg-warning-soft: #4a3514;
+  --sdq-bg-success-soft: #123b32;
+  --sdq-bg-danger-soft: #4a2023;
+  --sdq-text-primary: var(--sdq-neutral-50);
+  --sdq-text-secondary: var(--sdq-neutral-300);
+  --sdq-text-tertiary: var(--sdq-neutral-400);
+  --sdq-text-on-brand: #ffffff;
+  --sdq-border-subtle: #2a2a2a;
+  --sdq-border-strong: #3a3a3a;
+  --sdq-shadow-card: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --sdq-overlay-scrim: rgba(0, 0, 0, 0.7);
+  --sdq-action-primary: var(--sdq-blue-400);
+  --sdq-action-primary-pressed: var(--sdq-blue-500);
+  --sdq-income: var(--sdq-blue-400);
+  --sdq-cost: var(--sdq-warning-500);
+  --sdq-profit: var(--sdq-success-500);
+  --sdq-risk: var(--sdq-danger-500);
+  --sdq-info: var(--sdq-info-500);
+  --sdq-icon-default: var(--sdq-neutral-400);
+  --sdq-icon-disabled: var(--sdq-neutral-600);
+}

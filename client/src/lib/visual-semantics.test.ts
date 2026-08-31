@@ -41,7 +41,7 @@ describe("第二批全站视觉语义", () => {
   });
 
   it("P2 核心模块使用 SDQ 语义令牌和移动端触控尺寸", () => {
-    expect(readFileSync(resolve(process.cwd(), "client/src/sd-design-tokens.css"), "utf8")).toContain("--sdq-action-primary:");
+    expect(readFileSync(resolve(process.cwd(), "client/src/tokens/semantic.css"), "utf8")).toContain("--sdq-action-primary:");
     expect(baseCss).toContain(".record-filter > button.active");
     expect(baseCss).toContain(".record-row > strong.income");
     expect(baseCss).toContain(".prototype-products .product-cost-list > button");
