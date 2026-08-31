@@ -336,6 +336,373 @@ pnpm build    # vite build 生产构建
 
 ---
 
+## 批次 6：皮肤中心 · 阶段1 令牌收敛（消除硬编码颜色）
+
+### 目标
+全局扫描并消除组件中的硬编码颜色，所有组件只消费 `--sdq-*` 语义令牌。这是皮肤中心的基础——只有全部令牌化，换皮肤才能全局生效。
+
+### Trae 指令（直接复制）
+
+```
+我需要全局消除硬编码颜色，请按以下步骤操作：
+
+1. 先读取 client/src/sd-design-tokens.css，理解现有的语义令牌（--sdq-bg-* / --sdq-text-* / --sdq-border-* / --sdq-action-* / --sdq-profit / --sdq-cost / --sdq-risk / --sdq-info / --sdq-icon-* 等）。
+
+2. 全局扫描 client/src 目录中的硬编码颜色：
+   - 搜索 #[0-9a-fA-F]{3,8}（十六进制颜色）
+   - 搜索 rgb( 和 rgba(
+   - 排除：sd-design-tokens.css（令牌定义文件本身）、*.test.tsx（测试文件）
+   - 重点文件：client/src/index.css（硬编码最多）、client/src/cashflow-filter.css、client/src/layout-unification.css、client/src/widescreen-c7.css
+
+3. 逐个替换为语义令牌：
+   - #087ff5 / #0880f7 / #1677ff → var(--sdq-action-primary) 或 var(--sdq-income)
+   - #eaf5ff / #e6f1ff / #f2f7ff → var(--sdq-bg-brand-soft)
+   - #ffffff → var(--sdq-bg-surface)
+   - #f5f7fa / #f7f9fc / #f9fafb → var(--sdq-bg-canvas)
+   - #212830 / #0b1836 / #172033 → var(--sdq-text-primary)
+   - #576575 / #71859d / #6b7280 / #8b97a8 → var(--sdq-text-secondary)
+   - #8f9dae / #9ca3af / #a1aaba → var(--sdq-text-tertiary)
+   - #ebf0f4 / #e1e8f0 / #e4ebf2 → var(--sdq-border-subtle)
+   - #20a779 / #079455 / #10b981 → var(--sdq-profit)
+   - #f6a623 / #d97706 / #f59e0b → var(--sdq-cost)
+   - #e8534f / #c83227 / #ef4444 → var(--sdq-risk)
+   - #5acbfa / #3cb4ec → var(--sdq-info)
+   - rgba(20,50,90,0.08) → var(--sdq-shadow-card)
+   - 圆角：8px → var(--sdq-radius-sm)，12px → var(--sdq-radius-md)，16px → var(--sdq-radius-lg)
+
+4. 如果发现缺少对应的语义令牌，在 sd-design-tokens.css 的 :root 和 .mobile-shell.skin-deep 中同时新增（浅色和深色双轨）。
+
+5. 替换完成后验证：
+   - grep -rn "#[0-9a-fA-F]\{3,8\}" client/src --include="*.css" --include="*.tsx" | grep -v "sd-design-tokens" | grep -v ".test."
+   - 应该只剩极少或零个硬编码颜色
+
+6. 运行 pnpm check && pnpm test && pnpm build，确保全绿。
+
+7. 提交：git commit -m "refactor(tokens): 全局消除硬编码颜色，组件统一消费--sdq-*语义令牌"
+```
+
+### 验收标准
+- [ ] 组件 CSS/TSX 中无硬编码颜色（排除令牌定义文件和测试文件）
+- [ ] 新增缺失的语义令牌（浅色+深色双轨）
+- [ ] 三种皮肤（soft/deep/aurora）切换视觉正常
+- [ ] 三门禁全绿
+
+---
+
+## 批次 7：皮肤中心 · 阶段2 皮肤定义拆分
+
+### 目标
+把 `sd-design-tokens.css` 拆分为 `tokens/`（原色阶+语义默认）和 `skins/`（每皮肤独立文件），新增 midnight 和 forest 皮肤。
+
+### Trae 指令（直接复制）
+
+```
+我需要拆分皮肤定义文件，请按以下步骤操作：
+
+1. 读取 client/src/sd-design-tokens.css 完整内容，理解三层结构：
+   - 层一：原色阶原语（:root 中的 --sdq-blue-* / --sdq-neutral-* / --sdq-success-* 等）
+   - 层二：语义令牌（:root 默认浅色 + .mobile-shell.skin-deep 深色 + .mobile-shell.skin-aurora 极光）
+   - 层三：Tailwind v4 @theme 桥
+
+2. 创建目录结构：
+   mkdir -p client/src/tokens client/src/skins
+
+3. 创建 client/src/tokens/primitives.css：
+   - 从 sd-design-tokens.css 提取层一（原色阶原语）
+   - 只包含 :root 中的 --sdq-blue-* / --sdq-neutral-* / --sdq-success-* / --sdq-warning-* / --sdq-danger-* / --sdq-info-*
+   - 文件头部加注释：原色阶原语，所有皮肤共享，不可修改
+
+4. 创建 client/src/tokens/semantic.css：
+   - 从 sd-design-tokens.css 提取层二的 :root 默认语义令牌（soft 浅色）
+   - 包含 --sdq-bg-* / --sdq-text-* / --sdq-border-* / --sdq-shadow-* / --sdq-action-* / --sdq-income/cost/profit/risk/info / --sdq-icon-* / --sdq-radius-* / --sdq-space-* / --sdq-font-*
+   - 如果缺少圆角/间距/字体令牌，从 index.css 中提取常用值补充
+
+5. 创建 client/src/tokens/tailwind-bridge.css：
+   - 从 sd-design-tokens.css 提取层三（Tailwind @theme 桥）
+
+6. 创建 client/src/skins/soft.css：
+   - 从 semantic.css 复制默认语义令牌，包装在 .mobile-shell.skin-soft { ... } 中
+   - 文件头部加皮肤元数据注释（名称/模式/作者）
+
+7. 创建 client/src/skins/deep.css：
+   - 从 sd-design-tokens.css 提取 .mobile-shell.skin-deep 的语义令牌
+   - 包装在 .mobile-shell.skin-deep { ... } 中
+   - 补全缺失的语义令牌（参考 soft.css 的完整令牌列表，deep 中缺失的用合理深色值补充）
+
+8. 创建 client/src/skins/aurora.css：
+   - 从 sd-design-tokens.css 提取 .mobile-shell.skin-aurora 的令牌
+   - 包装在 .mobile-shell.skin-aurora { ... } 中
+
+9. 创建 client/src/skins/midnight.css（新增，午夜黑纯黑深色）：
+   - 基于 deep.css，修改关键值：
+     --sdq-bg-canvas: #000000
+     --sdq-bg-surface: #111111
+     --sdq-bg-surface-subtle: #1a1a1a
+     --sdq-bg-elevated: #1f1f1f
+     --sdq-border-subtle: #2a2a2a
+     --sdq-border-strong: #3a3a3a
+   - 其他令牌参考 deep.css
+
+10. 创建 client/src/skins/forest.css（新增，森林绿品牌色）：
+    - 基于 soft.css，修改品牌主色：
+      --sdq-action-primary: #20a779
+      --sdq-action-primary-pressed: #1b8f68
+      --sdq-bg-brand: #20a779
+      --sdq-bg-brand-soft: #e8f8f2
+      --sdq-income: #20a779
+    - 注意：--sdq-profit 保持 #20a779（业务语义色保护），--sdq-cost/risk/info 不变
+    - 其他令牌参考 soft.css
+
+11. 修改 client/src/sd-design-tokens.css，改为只 import：
+    @import "./tokens/primitives.css";
+    @import "./tokens/semantic.css";
+    @import "./tokens/tailwind-bridge.css";
+    @import "./skins/soft.css";
+    @import "./skins/deep.css";
+    @import "./skins/aurora.css";
+    @import "./skins/midnight.css";
+    @import "./skins/forest.css";
+    （保留原文件注释，说明已拆分）
+
+12. 创建 client/src/skins/index.ts（皮肤注册表）：
+    定义 SkinMeta 接口和 SKIN_REGISTRY 数组，包含 5 种官方皮肤的元数据：
+    - soft: 清蓝，浅色，默认
+    - deep: 深蓝，深色
+    - aurora: 极光，浅色，玻璃拟态
+    - midnight: 午夜黑，深色，纯黑
+    - forest: 森林绿，浅色，绿色品牌
+    每个包含 id/name/description/mode/author/previewColors（4个关键色）
+
+13. 运行 pnpm check && pnpm test && pnpm build，确保全绿。
+
+14. 验证：手动切换 5 种皮肤（修改 workspace.visualSkin），确认每种皮肤视觉正常。
+
+15. 提交：git commit -m "refactor(skins): 皮肤定义拆分到skins/目录，新增midnight和forest皮肤"
+```
+
+### 验收标准
+- [ ] tokens/ 目录包含 primitives.css / semantic.css / tailwind-bridge.css
+- [ ] skins/ 目录包含 5 种皮肤 CSS + index.ts 注册表
+- [ ] sd-design-tokens.css 改为只 import
+- [ ] 5 种皮肤切换视觉正常
+- [ ] deep/midnight 深色令牌完整无缺失
+- [ ] 三门禁全绿
+
+---
+
+## 批次 8：皮肤中心 · 阶段3 统一切换机制
+
+### 目标
+在根组件统一应用 `skin-{id}` class，替换当前分散的切换逻辑，切换时增加过渡动画。
+
+### Trae 指令（直接复制）
+
+```
+我需要统一皮肤切换机制，请按以下步骤操作：
+
+1. 读取 client/src/components/DashboardLayout.tsx 和 client/src/App.tsx（或 main.tsx），找到当前皮肤 class 的应用位置。
+   - 搜索 "skin-deep"、"skin-soft"、"mobile-shell"、"visualSkin"
+   - 确认当前 .mobile-shell 元素在哪里渲染
+
+2. 在根组件（DashboardLayout 或 App）中，从 useCostBook() 获取 visualSkin：
+   const { visualSkin } = useCostBook();
+
+3. 在 .mobile-shell 元素上动态应用皮肤 class：
+   <div className={`mobile-shell skin-${visualSkin}`}>
+   （如果当前已经有类似逻辑，确认它正确应用了所有 5 种皮肤的 class）
+
+4. 增加皮肤切换过渡动画：
+   在 client/src/index.css 中为 .mobile-shell 增加：
+   .mobile-shell {
+     transition: background-color 0.2s ease, color 0.2s ease;
+   }
+   .mobile-shell * {
+     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+   }
+   （注意：不要对 transform/opacity 以外的属性做过多过渡，可能影响性能。可以只对背景色和文字色做过渡。）
+
+5. 确认 updateVisualSkin 函数（在 cost-book.ts 中）能正确切换所有 5 种皮肤：
+   - 当前 VisualSkin 类型是 "aurora" | "soft" | "deep"
+   - 需要扩展为 "aurora" | "soft" | "deep" | "midnight" | "forest"
+   - 修改 client/src/lib/cost-book.ts 中的 VisualSkin 类型
+   - 修改 normalizeState 中的皮肤校验数组，加入 midnight 和 forest
+   - 修改 createSeedState 和 createEmptyState 的默认值（保持 "soft"）
+
+6. 在外观设置页面（如果存在）或我的页面，增加皮肤切换入口：
+   - 如果当前 appearance subPage 未实现，先创建一个简单的皮肤切换列表
+   - 显示 5 种皮肤名称，点击切换
+   - （完整的皮肤中心页面在下一批次实现）
+
+7. 运行 pnpm check && pnpm test && pnpm build，确保全绿。
+
+8. 新增回归测试：
+   - 根组件应用了正确的 skin-{id} class
+   - VisualSkin 类型包含 5 种皮肤
+   - updateVisualSkin 能正确切换并持久化
+
+9. 提交：git commit -m "feat(skins): 统一皮肤切换机制，扩展为5种皮肤，增加过渡动画"
+```
+
+### 验收标准
+- [ ] VisualSkin 类型扩展为 5 种（soft/deep/aurora/midnight/forest）
+- [ ] 根组件统一应用 `skin-{id}` class
+- [ ] 皮肤切换有 200ms 过渡动画
+- [ ] 5 种皮肤均可切换并持久化
+- [ ] 三门禁全绿
+- [ ] 新增 ≥3 项回归测试
+
+---
+
+## 批次 9：皮肤中心 · 阶段4 皮肤中心页面
+
+### 目标
+实现完整的皮肤中心页面（替换 appearance），包含皮肤列表、实时预览、自定义编辑器、导入导出。
+
+### Trae 指令（直接复制）
+
+```
+我需要实现皮肤中心页面，请按以下步骤操作：
+
+1. 读取 docs/skin-center-design-2026-08-31.md，理解皮肤中心的完整设计（页面布局/皮肤卡片/实时预览/编辑器/持久化）。
+
+2. 创建组件目录：
+   mkdir -p client/src/components/skin-center
+
+3. 创建 client/src/components/skin-center/SkinCard.tsx：
+   - 皮肤卡片组件，props: skin: SkinMeta, isActive: boolean, onApply: () => void
+   - 显示：4色预览条（primary/background/surface/text 色块）+ 名称 + 描述 + 模式标签（浅色/深色）
+   - 已应用：显示"已应用 ✓"（禁用态）
+   - 未应用：显示"应用"按钮
+   - 自定义皮肤额外显示：编辑/复制/导出/删除按钮
+
+4. 创建 client/src/components/skin-center/SkinPreview.tsx：
+   - 迷你工作台实时预览组件
+   - 用 CSS transform: scale(0.85) 缩小
+   - 包含：迷你经营概览卡（大数字+趋势）+ 迷你订单数据（3指标）+ 迷你商品卡 + 底部Tab栏
+   - 实时应用当前选中的皮肤（通过父组件传入 skinId，在预览容器上应用 skin-{id} class）
+
+5. 创建 client/src/components/skin-center/ColorPicker.tsx：
+   - 颜色选择器组件，props: value: string, onChange: (color: string) => void
+   - 使用原生 <input type="color"> + 十六进制输入框
+   - 显示当前颜色色块
+
+6. 创建 client/src/components/skin-center/SkinEditor.tsx：
+   - 自定义皮肤编辑器组件（弹窗或侧边抽屉）
+   - 字段：名称、描述、基于哪个官方皮肤（下拉）
+   - 关键颜色编辑：品牌主色/背景色/卡片背景/主文字/次文字/边框色（用 ColorPicker）
+   - 圆角与间距：卡片圆角（滑块 4-24px）、基础间距（滑块 4-24px）
+   - 实时预览：编辑时顶部显示迷你预览
+   - 按钮：保存/取消
+   - 保存时生成 overrides 对象 { "--sdq-action-primary": "#ff0000", ... }
+
+7. 创建 client/src/pages/SkinCenter.tsx（或在 Home.tsx 中实现 skinCenter subPage）：
+   - 页面布局（参考设计文档第四章）：
+     - 顶部：返回按钮 + 标题"皮肤中心" + 描述
+     - 预览区：SkinPreview 实时预览当前选中皮肤
+     - 官方皮肤区：5个 SkinCard 网格
+     - 我的自定义皮肤区：自定义皮肤卡片 + "创建自定义皮肤"按钮
+     - 高级设置：跟随系统开关/降低动效开关/大字体模式开关
+   - 皮肤选择逻辑：点击皮肤卡片 → 先预览（不立即应用）→ 点击"应用"才真正切换
+   - 自定义皮肤持久化：localStorage key "sdq-custom-skins"
+     - 结构：{ id, name, description, baseSkin, overrides, createdAt }[]
+     - 应用自定义皮肤：先加载 baseSkin CSS，再用 document.documentElement.style.setProperty() 应用 overrides
+   - 导入导出：导出为 JSON 文件下载，导入时读取 JSON 文件
+
+8. 替换现有的 appearance subPage：
+   - 在 Home.tsx 中，把 subPage === "appearance" 的渲染改为 SkinCenter 页面
+   - 或者新增 subPage "skinCenter"，在我的页面增加"皮肤中心"入口
+
+9. 运行 pnpm check && pnpm test && pnpm build，确保全绿。
+
+10. 新增回归测试：
+    - SkinCard 渲染测试（预览色/名称/应用按钮）
+    - 自定义皮肤 localStorage 持久化测试
+    - 皮肤应用后根组件 class 变化测试
+
+11. 提交：git commit -m "feat(skin-center): 皮肤中心页面（皮肤列表+实时预览+自定义编辑器+导入导出）"
+```
+
+### 验收标准
+- [ ] 皮肤中心页面可访问（我的 → 皮肤中心）
+- [ ] 5 种官方皮肤卡片显示正常（预览色/名称/描述/模式）
+- [ ] 实时预览区正常工作（选中皮肤即时预览）
+- [ ] 自定义皮肤创建/编辑/保存/删除正常
+- [ ] 自定义皮肤 localStorage 持久化正常
+- [ ] 皮肤导入导出（JSON）正常
+- [ ] 高级设置（跟随系统/降低动效/大字体）UI 正常
+- [ ] 三门禁全绿
+- [ ] 新增 ≥5 项回归测试
+
+---
+
+## 批次 10：皮肤中心 · 阶段5 深色完善与对比度验证
+
+### 目标
+补全深色模式令牌，全局对比度验证达到 WCAG AA 标准。
+
+### Trae 指令（直接复制）
+
+```
+我需要完善深色模式并验证对比度，请按以下步骤操作：
+
+1. 深色令牌补全：
+   - 读取 client/src/skins/deep.css 和 client/src/skins/midnight.css
+   - 与 client/src/skins/soft.css 对比，找出 deep/midnight 中缺失的语义令牌
+   - 补全所有缺失的令牌（圆角/间距/字体令牌在深浅模式下值相同，直接复制；颜色令牌用合理的深色值）
+   - 重点检查：--sdq-bg-brand-soft / --sdq-bg-warning-soft / --sdq-bg-success-soft / --sdq-bg-danger-soft 在深色下是否有定义
+
+2. 业务语义色深色可辨识性验证：
+   - --sdq-profit (#20a779) 在深色背景下是否可辨识（对比度 ≥3:1）
+   - --sdq-cost (#f6a623) 在深色背景下是否可辨识
+   - --sdq-risk (#e8534f) 在深色背景下是否可辨识
+   - --sdq-info (#5acbfa) 在深色背景下是否可辨识
+   - 如果不可辨识，在深色皮肤中调整这些颜色的明度（但保持色相不变，如 #20a779 → #34d399）
+   - 注意：浅色模式下的业务色保持不变
+
+3. 全局对比度检查：
+   - 安装或使用对比度检查工具（如果项目中有 axe-core 或类似工具）
+   - 或者写一个简单的 Node 脚本，遍历所有语义令牌组合，计算对比度：
+     * text-primary vs bg-canvas（应 ≥7:1）
+     * text-secondary vs bg-canvas（应 ≥4.5:1）
+     * text-tertiary vs bg-canvas（应 ≥3:1）
+     * action-primary vs bg-surface（应 ≥4.5:1）
+     * profit/cost/risk/info vs bg-surface（应 ≥3:1）
+   - 对 soft 和 deep 两种皮肤分别检查
+   - 输出不达标项列表
+
+4. 修复不达标项：
+   - 调整文字颜色或背景颜色，使对比度达标
+   - 优先调整文字颜色（因为背景色是皮肤的主视觉）
+   - 修复后重新运行对比度检查，直到全部达标
+
+5. 组件级深色模式检查：
+   - 手动在 deep 皮肤下遍历所有页面（工作台/订单/商品/洞察/我的/详情页）
+   - 检查是否有：
+     * 白色文字在白色背景上（不可见）
+     * 硬编码颜色残留（在批次6中应该已消除，但可能有遗漏）
+     * 边框在深色下不可见
+     * 阴影在深色下过重或不可见
+   - 修复发现的问题
+
+6. 运行 pnpm check && pnpm test && pnpm build，确保全绿。
+
+7. 新增对比度测试：
+   - 在 client/src/lib/sd-design-tokens.test.ts 中增加对比度断言
+   - 对关键令牌组合断言对比度 ≥ 阈值
+
+8. 提交：git commit -m "fix(skins): 深色模式令牌补全+全局对比度验证达到WCAG AA"
+```
+
+### 验收标准
+- [ ] deep/midnight 深色令牌完整（与 soft 令牌数量一致）
+- [ ] 业务语义色在深色下可辨识（对比度 ≥3:1）
+- [ ] 全局对比度达到 WCAG AA（正文 ≥4.5:1，非文本 ≥3:1）
+- [ ] 所有页面在 deep 皮肤下无显示异常
+- [ ] 对比度测试纳入自动化测试
+- [ ] 三门禁全绿
+
+---
+
 ## Trae 使用技巧
 
 1. **先读后改**：每批指令都要求先读取相关文件，Trae 会自动读取并理解上下文
@@ -350,15 +717,26 @@ pnpm build    # vite build 生产构建
 
 ## 完成标准（全部批次完成后）
 
+### UI 问题修复（批次 1-5）
 1. **17 项线上 UI 问题全部修复**（5 项已完成 + 12 项待实施）
 2. **三门禁全绿**：每批 `pnpm check && pnpm test && pnpm build` 通过
 3. **回归测试覆盖**：新增 ≥20 项 DOM/功能回归测试
 4. **生产发布**：合并 main 后按 Runbook 发布到 app.3dq.site
 5. **线上验收**：发布后用测试账号逐页复核
 
+### 皮肤中心（批次 6-10）
+6. **令牌统一**：所有组件只消费 `--sdq-*` 语义令牌，无硬编码颜色
+7. **皮肤完整**：5 种官方皮肤（soft/deep/aurora/midnight/forest）全部可用
+8. **皮肤中心页面**：皮肤列表/实时预览/自定义编辑器/导入导出全部可用
+9. **自定义皮肤**：用户可基于官方皮肤创建自定义皮肤，localStorage 持久化
+10. **对比度达标**：所有皮肤通过 WCAG AA 对比度检查（正文 ≥4.5:1，非文本 ≥3:1）
+11. **业务色保护**：利润/成本/风险/信息色在所有皮肤下保持一致可辨识
+12. **切换流畅**：皮肤切换有过渡动画，无布局跳动，持久化正常
+
 ## References
 - 线上问题清单：docs/live-ui-beauty-audit-2026-08-31.md
 - 解决方案：docs/live-ui-solutions-2026-08-31.md
 - 全局方案：docs/ui-ux-optimization-solution-2026-08-31.md
 - 全面检查：docs/global-ui-layout-element-chart-title-audit-2026-08-31.md
+- 皮肤中心设计：docs/skin-center-design-2026-08-31.md
 - 设计系统基线：design-system/DESIGN.md
