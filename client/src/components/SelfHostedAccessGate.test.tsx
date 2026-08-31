@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SelfHostedAccessGate } from "./SelfHostedAccessGate";
 
@@ -274,5 +275,35 @@ describe("SelfHostedAccessGate CloudBase 服务端验证码入口", () => {
     expect(trpcMocks.requestCloudbaseOtp.mutateAsync).toHaveBeenLastCalledWith({ method: "email", purpose: "register", email: "owner@example.com" });
     expect((screen.getByLabelText("6 位验证码") as HTMLInputElement).value).toBe("");
     expect(screen.getByRole("button", { name: /秒后可重新获取/ })).toBeTruthy();
+  });
+  it("注册页经营行业替换为自定义下拉：展开显示全部行业并可选中", async () => {
+    const user = userEvent.setup();
+    render(<SelfHostedAccessGate><div>私有内容</div></SelfHostedAccessGate>);
+    fireEvent.click(screen.getByRole("button", { name: "还没有账号？创建你的店铺" }));
+
+    const trigger = screen.getByRole("combobox", { name: "经营行业" });
+    expect(trigger).toBeTruthy();
+
+    await user.click(trigger);
+    expect(await screen.findByRole("option", { name: "餐饮" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "零售" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "电商" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "美业服务" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "小商贩" })).toBeTruthy();
+
+    await user.click(screen.getByRole("option", { name: "餐饮" }));
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "经营行业" }).textContent).toContain("餐饮"));
+  });
+
+  it("注册页行业下拉支持键盘打开并导航到选项", async () => {
+    render(<SelfHostedAccessGate><div>私有内容</div></SelfHostedAccessGate>);
+    fireEvent.click(screen.getByRole("button", { name: "还没有账号？创建你的店铺" }));
+
+    const trigger = screen.getByRole("combobox", { name: "经营行业" }) as HTMLElement;
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    expect(await screen.findByRole("option", { name: "餐饮" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "零售" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "小商贩" })).toBeTruthy();
   });
 });

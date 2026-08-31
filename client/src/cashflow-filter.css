@@ -133,7 +133,7 @@
 .skin-deep .segment-control button { color: #a8c6dd; }
 .skin-deep .segment-control button.active { color: #fff; background: #1689dc; }
 .skin-deep .analysis-trend-card .trend-chart, .skin-deep .analysis-cashflow-card .cashflow-bars { background: transparent; }
-.skin-deep .record-form input, .skin-deep .record-form select, .skin-deep .amount-input { color: var(--skin-text); background: rgba(169,216,255,.08); border-color: rgba(170,218,255,.18); }
+.skin-deep .record-form input, .skin-deep .record-form select, .skin-deep .record-form .profile-industry-trigger, .skin-deep .amount-input { color: var(--skin-text); background: rgba(169,216,255,.08); border-color: rgba(170,218,255,.18); }
 .skin-deep .cost-ring > span { background: #102944; }
 .skin-deep .home-chart-empty, .skin-deep .analysis-stack-card .home-chart-empty, .skin-deep .analysis-cashflow-card .home-chart-empty { color: var(--skin-text); background: rgba(122,184,244,.04); border-color: rgba(168,215,255,.2); }
 .skin-deep .home-chart-empty b, .skin-deep .analysis-stack-card .home-chart-empty b, .skin-deep .analysis-cashflow-card .home-chart-empty b { color: var(--skin-subtle); }

@@ -11,3 +11,17 @@ if (
 ) {
   Object.defineProperty(globalThis, "localStorage", { value: jsdomWindow.localStorage, configurable: true, writable: true });
 }
+
+// Radix Select 在 jsdom 中依赖的 DOM API（hasPointerCapture / scrollIntoView）未实现，补充 no-op polyfill。
+// node 环境下不存在 Element，自动跳过；仅 jsdom 环境生效。
+if (typeof Element !== "undefined") {
+  const elementPrototype = Element.prototype as unknown as Record<string, unknown>;
+  if (typeof elementPrototype.hasPointerCapture !== "function") {
+    elementPrototype.hasPointerCapture = () => false;
+    elementPrototype.setPointerCapture = () => undefined;
+    elementPrototype.releasePointerCapture = () => undefined;
+  }
+  if (typeof elementPrototype.scrollIntoView !== "function") {
+    elementPrototype.scrollIntoView = () => undefined;
+  }
+}

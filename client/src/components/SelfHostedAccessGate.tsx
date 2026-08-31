@@ -2,6 +2,7 @@ import { FormEvent, ReactNode, useState } from "react";
 import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, Phone, ShieldCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { brandAssets } from "@/lib/brand-assets";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Mode = "login" | "register" | "recover";
 type VerificationMethod = "password" | "email" | "sms";
@@ -179,7 +180,7 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
       </div>}
       <form className="selfhost-access-form" onSubmit={submit} noValidate>
         {isBootstrap && <><Field label="初始化令牌" value={bootstrapToken} onChange={setBootstrapToken} type="password" autoComplete="one-time-code" placeholder="部署时生成的令牌" /><Field label="管理员姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="工作区名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：我的商店" /></>}
-        {isRegistering && <><Field label="你的姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="店铺名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：小满商店" /><label className="selfhost-field"><span>经营行业</span><select value={industryId} onChange={event => setIndustryId(event.target.value as typeof industryId)}><option value="canteen">餐饮</option><option value="retail">零售</option><option value="ecommerce">电商</option><option value="beauty">美业服务</option><option value="stall">小商贩</option></select></label></>}
+        {isRegistering && <><Field label="你的姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="店铺名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：小满商店" /><label className="selfhost-field"><span>经营行业</span><Select value={industryId} onValueChange={value => setIndustryId(value as typeof industryId)}><SelectTrigger className="selfhost-select-trigger" aria-label="经营行业"><SelectValue placeholder="请选择经营行业" /></SelectTrigger><SelectContent><SelectItem value="canteen">餐饮</SelectItem><SelectItem value="retail">零售</SelectItem><SelectItem value="ecommerce">电商</SelectItem><SelectItem value="beauty">美业服务</SelectItem><SelectItem value="stall">小商贩</SelectItem></SelectContent></Select></label></>}
         {method !== "sms" && <Field label="邮箱" value={email} onChange={setEmail} type="email" autoComplete="email" placeholder="name@example.com" icon={<Mail size={17} />} />}
         {method === "sms" && <Field label="手机号" value={phone} onChange={setPhone} type="tel" autoComplete="tel" inputMode="tel" placeholder="138 0000 0000" icon={<Phone size={17} />} />}
         {(isBootstrap || isRegistering || isRecovering || method === "password") && <Field label={isRecovering ? "新密码" : "密码"} value={password} onChange={setPassword} type="password" autoComplete={isBootstrap || isRegistering || isRecovering ? "new-password" : "current-password"} placeholder={isBootstrap || isRegistering || isRecovering ? "至少 8 个字符" : "请输入密码"} minLength={isBootstrap || isRegistering || isRecovering ? 8 : undefined} icon={<LockKeyhole size={17} />} />}
