@@ -1,4 +1,4 @@
-# UI 设计升级 · 技能选用建议（算得清）
+﻿# UI 设计升级 · 技能选用建议（算得清）
 
 **日期：** 2026-08-30
 **任务：** 为「算得清 App 全局 UI 设计升级」筛选可用的 Agent 技能
@@ -48,3 +48,31 @@
 ## 决策待定
 
 升级范围二选一：**只做令牌系统化**（第 1–2 步，~1 天）或 **令牌 + 全站 P1 遗留改造**（第 1–4 步，3–5 天）。`web-perf` 是否纳入取决于是否愿意先配置 Chrome DevTools MCP。
+
+---
+
+## 调研补全（2026-08-30，主线直读两仓库源文件；调研子 Agent 因 LLM 瞬时故障终止，不影响结论）
+
+### ui-ux-pro-max（已更新至上游最新并本地安装验证）
+
+- 数据规模：79 styles / 192 product palettes / 74 font pairings / 119 UX guidelines / 105 icons / 17 GSAP presets / 25 chart types / 22 stacks（含 react/nextjs/shadcn 等 CSV）
+- 工作流（Python 3 零依赖，scripts/search.py）：
+  1. 新项目/全局方向 → `--design-system`（聚合 style/color/landing/typography + ui-reasoning 推理 → 模式/风格/色板/字体/效果/反模式）
+  2. 定向问题 → `--domain ux|color|typography|icons|charts|gsap`（每域有优先级 1–10 规则表：Accessibility CRITICAL → Touch 44×44 CRITICAL → … → Charts）
+  3. 已知栈 → `--stack react|nextjs|shadcn`（实现细节）
+  4. `--persist --output-dir` 落盘复用
+- 对算得清的用法：审计 P1 逐项用 `--domain ux` 定向查询（如 "error summary validation"）；实现细节用 `--stack react`；升级方向校验用 `--design-system` 对照现有蓝白经营工具风格
+
+### emilkowalski/skills 流体交互工具链（已安装 7 个，分工闭环）
+
+| 技能 | 角色 | 铁律摘要 |
+| --- | --- | --- |
+| find-animation-opportunities | 找机会（只报告不实现） | 克制至上：每 App 最多 5–7 条建议；100+/天的高频操作**永远不做动画**（键盘操作=一票否决） |
+| animate | 建造 | 决策顺序：要不要动→目的→工具→属性→曲线；曲线/时长用表内精确值，禁止手造 cubic-bezier；向既有令牌扩展 |
+| improve-animations | 审计+规划 | recon→八类并行审计→自包含计划（执行者零上下文零品味也能做对） |
+| review-animations | 评审 | 十项铁律：动画需理由；ease-in 是 block；UI <300ms；origin 从 0.9–0.97+opacity（禁 scale(0)）；只动 transform/opacity；非对称进出；reduced-motion |
+| apple-design | 方法论总纲 | WWDC Designing Fluid Interfaces 17 节（响应/直接操纵/可中断/弹簧/速度交接/动量投影/空间一致/材质/排版/八原则） |
+
+### 对 D 卡的影响
+
+D1–D3 不变（CSS 层，无手势不引入弹簧——与 find/animate 的频率门一致）。D4 弹簧卡若立项：曲线与时长**必须取自 review-animations/STANDARDS.md 与 apple-design 数值表**（damping 1.0 默认、bounce 仅限动量场景），并由 review-animations 验收。
