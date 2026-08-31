@@ -295,7 +295,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 @media (max-width: 430px) { .mobile-shell { background: #f7f8fa; }.app-frame { box-shadow: none; }.floating-add { right: 18px; }.tabbar { padding-bottom: calc(7px + env(safe-area-inset-bottom)); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
-.selfhost-field-hint { margin: -7px 1px 0; color: #50657f; font-size: 11px; line-height: 1.45; }
+.selfhost-field-hint { margin: -7px 1px 0; color: #50657f; font-size: 11px; line-height: 1.45; }.selfhost-otp-error { margin: -7px 1px 0; color: #be3131; font-size: 12px; line-height: 1.5; }
 
 /* Logo System Draft 应用：Digital Blue #087FF5 / Navy #0B1836；以“+ / − / =”组织新增、核算与结果。 */
 :root { --sq-blue: #087ff5; --sq-navy: #0b1836; --sq-page: #f7faff; --sq-line: #e5ebf2; }

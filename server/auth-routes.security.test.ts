@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 import { LOCAL_SESSION_COOKIE } from "./local-auth";
 import { AUTH_THROTTLED_MESSAGE, resetAuthSecurityForTesting } from "./auth-security";
+import { CloudbaseOtpError } from "./cloudbase-auth";
+import { TRPCError } from "@trpc/server";
 
 const dbMocks = vi.hoisted(() => ({
   createInitialAdmin: vi.fn(),
@@ -37,7 +39,11 @@ vi.mock("./local-auth", async importOriginal => ({
   ...authMocks,
 }));
 
-vi.mock("./cloudbase-auth", () => cloudbaseMocks);
+// 保留真实导出（如 CloudbaseOtpError），仅覆盖 OTP 网关调用。
+vi.mock("./cloudbase-auth", async importOriginal => ({
+  ...(await importOriginal<typeof import("./cloudbase-auth")>()),
+  ...cloudbaseMocks,
+}));
 
 const { appRouter } = await import("./routers");
 
@@ -155,5 +161,14 @@ describe("public auth route security", () => {
     await expect(caller.auth.resetPasswordWithCloudbaseOtp({ challengeId: "6d9f7029-39e6-4f8b-8eb2-4ebcd992afe5", verificationCode: "123456", password: "password123" })).rejects.toThrow("密码不符合安全要求");
     expect(cloudbaseMocks.completeCloudbaseOtpChallenge).not.toHaveBeenCalled();
     expect(dbMocks.updateAppUserPassword).not.toHaveBeenCalled();
+  });
+
+  it("透传 OTP 验证失败的结构化中文提示为 tRPC BAD_REQUEST", async () => {
+    cloudbaseMocks.completeCloudbaseOtpChallenge.mockRejectedValue(new CloudbaseOtpError("verification_code_invalid", "验证码错误，请重新输入"));
+    const caller = appRouter.createCaller(anonymousContext());
+    const failure = await caller.auth.loginWithCloudbaseOtp({ challengeId: "6d9f7029-39e6-4f8b-8eb2-4ebcd992afe5", verificationCode: "123456" }).catch(error => error);
+    expect(failure).toBeInstanceOf(TRPCError);
+    expect(failure.code).toBe("BAD_REQUEST");
+    expect(failure.message).toBe("验证码错误，请重新输入");
   });
 });
