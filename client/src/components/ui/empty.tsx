@@ -114,17 +114,17 @@ function EmptyState({
     <div
       data-slot="empty-state"
       className={cn(
-        "flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl bg-[#f9fafb] px-6 py-6 text-center",
+        "flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl bg-canvas px-6 py-6 text-center",
         className
       )}
     >
       {icon ? <EmptyMedia variant="icon">{icon}</EmptyMedia> : null}
-      <p data-slot="empty-state-title" className="text-sm font-medium text-[#374151]">{title}</p>
+      <p data-slot="empty-state-title" className="text-sm font-medium text-ink">{title}</p>
       {description ? (
-        <p data-slot="empty-state-description" className="max-w-sm text-xs/relaxed text-[#6b7280]">{description}</p>
+        <p data-slot="empty-state-description" className="max-w-sm text-xs/relaxed text-muted">{description}</p>
       ) : null}
       {action ? (
-        <button type="button" data-slot="empty-state-action" onClick={action.onClick} className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-[#087ff5] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#086fe0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087ff5]">
+        <button type="button" data-slot="empty-state-action" onClick={action.onClick} className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-[var(--sdq-action-primary)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--sdq-action-primary-pressed)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sdq-action-primary)]">
           {action.label}
         </button>
       ) : null}

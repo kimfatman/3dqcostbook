@@ -107,6 +107,7 @@
   --sdq-text-primary: var(--sdq-neutral-50);        /* 原 #f5f8ff */
   --sdq-text-secondary: var(--sdq-neutral-300);     /* 原 #bac5d7：深色皮肤次级文字近 neutral-300（Δ3.2），非浅色对应的 neutral-600 步 */
   --sdq-text-tertiary: var(--sdq-neutral-400);      /* 原 #7f8ba0 */
+  --sdq-text-on-brand: #ffffff;                       /* 品牌按钮上的白字，深浅色下保持白色 */
   --sdq-border-subtle: var(--sdq-neutral-800);      /* 原 #2d3a50 */
   --sdq-border-strong: var(--sdq-neutral-600);      /* 原 #49607d */
   --sdq-shadow-card: 0 6px 20px rgba(0, 0, 0, 0.24);
