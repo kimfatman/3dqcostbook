@@ -183,13 +183,19 @@ C1 已建原色阶 50–950 + 语义层重指向 + Tailwind `@theme` 桥。**收
 
 ---
 
-## 五、全局实施批次（延续 C1–C7 节奏，建议 C8+）
+## 五、全局实施批次（延续 C1–C7 节奏，串行推进）
 
-> 每批独立分支 `agent/ui-upgrade-cN-*` → 三门禁（TS/全量测试/生产构建）→ 多视口回归 → 合 main → Runbook 发布。
+> **推进方式（结合仓库实际，2026-08-31 调研定稿）**：
+> - 仓库既定模式为"多 Agent 协作"（`ui-backend-agent-prompts.md`：统筹/UI/后端 3 Agent，独立分支 + PR 交接 + 回归证据）。C1–C7 已由本地 agent 用"每卡独立分支 → 三门禁 → 合 main → Runbook 发布"成功上线，本批完全复用该模式。
+> - **串行推进，非并行**：所有批次（含经营分析一期）都改 Home.tsx 洞察区域，并行会同文件冲突。每批独立分支 `agent/ui-upgrade-cN-*`，合入 main 后开下一批。
+> - **P0 后端问题分流**：OTP 链路、注册邮箱验证、店铺切换器属认证/后端，划给后端 Agent 单独批次，不混入 UI 批次。
+> - 每批保留 DOM 回归断言（延续 C1–C7 每卡 5–12 项），三门禁（`pnpm check` + `pnpm test` + `pnpm build`）全绿才合并。
 
 | 批 | 内容 | 规模 | 验收锚点 |
 |---|---|---|---|
-| **C8 全局组件与空态** | EmptyState/PageHeader/MetricCard 抽取 + 各页空态三件套 + 蓝色待观察标签替代红徽章 | M | 空态截图 + 徽章色断言 |
+| **后端-P0（分流）** | OTP 链路修复、注册邮箱验证、店铺切换器（后端 Agent） | M | 认证回归 + 店铺切换 e2e |
+| **C8 全局组件与空态** | EmptyState/PageHeader/MetricCard 抽取 + 各页空态三件套 + 蓝待观察标签替代红徽章 | M | 空态截图 + 徽章色断言 |
+| **C-IA 经营分析一期** | 经营分析双 Tab + 物料库/BOM/套餐 + 毛利/保本/客流（按 business-analysis-solution，拆独立目录） | L | 单测 + DOM + 闭环验收 |
 | **C9 导航重构** | 详情页粘性主 Tab + FAB 上移 64px + padding-bottom 96px + back 状态保留 | M | 详情页 DOM + 滚动回归 |
 | **C10 图标体系** | emoji→Lucide 迁移 + 图标 token + aria 补全 | S | 图标断言 + a11y 扫描 |
 | **C11 页面专项 P0** | 商品详情标题去重、回款额遮挡、消息时间戳、我的行业切换 | S | 逐项 DOM 断言 |
@@ -198,7 +204,7 @@ C1 已建原色阶 50–950 + 语义层重指向 + Tailwind `@theme` 桥。**收
 | **C14 暗色模式双轨** | 语义 token 双轨补全 + 对比度独立校验 + prefers-color-scheme | L | 双主题对比度报告 |
 | **C15 性能与 PWA** | 关键 CSS inline + WebP/懒加载 + Service Worker | L | Lighthouse + 二次访问秒开 |
 
-*经营分析一期作为独立主线并行实施，全程遵守本方案规则（与 `business-analysis-solution` 互为支撑）。*
+**批次顺序依赖**：C8（组件）须在 C9–C12（改页面）之前；C13（动效）依赖 C1 令牌；C14（暗色）依赖 C8/C10 完成。经营分析（C-IA）作为独立大批次串行插入，遵守本方案全部规则。
 
 ---
 
