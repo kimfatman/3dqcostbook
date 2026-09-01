@@ -1664,6 +1664,273 @@ git push
 
 ---
 
+### 批次 19：图表专项优化（数据表达 + 美观度 + 交互性）
+
+#### 目标
+基于 `docs/chart-data-expression-audit-2026-09-01.md` 审查报告，对 18 个图表进行专项优化：4 个图表类型变更、全局图表规范统一、所有图表加入场动画和 hover Tooltip。
+
+#### 涉及文件
+- `client/src/pages/Home.tsx`（所有图表组件）
+- `client/src/index.css`（图表样式）
+- `client/src/components/ChartTooltip.tsx`（Tooltip 组件，如已存在则复用）
+
+#### 前置依赖
+- 批次 11（全局配色与令牌）必须已完成，--sdq-chart-1~8 令牌已存在
+- 批次 12（全局组件）必须已完成，动画关键帧和 stagger-in 工具类已存在
+
+#### Trae 指令（直接复制）
+
+```
+我需要对所有图表进行专项优化，请按以下步骤操作：
+
+## 第一部分：4 个图表类型变更（P0）
+
+### 1. 成本分析饼图（CostAnalysisPieChart）改为横向条形图
+当前问题：与成本结构环形图（CostStructureRing）功能完全重复，饼图不适合>5分类
+修改方案：
+- 将 CostAnalysisPieChart 组件重命名为 CostStructureBarChart
+- 渲染方式从 conic-gradient 饼图改为横向条形图（与 SkuTopBars 样式一致）
+- 每行：排名序号 + 分类名 + 金额 + 占比 + 条形进度条 + ChevronRight
+- 按金额降序排列，前5名显示，超过5名显示"其他N类"汇总行
+- 条形颜色：第1名 --sdq-chart-1，第2名 --sdq-chart-2，第3名 --sdq-chart-3，其余 --sdq-chart-8
+- 标题从"钱花在哪里"改为"成本结构"
+- 保留点击下钻功能（onSelect/onOpenAll）
+- 保留底部洞察（最大驱动/占比）
+
+### 2. 月度成本堆叠面积图（MonthlyCostStackChart）改为堆叠柱状图
+当前问题：面积图不适合离散月份+多分类（最多8层，底层几乎不可见）
+修改方案：
+- 将渲染方式从 SVG path 堆叠面积改为堆叠柱状图
+- 每月一根柱子，柱子内部分类堆叠（从下到上按金额排序）
+- 柱子宽度：月份数≤6时每柱宽 12%，间距 4%
+- 柱子加圆角（顶部 4px）
+- 分类颜色：用 --sdq-chart-1~8，前5类显示，超过5类合并为"其他"
+- 保留顶部图例（前4类+"+N类"）
+- 保留底部对比条（最新月/较上月/最大分类）
+- 加Y轴刻度（0/25%/50%/75%/100%，左侧显示）
+- 保留点击下钻功能（onOpen）
+
+### 3. 退款帕累托图（RefundPareto）加累计占比折线
+当前问题：只有条形，缺累计占比折线，无法完整实现80/20分析
+修改方案：
+- 在条形图上方叠加累计占比折线（SVG polyline）
+- 折线Y轴：右侧，0%-100%
+- 折线数据点：每个原因的累计占比（cumulativeShare）
+- 折线颜色：--sdq-chart-4（橙色），数据点 r=2.5
+- 加80%参考线（dashed line，--sdq-chart-8，标注"80%"）
+- 前两原因用 --sdq-chart-1（主色蓝）高亮，其余用 --sdq-chart-8
+- 保留顶部集中度卡片（前两原因占比）
+- 保留点击下钻功能（onSelect）
+
+### 4. 月度现金流图（MonthlyCashFlowChart）加净额折线
+当前问题：只有双柱，缺净额趋势，无法直观看到现金流变化趋势
+修改方案：
+- 在双柱上方叠加净额折线（SVG polyline）
+- 净额 = 流入 - 流出
+- 折线颜色：净额>0 用 --sdq-chart-3（绿），净额<0 用 --sdq-chart-5（红）
+- 数据点 r=2.5，当前月 r=3.5
+- 加零基准线（dashed line，--sdq-chart-grid）
+- 双柱改为真实柱子（圆角，高度动画）
+- 流入柱颜色：--sdq-chart-3（绿），流出柱颜色：--sdq-chart-5（红）
+- 保留筛选面板（渠道/供应商）
+- 保留底部对比（流入/流出/净额）
+- 保留点击下钻功能（onOpen）
+
+## 第二部分：全局图表规范统一（P1）
+
+### 5. 网格线统一
+- 所有有坐标系的图表（折线/柱状/面积/雷达）统一用 SVG line 实现网格线
+- 网格线颜色：var(--sdq-chart-grid)
+- 横向网格线：3-4条（25%/50%/75%/100%）
+- 纵向网格线：按需（时间序列图可不显示纵向网格线）
+- 删除销售动能图的 repeating-linear-gradient 网格线，改用 SVG line
+
+### 6. 数据点大小统一
+- 普通数据点：r=2
+- 当前月/当前值数据点：r=3.5
+- 峰值/最低值数据点：r=2.5
+- hover 数据点：r=4.5
+- 用 CSS 类统一控制：.chart-point / .chart-point.current / .chart-point.peak / .chart-point:hover
+- 修改利润趋势图（r=1.65-2.8）、销售动能图（r=1.65-2.8）、定价利润图（r=1.15-3.2）
+
+### 7. X 轴标签格式统一
+- 月度图："8月"格式
+- 日度图："15日"格式
+- 跨月时："8/15"格式
+- 标签字号：10px，颜色 var(--sdq-text-tertiary)
+- 标签与数据点垂直对齐
+- 当前月/最新日标签高亮（颜色 var(--sdq-text-primary)，加粗）
+
+### 8. 图例位置/样式统一
+- 图例位置：标题右侧（横向排列）或图表底部（横向排列）
+- 图例项：颜色点（10px 圆点）+ 标签（10px，var(--sdq-text-secondary)）
+- 超过5项时：显示前4项 + "其他N项"
+- 图例可点击：点击高亮对应数据系列，再次点击取消
+- 统一样式类：.chart-legend / .chart-legend-item / .chart-legend-dot
+
+### 9. 摘要卡片样式统一
+- 所有图表底部摘要卡片统一为 3 栏等宽 grid
+- 每栏：标签（10px，var(--sdq-text-tertiary)）+ 数值（14px，bold，var(--sdq-text-primary)）
+- 数值颜色按语义：正值 var(--sdq-profit)，负值 var(--sdq-risk)，中性 var(--sdq-text-primary)
+- 统一样式类：.chart-summary / .chart-summary-item / .chart-summary-label / .chart-summary-value
+- 修改利润趋势（最新/最高/最低）、销售动能（最新/峰值/客单）、成本堆叠（最新月/较上月/最大分类）、现金流（流入/流出/净额）
+
+### 10. 空态/加载态规范
+- 空态统一三段式：图标（48px，var(--sdq-text-tertiary)）+ 标题（14px bold）+ 描述（12px，var(--sdq-text-secondary)）+ 行动按钮（44px，fixed-primary）
+- 加载态：shimmer 骨架屏（200ms 延迟后显示，动画 1.5s infinite）
+- 空态与加载态视觉区分：空态有行动按钮，加载态无按钮只有骨架
+- 统一样式类：.chart-empty / .chart-loading / .chart-skeleton
+- 修改 HomeChartEmpty 组件，统一为三段式
+
+## 第三部分：所有图表加入场动画（P1）
+
+### 11. 柱状图入场动画
+- 适用：销售动能图、商品成本趋势图、退款帕累托图、现金流图、结构对比图、堆叠柱状图
+- 动画：height 从 0 到目标值，spring 动画（cubic-bezier(0.34, 1.56, 0.64, 1)）
+- 时长：0.6s
+- stagger：每根柱子延迟 30ms
+- 实现：CSS @keyframes chart-bar-in { from { height: 0; } } + .chart-bar { animation: chart-bar-in 0.6s var(--sdq-ease-spring) both; }
+- 注意：SVG 柱子用 transform: scaleY(0) 到 scaleY(1)，transform-origin: bottom
+
+### 12. 折线图入场动画
+- 适用：利润趋势图、销售动能图折线、定价利润图、退款帕累托累计折线、现金流净额折线
+- 动画：stroke-dashoffset 从 100% 到 0，时长 0.8s，ease-out
+- 面积图：opacity 从 0 到 1，延迟 0.3s，时长 0.6s
+- 实现：CSS .chart-line { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: chart-line-in 0.8s ease-out forwards; }
+- @keyframes chart-line-in { to { stroke-dashoffset: 0; } }
+
+### 13. 环形图入场动画
+- 适用：销售目标进度环、预算环形图、成本结构环形图
+- SVG 环形（circle stroke-dashoffset）：从满到目标值，1s spring
+- conic-gradient 环形：旋转展开（从 0 到目标角度），1s spring
+- 中心数字：AnimatedChartValue 从 0 滚动到目标值，与环形动画同步
+- 实现：CSS .chart-ring-progress { stroke-dasharray: 314; stroke-dashoffset: 314; animation: chart-ring-in 1s var(--sdq-ease-spring) forwards; }
+
+### 14. 面积图入场动画
+- 适用：堆叠柱状图（原面积图已改为柱状图，如保留其他面积图）
+- 动画：opacity 从 0 到 1 + clip-path 从下往上展开
+- 时长：0.8s，stagger 每层 100ms
+- 实现：CSS .chart-area { opacity: 0; animation: chart-area-in 0.8s ease-out forwards; }
+
+### 15. 雷达图入场动画
+- 适用：经营健康度雷达图
+- 动画：多边形 scale 从 0 到 1，从中心展开，1s spring
+- 网格线：opacity 从 0 到 1，stagger 每层 100ms
+- 实现：CSS .health-shape { transform: scale(0); transform-origin: center; animation: chart-radar-in 1s var(--sdq-ease-spring) forwards; }
+
+### 16. 条形图入场动画
+- 适用：SKU排行、供应商排行、成本结构条形图（原饼图改）、结构对比图
+- 动画：width 从 0 到目标值，spring 动画，stagger 每行 50ms
+- 实现：CSS .chart-bar-h { width: 0; animation: chart-bar-h-in 0.6s var(--sdq-ease-spring) forwards; }
+
+### 17. 瀑布图入场动画
+- 适用：利润瀑布图
+- 动画：每根柱子从 0 到目标高度，spring 动画，stagger 100ms
+- 连接线：柱子动画完成后淡入（延迟 0.5s）
+- 实现：复用柱状图动画类
+
+### 18. 减少动效适配
+- 所有图表动画加 @media (prefers-reduced-motion: reduce) 禁用
+- 禁用时图表直接显示最终状态，无动画
+
+## 第四部分：所有图表加 hover Tooltip（P1）
+
+### 19. 统一 ChartTooltip 组件
+- 检查 client/src/components/ChartTooltip.tsx 是否已存在
+- 如不存在，创建统一的 Tooltip 组件：
+  - Props: label, value, detail, position（top/bottom/left/right）
+  - 样式：背景 var(--sdq-bg-elevated)，圆角 8px，阴影 var(--sdq-shadow-elevated)，padding 8px 12px
+  - 文字：label 10px tertiary，value 14px bold，detail 10px secondary
+  - 动画：opacity 0→1 + translateY(4px)→0，0.15s ease-out
+  - 触控设备：点击显示，再次点击或点击其他区域隐藏
+
+### 20. 各图表 Tooltip 内容
+- 利润瀑布图：点击/hover 柱子显示（步骤名/金额/占营收比例）
+- 利润趋势图：hover 数据点显示（月份/收入/成本/利润/利润率）
+- 预算环形图：hover 环形显示（已用XX% / 已用XX元 / 预算XX元 / 剩余XX元）
+- 退款帕累托图：hover 条形显示（原因/金额/件数/占比/累计占比）
+- 销售动能图：hover 柱子/数据点显示（日期/销售额/订单数/客单价/环比）
+- SKU排行：hover 行显示（商品名/数值/占比/排名）
+- 成本结构环形图：hover 扇区显示（分类名/金额/占比/较上月变化）
+- 成本结构条形图（原饼图改）：hover 行显示（分类名/金额/占比/排名）
+- 结构对比图：hover 双条形显示（分类/本期占比/上期占比/变化值）
+- 销售目标进度环：hover 环形显示（完成率XX% / 已完成XX元 / 目标XX元 / 预计月末XX元）
+- 堆叠柱状图（原面积图改）：hover 柱子显示（月份/每层分类/金额/占比/总成本）
+- 现金流图：hover 柱子/数据点显示（月份/流入/流出/净额/累计）
+- 健康度雷达图：hover 维度轴/数据点显示（维度名/分数/原始值/公式）
+- 定价利润图：hover 数据点显示（售价/贡献利润/利润率/与保本价差额）
+- 商品成本趋势图：hover 柱子显示（月份/单位成本/较上月变化/与平均差额）
+- 供应商排行：hover 行显示（供应商名/金额/笔数/占比/排名）
+
+### 21. hover 高亮效果
+- 柱状图：hover 柱子亮度 +8%（filter: brightness(1.08)），阴影加深
+- 折线图：hover 数据点 r 从 2 放大到 4.5，折线亮度 +8%
+- 环形图：hover 扇区亮度 +8%，轻微放大（scale 1.02）
+- 条形图：hover 行背景 var(--sdq-bg-canvas)，条形亮度 +8%
+- 雷达图：hover 维度轴高亮，对应数据点放大
+- 所有 hover 过渡：0.15s ease-out
+
+## 第五部分：标题简洁化（P2）
+
+### 22. 图表标题统一
+- "钱花在哪里" → "成本结构"
+- "本期利润形成" → "利润构成"
+- "近 6 月经营利润"（副标题）→ "近6月"（主标题"利润趋势"已含）
+- "成本归属·供应商" → "供应商成本"
+- "近 6 月单位成本趋势" → "成本趋势"
+- "销售动能"（已简洁，保留）
+- 所有主标题≤6字，副标题放时间范围
+- 删除冗余修饰词（"本期""近6月"等在主标题中重复出现的）
+
+## 第六步：验证
+1. pnpm check && pnpm test && pnpm build，三门禁全绿
+2. 启动开发服务器，逐页检查 18 个图表：
+   - 4 个类型变更的图表渲染正确
+   - 所有图表入场动画流畅（stagger/spring）
+   - 所有图表 hover 高亮 + Tooltip 显示正确
+   - 网格线/数据点/图例/摘要卡片样式统一
+   - 空态三段式 + 加载态骨架屏
+3. 切换 5 种皮肤，图表颜色自动变化（--sdq-chart-1~8）
+4. 开启 prefers-reduced-motion，所有动画禁用，图表直接显示
+5. 触控设备上点击图表显示 Tooltip
+6. 检查所有图表标题简洁，无啰嗦/重复
+
+## 注意事项
+- 批次 11（令牌）和批次 12（全局组件）必须已完成，否则 --sdq-chart-* 令牌和动画类不存在
+- 图表类型变更时保留原有的 props 接口和点击下钻功能，不破坏外部调用
+- SVG 动画用 CSS 类控制，不要在 JS 中操作 style
+- Tooltip 组件要支持触控设备（点击显示，而非仅 hover）
+- 所有动画加 prefers-reduced-motion 适配
+- 堆叠柱状图的分类颜色与原面积图保持一致（--sdq-chart-1~8）
+```
+
+#### 验收标准
+- [ ] 成本分析饼图改为横向条形图（与环形图形成互补）
+- [ ] 月度成本堆叠面积图改为堆叠柱状图
+- [ ] 退款帕累托图加累计占比折线 + 80%参考线
+- [ ] 月度现金流图加净额折线 + 零基准线
+- [ ] 所有图表网格线统一用 SVG line + --sdq-chart-grid
+- [ ] 数据点大小统一（普通r=2/当前r=3.5/峰值r=2.5/hover r=4.5）
+- [ ] X轴标签格式统一（月/日/跨月）
+- [ ] 图例位置/样式统一，可点击高亮
+- [ ] 摘要卡片 3 栏等宽 grid，数值颜色按语义
+- [ ] 空态三段式 + 加载态 shimmer 骨架屏
+- [ ] 柱状图入场动画（height spring + stagger）
+- [ ] 折线图入场动画（stroke-dashoffset + 面积淡入）
+- [ ] 环形图入场动画（stroke-dashoffset/conic-gradient 旋转）
+- [ ] 雷达图入场动画（scale 从中心展开）
+- [ ] 条形图入场动画（width spring + stagger）
+- [ ] 所有动画加 prefers-reduced-motion 适配
+- [ ] 统一 ChartTooltip 组件，支持 hover + 触控点击
+- [ ] 18 个图表全部加 hover Tooltip（内容完整）
+- [ ] hover 高亮效果（亮度+8%/放大/阴影）
+- [ ] 图表标题简洁化（≤6字，无啰嗦/重复）
+- [ ] 5 种皮肤下图表颜色自动变化
+- [ ] 三门禁全绿
+- [ ] 变更已登记到 docs/change-log.md
+
+---
+
 ## 完成标准（全部批次完成后）
 
 ### UI 问题修复（批次 1-5）
@@ -1697,6 +1964,15 @@ git push
 24. **性能达标**：首屏<3s，CSS动画用transform/opacity，图表不阻塞主线程
 25. **三门禁全绿**：每批 pnpm check && pnpm test && pnpm build 通过
 26. **文档更新**：ui-polish-todo/change-log/design-tokens 文档同步更新
+
+### 图表专项优化（批次 19）
+27. **图表类型正确**：成本分析饼图→横向条形图、成本堆叠面积图→堆叠柱状图、退款帕累托加累计折线、现金流加净额折线
+28. **图表规范统一**：网格线/数据点/X轴标签/图例/摘要卡片/空态加载态全部统一
+29. **图表动效完整**：18个图表全部加入场动画（柱状/折线/环形/雷达/条形/瀑布），spring物理+stagger
+30. **图表交互完整**：18个图表全部加hover高亮+Tooltip，支持触控点击
+31. **图表标题简洁**：主标题≤6字，无啰嗦/重复
+32. **图表皮肤兼容**：5种皮肤下图表颜色自动变化（--sdq-chart-1~8）
+33. **图表减少动效**：prefers-reduced-motion下所有动画禁用
 
 ## References
 - 线上问题清单：docs/live-ui-beauty-audit-2026-08-31.md
