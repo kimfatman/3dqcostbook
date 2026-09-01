@@ -113,7 +113,7 @@
 | 4 | 商品模块 | 商品列表/商品详情/新增商品/BOM/定价/SKU | ✅ 方案完成，待执行 | 第四章 |
 | 5 | 洞察模块 | 洞察页/瀑布图/成本结构/报表 | ✅ 方案完成，待执行 | 第五章 |
 | 6 | 我的模块 | 我的/设置/皮肤中心/供应商/流水/记一笔 | ✅ 方案完成，待执行 | 第六章 |
-| 7 | 全局组件 | 弹窗/抽屉/下拉/空态/加载态/Toast | ⏳ 待打磨 | 第七章 |
+| 7 | 全局组件 | 弹窗/抽屉/下拉/空态/加载态/Toast | ✅ 方案完成，待执行 | 第七章 |
 | 8 | 全局配色与令牌 | 令牌完整性/对比度/皮肤兼容 | ⏳ 待打磨 | 第八章 |
 
 **进度：** 1/8 模块方案完成（12.5%）
@@ -632,11 +632,102 @@
 
 ---
 
-## 第七章：全局组件（⏳ 待打磨）
+## 第七章：全局组件（✅ 方案完成）
 
-**状态：** 待打磨 ｜ **包含组件：** 弹窗(Dialog)、抽屉(Sheet)、下拉(Dropdown/Select)、空态(Empty)、加载态(Skeleton/Spinner)、Toast、按钮(Button)、输入框(Input)、徽章(Badge)、卡片(Card)、工具提示(Tooltip)
+**打磨日期：** 2026-09-01 ｜ **问题数：** 30 ｜ **执行状态：** 待 Trae 执行
+**审查轮次：** Apple Design ×2 + ui-ux-pro-max ×2（共4轮）
+**包含：** 顶部栏、底部导航、FAB、Toast、空态、表单、按钮、卡片、分段控制、搜索框、页面标题、详情hero、弹窗、图表工具、头像/Logo、行业选择、分类chips、周柱状图
 
-（打磨完成后在此填写问题清单和方案）
+### 7.1 当前基线
+- 底部导航用backdrop-filter: blur(16px)半透明材质，符合Apple Design规范
+- FAB用渐变+内阴影+外阴影，材质层次丰富
+- 表单输入框focus有3px光晕，无障碍友好
+- 弹窗用role="alertdialog"+aria-modal，无障碍规范
+- 空态组件HomeChartEmpty三段式（标题+描述+行动按钮）
+- 图表工具ChartTooltip/AnimatedChartValue封装良好
+- 头像/Logo用渐变背景，品牌感强
+- 按钮点击有scale(.97/.98)反馈
+- 卡片圆角14-16px，基本统一
+
+### 7.2 问题清单（30项）
+
+#### P0（8项）
+| # | 问题 | 方案 |
+|---|---|---|
+| 1 | CSS重复定义严重：tabbar 4个、empty-state 5个、segment-control 3个、search-field 2个、app-toast 2个、sub-intro 2个 | 收敛为单一权威定义，删除重复/旧定义，用CSS变量统一参数 |
+| 2 | 硬编码颜色：tabbar背景rgba(255,255,255,.94/.96/.97)、多个组件阴影rgba | 改语义令牌：tabbar背景`--sdq-bg-glass`，阴影`--sdq-shadow-elevated` |
+| 3 | 旧令牌残留：--sq-blue、--sq-navy、--sq-line、--app-card、--app-line、--app-radius、--app-subtle | 全部替换为--sdq-*语义令牌，删除旧令牌定义 |
+| 4 | detail-hero深色皮肤异常：背景用--sdq-text-primary，深色下背景变浅文字也变浅 | 改`--sdq-bg-brand`或专用`--sdq-hero-bg`，深色皮肤下保持深色 |
+| 5 | FAB渐变无效：linear-gradient两色相同 | 改真实渐变：`linear-gradient(140deg, --sdq-action-primary, --sdq-info)`或纯色+内阴影 |
+| 6 | tabbar按钮文字9-10px<11px标准 | 文字→11px，图标保持21px，active态加粗 |
+| 7 | weekly-bars em 9px<11px标准（成本趋势图X轴标签） | em→11px，颜色保持--sdq-text-tertiary |
+| 8 | industry-picker small/em 9-10px<11px标准 | small→10px（最小），em→11px，b保持13px |
+
+#### P1（14项）
+| # | 问题 | 方案 |
+|---|---|---|
+| 9 | fixed-primary:hover背景不变，无hover反馈 | hover背景`color-mix(in srgb, --sdq-action-primary 92%, black)`，亮度+5% |
+| 10 | search-field focus光晕不一致：3种写法（rgba 9%/color-mix 12%/color-mix 14%） | 统一为`box-shadow: 0 0 0 3px color-mix(in srgb, --sdq-action-primary 14%, transparent)` |
+| 11 | app-toast位置/圆角不一致：bottom 83px/87px，border-radius 999px/12px | 统一为bottom: calc(env(safe-area-inset-bottom) + 88px)，border-radius: 12px |
+| 12 | tabbar切换无过渡动画，active态瞬时变化 | 加color/background过渡（0.2s ease），active态背景淡入 |
+| 13 | Toast出现/消失无动画，瞬时出现/消失 | 加fade-in+slide-up动画（0.25s spring），消失时fade-out |
+| 14 | 弹窗出现无动画，voucher-guard瞬时出现 | 加backdrop fade-in+card scale-in（0.25s spring） |
+| 15 | 分段控制切换无滑动动画，active态瞬时变化 | 加active背景滑动动画（0.25s spring），或transform translateX |
+| 16 | 可点击卡片无hover反馈，桌面端悬停无变化 | hover背景`--sdq-bg-canvas`，阴影加深，左侧加3px品牌色指示条 |
+| 17 | 空态组件无入场动画，瞬时出现 | 加fade-in+up动画（0.3s ease），延迟100ms |
+| 18 | 表单输入框focus无过渡，光晕瞬时出现 | 加border-color/box-shadow过渡（0.2s ease） |
+| 19 | 顶部栏无滚动隐藏/显示，固定占用空间 | 向下滚动隐藏，向上滚动显示（0.3s ease），或保持固定但加阴影 |
+| 20 | empty-state样式不一致：5个定义导致padding/color/border-radius差异 | 收敛为单一权威定义，padding: 25px 14px，color: --sdq-text-secondary，border-radius: 14px |
+| 21 | 多个组件硬编码阴影颜色：rgba(11,24,54,.18)、rgba(22,119,255,.18) | 改语义令牌：`--sdq-shadow-elevated`、`--sdq-shadow-brand`，深色皮肤自动适配 |
+| 22 | sub-intro h1字号不一致：28px/27px两种 | 统一为27px（compact）/28px（默认），letter-spacing: -.05em |
+
+#### P2（8项）
+| # | 问题 | 方案 |
+|---|---|---|
+| 23 | 全局组件无统一动效令牌规范 | 定义--sdq-ease-spring/--sdq-ease-standard/--sdq-duration-fast/normal/slow令牌 |
+| 24 | 按钮无统一状态规范（hover/active/disabled/focus） | 定义按钮状态规范：hover brightness+5%、active scale.98、disabled opacity.58、focus 3px光晕 |
+| 25 | 卡片无统一圆角/阴影/间距规范 | 定义卡片规范：圆角14px、阴影--sdq-shadow-elevated、间距12px、内边距16px |
+| 26 | 表单无统一label/input/error规范 | 定义表单规范：label 12px加粗、input 44px高、error 11px --sdq-risk、helper 10px --sdq-text-tertiary |
+| 27 | 无统一加载骨架屏规范 | 定义骨架屏规范：shimmer动画1.5s、背景--sdq-bg-canvas、圆角8px |
+| 28 | 无统一空态插画规范 | 定义空态规范：图标48px、标题14px加粗、描述12px、行动按钮44px |
+| 29 | 无统一Toast规范 | 定义Toast规范：位置底部88px、圆角12px、文字12px、时长2.5s、成功/警告/错误三种类型 |
+| 30 | 无统一弹窗规范 | 定义弹窗规范：backdrop rgba(0,0,0,.4)、card圆角16px、标题16px、描述13px、按钮44px |
+
+### 7.3 配色检查
+- ❌ CSS重复定义严重（P0）
+- ❌ 硬编码颜色：tabbar背景/阴影（P0）
+- ❌ 旧令牌残留：--sq-*/--app-*（P0）
+- ❌ detail-hero深色皮肤异常（P0）
+- ❌ FAB渐变无效（P0）
+- ⚠️ fixed-primary:hover无反馈（P1）
+- ⚠️ search-field focus光晕不一致（P1）
+- ⚠️ app-toast位置/圆角不一致（P1）
+- ⚠️ empty-state样式不一致（P1）
+- ⚠️ 多个组件硬编码阴影颜色（P1）
+- ✅ 主要颜色使用语义令牌
+- ✅ 表单focus有光晕
+- ✅ 弹窗无障碍规范
+
+### 7.4 验收标准
+- [ ] CSS重复定义收敛为单一权威定义
+- [ ] 硬编码颜色全部替换为语义令牌
+- [ ] 旧令牌（--sq-*/--app-*）全部替换为--sdq-*
+- [ ] detail-hero深色皮肤下可读
+- [ ] FAB真实渐变
+- [ ] 无9px以下文字，tabbar/weekly-bars/industry-picker≥11px
+- [ ] fixed-primary:hover有亮度变化
+- [ ] search-field focus光晕统一
+- [ ] app-toast位置/圆角统一
+- [ ] tabbar/segment-control切换有过渡动画
+- [ ] Toast/弹窗出现有动画
+- [ ] 可点击卡片有hover反馈
+- [ ] 空态/表单focus有过渡
+- [ ] 定义全局动效令牌（ease/duration）
+- [ ] 定义按钮/卡片/表单/空态/Toast/弹窗统一规范
+- [ ] 减少动效适配
+- [ ] 5种皮肤正常
+- [ ] 三门禁全绿
+- [ ] 变更已登记
 
 ---
 
@@ -658,6 +749,7 @@
 | 2026-09-01 | 商品模块 | 32 | 方案完成，待执行 | AI（4轮审查） |
 | 2026-09-01 | 洞察模块 | 35 | 方案完成，待执行 | AI（4轮审查） |
 | 2026-09-01 | 我的模块 | 28 | 方案完成，待执行 | AI（4轮审查） |
+| 2026-09-01 | 全局组件 | 30 | 方案完成，待执行 | AI（4轮审查） |
 | | | | | |
 
 ---
