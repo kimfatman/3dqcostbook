@@ -7,6 +7,14 @@
 ## 2026-09-01
 
 ### 技术
+- 批次 13（登录/注册页打磨，载体 SelfHostedAccessGate.tsx —— 项目无 pages/Login.tsx、Register.tsx）：
+  - Hero 区：官方品牌印鉴（brandAssets.logoMark）放大为 64×64 圆角 16px（hero-mark 由 29px/10px 升级），标语收敛（移除“专属工作区/私有数据”卖点胶囊，对齐 08-30 评审 P3-2）；hero 配色保持方案 A 线上深色品牌渐变（bg-brand-soft 到 transparent 的浅色方案未采用，保证与已上线的方案 A 视觉一致）；入场动画 fade-in + slide-up（@keyframes sdq-rise-in，400ms，卡片延迟 100ms stagger，prefers-reduced-motion 降级为无动画）
+  - 输入统一：登录/注册全部输入框接入批次 12 .sdq-input 类体系（44px --sdq-height-control / 圆角 12 --sdq-radius-md / focus 品牌蓝 4px 光晕 / error risk 描边+光晕 / 前缀图标 16px text-secondary），移动端字号保持 16px 防 iOS 缩放，label 统一 14px text-primary 700 + 必填红星 .sdq-required，::-webkit-autofill 自定义背景文字色，经营行业下拉 SelectTrigger 与输入框等高对齐（min-height --sdq-height-control / radius-md / focus 光晕 15%）
+  - 字段级错误：提交时统一收集（邮箱格式/手机号/姓名/店铺名/密码/初始化令牌），输入框下方 12px risk 提示 + CircleAlert 图标 + aria-invalid + 红框光晕，重新输入即消失；修复 P0-5 错误背景色非法写法 var(--sdq-bg-surface)4f3 → color-mix(in srgb, var(--sdq-risk) 8%, var(--sdq-bg-surface))；全局 role=alert 通知契约保留
+  - 验证码按钮三态：发送中（sdq-spinner 旋转 + “发送中…” disabled）、倒计时（“60 秒后可重新获取” disabled）、倒计时结束恢复“重新获取验证码”可点击；发送失败保留重试入口与全局提示
+  - 密码强度指示器（注册/重设/初始化，登录页不显示）：4 段进度条，弱 1 段 risk / 中 2 段 cost / 强 3-4 段 profit，12px 文字“弱/中/强”+ 建议，纯前端计算（长度≥8+大小写+数字+符号）实时更新
+  - 其他打磨：密码眼睛切换触控区 38→44px，协议复选框 17→20px + :active 缩放
+  - 回归：新增 SelfHostedAccessGate.batch13.dom.test.tsx（8 用例：CSS 契约 + hero 印鉴 + sdq 输入体系 + 字段级错误 + 密码强度三档 + 验证码三态 + 发送失败），既有方案 A 登录回归 15 项零改动全绿（提交：本批次）
 - 批次 12（全局组件打磨）：
   - 按钮：新增 `.sdq-btn` 类体系（五变体 primary/secondary/ghost/danger/link × 三尺寸 sm 32/md 40/lg 48 × 五状态 default/hover/active/disabled/loading），loading 态旋转图标（.sdq-btn-spin）+「处理中」文字+禁点，图标按钮 40×40 最小触控目标 + :active scale .92；只引用 --sdq-* 语义令牌（action 三态/text-link/radius/space），五皮肤自动适配
   - 卡片：新增 `.sdq-card` 三变体（default/elevated/brand），内边距 16/20px（--sdq-space-4/5）、圆角 12/16px（--sdq-radius-md/lg）、elevated 阴影 0 2px 8px（--sdq-blue-950 6% 派生）、可点击卡片 :active scale(.98) + 背景加深、标题 h2 20px -0.01em / 内容 14px
