@@ -1,0 +1,20 @@
+/* ============================================================================
+ * 算得清 SDQ 设计令牌 · 层三：Tailwind v4 @theme 桥（tailwind-bridge.css）
+ * 把关键令牌暴露为工具类色（bg-brand-500 / bg-brand-600 / text-ink / text-muted /
+ * bg-surface / bg-canvas / text-profit / text-cost / text-risk）。
+ * 配置核实：main.tsx 以 JS import 先引入本文件再引入 index.css；index.css 目前未含
+ * `@import "tailwindcss"`（@tailwindcss/vite 将本块原样编译进产物，待入口接入 Tailwind
+ * 即生效）。为避免入口链路问题，index.css 的 @import 之后已镜像同内容（值一致，工具类名
+ * 不重复定义、由 Tailwind 合并去重）。
+ * ========================================================================== */
+@theme {
+  --color-brand-500: var(--sdq-blue-500);
+  --color-brand-600: var(--sdq-blue-600);
+  --color-ink: var(--sdq-text-primary);
+  --color-muted: var(--sdq-text-secondary);
+  --color-surface: var(--sdq-bg-surface);
+  --color-canvas: var(--sdq-bg-canvas);
+  --color-profit: var(--sdq-profit);
+  --color-cost: var(--sdq-cost);
+  --color-risk: var(--sdq-risk);
+}

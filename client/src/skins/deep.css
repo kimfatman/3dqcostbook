@@ -1,0 +1,52 @@
+/* ============================================================================
+ * 算得清 SDQ 皮肤 · deep（深蓝 · 深色）
+ * 作者：SDQ Design Tokens
+ * 说明：深蓝深色皮肤，语义令牌重指向层一原语（ΔE00≤25 才改），
+ *       颜色类令牌完整覆盖（与 soft 对齐），非颜色令牌（radius/space/font/motion）显式声明（与 soft 一致）。
+ * ========================================================================== */
+.mobile-shell.skin-deep {
+  color-scheme: dark;
+  --sdq-bg-canvas: var(--sdq-neutral-950);         /* 原 #0b1220 */
+  --sdq-bg-surface: #151f31;                        /* 与浅色 bg-surface 同理保留原值（深色表面带品牌蓝调，不落中性阶） */
+  --sdq-bg-surface-subtle: #1b2940;
+  --sdq-bg-elevated: #202e45;
+  --sdq-bg-brand: var(--sdq-blue-400);              /* 原 #328fff */
+  --sdq-bg-brand-soft: #123b70;
+  --sdq-bg-warning-soft: #4a3514;
+  --sdq-bg-success-soft: #123b32;
+  --sdq-bg-danger-soft: #4a2023;
+  --sdq-text-primary: var(--sdq-neutral-50);        /* 原 #f5f8ff */
+  --sdq-text-secondary: var(--sdq-neutral-300);     /* 原 #bac5d7：深色皮肤次级文字近 neutral-300（Δ3.2），非浅色对应的 neutral-600 步 */
+  --sdq-text-tertiary: var(--sdq-neutral-400);      /* 原 #7f8ba0 */
+  --sdq-text-on-brand: #0b1220;                       /* 批次10 亮蓝按钮改深字，对比 6.68:1 达 AA */
+  --sdq-border-subtle: var(--sdq-neutral-800);      /* 原 #2d3a50 */
+  --sdq-border-strong: var(--sdq-neutral-600);      /* 原 #49607d */
+  --sdq-shadow-card: 0 6px 20px rgba(0, 0, 0, 0.24);
+  --sdq-overlay-scrim: rgba(0, 0, 0, 0.62);
+  --sdq-action-primary: var(--sdq-blue-400);        /* 原 #328fff */
+  --sdq-action-primary-pressed: var(--sdq-blue-500); /* 原 #1c79e8 */
+  --sdq-income: var(--sdq-blue-400);                /* 原 #5ca7ff */
+  --sdq-cost: var(--sdq-warning-500);               /* 原 #f7ba4b */
+  --sdq-profit: var(--sdq-success-500);             /* 原 #45c99b */
+  --sdq-risk: var(--sdq-danger-500);                /* 原 #f06b69 */
+  --sdq-info: var(--sdq-info-500);                  /* 原 #6bcbfa */
+  --sdq-icon-default: var(--sdq-neutral-400);       /* 原 #7f8ba0 */
+  --sdq-icon-disabled: var(--sdq-neutral-600);      /* 原 #526176 */
+  /* batch-02 C11：深色信息卡文字令牌（text-inverse 系，本地派生保证深色皮肤下反色）。 */
+  --sdq-text-inverse-secondary: color-mix(in srgb, var(--sdq-text-on-brand) 72%, transparent);
+  --sdq-text-inverse-tertiary: color-mix(in srgb, var(--sdq-text-on-brand) 55%, transparent);
+  /* ---- 非颜色令牌（批次10 补全，与 soft 一致，深浅色下同值） ---- */
+  --sdq-radius-xs: 6px;
+  --sdq-radius-sm: 8px;
+  --sdq-radius-md: 12px;
+  --sdq-radius-lg: 16px;
+  --sdq-radius-pill: 999px;
+  --sdq-space-page-x: 16px;
+  --sdq-space-section: 24px;
+  --sdq-space-card: 16px;
+  --sdq-height-control: 44px;
+  --sdq-height-nav: calc(56px + env(safe-area-inset-bottom, 0px));
+  --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --sdq-motion-press: 100ms;
+  --sdq-motion-card: 220ms;
+}

@@ -2,6 +2,7 @@ import { FormEvent, ReactNode, useState } from "react";
 import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, Phone, ShieldCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { brandAssets } from "@/lib/brand-assets";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Mode = "login" | "register" | "recover";
 type VerificationMethod = "password" | "email" | "sms";
@@ -15,11 +16,15 @@ function normalizePhone(value: string) {
   return /^\+861\d{10}$/.test(compact) ? compact : null;
 }
 
+/** 后端按错误码返回的具体提示；命中这些提示说明验证会话已失效，需要重新获取验证码。 */
+const OTP_RESEND_HINTS = ["验证码已过期，请重新获取", "验证会话不存在，请重新获取验证码"];
+
 export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const setup = trpc.auth.setupStatus.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
   const me = trpc.auth.me.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
   const utils = trpc.useUtils();
   const [error, setError] = useState("");
+  const [otpError, setOtpError] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -61,6 +66,7 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
     setVerificationCode("");
     setCooldown(0);
     setError("");
+    setOtpError("");
   };
 
   const setScreenMode = (next: Mode) => {
@@ -102,6 +108,20 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
     }), 1000);
   };
 
+  /** 重新获取验证码：保持当前 mode（不切换登录/注册）与全部表单状态，仅重置验证码会话并重新发送，启动 60s 倒计时。 */
+  const resendOtp = async () => {
+    setOtpError("");
+    setOtpChallenge(null);
+    setVerificationCode("");
+    try {
+      await sendOtp();
+    } catch (reason) {
+      setOtpChallenge(null);
+      setVerificationCode("");
+      setError(reason instanceof Error ? reason.message : "无法获取验证码，请稍后再试");
+    }
+  };
+
   const completeOtp = async () => {
     if (!otpChallenge) return sendOtp();
     if (!/^\d{6}$/.test(verificationCode)) throw new Error("请输入 6 位验证码");
@@ -118,6 +138,7 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
+    setOtpError("");
     try {
       if ((isBootstrap || isRegistering) && !consentAgreed) throw new Error("请先阅读并同意服务协议与隐私政策");
       if (isBootstrap) {
@@ -135,7 +156,10 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
         await login.mutateAsync({ email, password });
       }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "无法完成验证，请检查输入后重试");
+      const message = reason instanceof Error ? reason.message : "无法完成验证，请检查输入后重试";
+      // OTP 验证阶段（已成功获取验证码）的错误内联显示在验证码输入框下方；其余错误走表单底部全局提示。
+      if (canUseOtp && otpChallenge) setOtpError(message);
+      else setError(message);
     }
   };
 
@@ -156,16 +180,16 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
       </div>}
       <form className="selfhost-access-form" onSubmit={submit} noValidate>
         {isBootstrap && <><Field label="初始化令牌" value={bootstrapToken} onChange={setBootstrapToken} type="password" autoComplete="one-time-code" placeholder="部署时生成的令牌" /><Field label="管理员姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="工作区名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：我的商店" /></>}
-        {isRegistering && <><Field label="你的姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="店铺名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：小满商店" /><label className="selfhost-field"><span>经营行业</span><select value={industryId} onChange={event => setIndustryId(event.target.value as typeof industryId)}><option value="canteen">餐饮</option><option value="retail">零售</option><option value="ecommerce">电商</option><option value="beauty">美业服务</option><option value="stall">小商贩</option></select></label></>}
+        {isRegistering && <><Field label="你的姓名" value={name} onChange={setName} autoComplete="name" placeholder="例如：张三" /><Field label="店铺名称" value={workspaceName} onChange={setWorkspaceName} placeholder="例如：小满商店" /><label className="selfhost-field"><span>经营行业</span><Select value={industryId} onValueChange={value => setIndustryId(value as typeof industryId)}><SelectTrigger className="selfhost-select-trigger" aria-label="经营行业"><SelectValue placeholder="请选择经营行业" /></SelectTrigger><SelectContent><SelectItem value="canteen">餐饮</SelectItem><SelectItem value="retail">零售</SelectItem><SelectItem value="ecommerce">电商</SelectItem><SelectItem value="beauty">美业服务</SelectItem><SelectItem value="stall">小商贩</SelectItem></SelectContent></Select></label></>}
         {method !== "sms" && <Field label="邮箱" value={email} onChange={setEmail} type="email" autoComplete="email" placeholder="name@example.com" icon={<Mail size={17} />} />}
         {method === "sms" && <Field label="手机号" value={phone} onChange={setPhone} type="tel" autoComplete="tel" inputMode="tel" placeholder="138 0000 0000" icon={<Phone size={17} />} />}
         {(isBootstrap || isRegistering || isRecovering || method === "password") && <Field label={isRecovering ? "新密码" : "密码"} value={password} onChange={setPassword} type="password" autoComplete={isBootstrap || isRegistering || isRecovering ? "new-password" : "current-password"} placeholder={isBootstrap || isRegistering || isRecovering ? "至少 8 个字符" : "请输入密码"} minLength={isBootstrap || isRegistering || isRecovering ? 8 : undefined} icon={<LockKeyhole size={17} />} />}
         {(isBootstrap || isRegistering || isRecovering) && <p className="selfhost-field-hint">至少 8 位；建议使用长密码短语，并避免常见弱口令。</p>}
-        {canUseOtp && otpChallenge && <><Field label="6 位验证码" value={verificationCode} onChange={value => setVerificationCode(value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="请输入验证码" /><p className="selfhost-field-hint">验证码已发送至{identityLabel === "邮箱" ? email.trim() : normalizePhone(phone)}，10 分钟内有效。</p></>}
+        {canUseOtp && otpChallenge && <><Field label="6 位验证码" value={verificationCode} onChange={value => setVerificationCode(value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="请输入验证码" /><p className="selfhost-field-hint">验证码已发送至{identityLabel === "邮箱" ? email.trim() : normalizePhone(phone)}，10 分钟内有效。</p>{otpError && <p role="alert" className="selfhost-otp-error">{otpError}</p>}</>}
         {(isBootstrap || isRegistering) && <label className="selfhost-consent"><input type="checkbox" checked={consentAgreed} onChange={event => setConsentAgreed(event.target.checked)} /><span>我已阅读并同意《<button type="button" onClick={event => { event.preventDefault(); setConsentDoc("terms"); }}>服务协议</button>》与《<button type="button" onClick={event => { event.preventDefault(); setConsentDoc("privacy"); }}>隐私政策</button>》</span></label>}
         {error && <p role="alert" className="selfhost-access-error">{error}</p>}
         <button type="submit" disabled={isPending || (canUseOtp && !otpChallenge && cooldown > 0)} className="selfhost-access-submit"><span>{canUseOtp && !otpChallenge && cooldown > 0 ? `${cooldown} 秒后可重发` : primaryLabel}</span><ArrowRight size={18} /></button>
-        {canUseOtp && otpChallenge && <button type="button" className="selfhost-access-switch" disabled={cooldown > 0 || isPending} onClick={() => { setOtpChallenge(null); setVerificationCode(""); }}>{cooldown > 0 ? `${cooldown} 秒后可重新获取` : "重新获取验证码"}</button>}
+        {canUseOtp && otpChallenge && <button type="button" className="selfhost-access-switch" disabled={cooldown > 0 || isPending} onClick={resendOtp}>{cooldown > 0 ? `${cooldown} 秒后可重新获取` : "重新获取验证码"}</button>}
         {!isBootstrap && <div className="selfhost-access-links">{!isRegistering && <button type="button" className="selfhost-access-switch" onClick={() => setScreenMode("register")}>还没有账号？创建你的店铺</button>}{!isRegistering && !isRecovering && <button type="button" className="selfhost-access-switch" onClick={() => setScreenMode("recover")}>忘记密码？使用验证码重设</button>}{(isRegistering || isRecovering) && <button type="button" className="selfhost-access-switch" onClick={() => setScreenMode("login")}>已有账号？返回登录</button>}</div>}
       </form>
       {!isBootstrap && <p className="selfhost-card-foot">验证码由 CloudBase 安全服务发送；登录即表示你同意仅在授权设备上使用此工作区。</p>}

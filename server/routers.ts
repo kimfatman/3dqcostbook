@@ -2,14 +2,24 @@ import { z } from "zod";
 import { getAppUserByCloudbaseSubject, getAppUserByEmail, getAppUserByPhoneNumber, getWorkspaceBook, hasAnyAppUsers, linkCloudbaseIdentity, listWorkspacesForUser, markSignedIn, createInitialAdmin, recentAuditEvents, registerAndCreateWorkspace, registerCloudbaseUserAndCreateWorkspace, saveWorkspaceBook, updateAppUserPassword, updateAppUserProfile, updateWorkspaceProfile } from "./db";
 import { localSessionCookieOptions, LOCAL_SESSION_COOKIE, hashPassword, signSession, verifyPassword } from "./local-auth";
 import { assertAuthAttemptAllowed, assertOtpSendAllowed, assertPasswordPolicy, clearAuthFailures, createAuthRateLimitKeys, recordAuthFailure, recordOtpSend } from "./auth-security";
-import { completeCloudbaseOtpChallenge, requestCloudbaseOtpChallenge, type CloudbaseOtpMethod, type CloudbaseOtpPurpose, type CloudbaseVerifiedIdentity } from "./cloudbase-auth";
+import { completeCloudbaseOtpChallenge, CloudbaseOtpError, requestCloudbaseOtpChallenge, type CloudbaseOtpMethod, type CloudbaseOtpPurpose, type CloudbaseVerifiedIdentity } from "./cloudbase-auth";
 import { protectedProcedure, publicProcedure, router, adminProcedure } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { getAdminHealth, getAdminOverview, getAdminVersion } from "./admin";
 import { listAdminUsers, listAdminWorkspaces, setAdminUserStatus, setAdminWorkspaceStatus } from "./admin-data";
 import { listAdminAuditEvents, listMigrationReviews, reviewMigration, listGlobalConfigs, saveGlobalConfigDraft, publishGlobalConfig } from "./admin-platform-data";
 import { createBackupSchedule, getAdminPerformanceSummary, getRuntimeMetrics, listAdminMetricSamples, listBackupRuns, listBackupSchedules, queueBackupRun, setBackupScheduleStatus } from "./admin-operations-data";
 
-const email = z.string().trim().toLowerCase().email().max(320);
+/** 将 OTP 验证的结构化错误转换为 tRPC BAD_REQUEST，保证中文提示能透传到前端。 */
+function asCloudbaseOtpTrpcError(error: unknown): Error {
+  if (error instanceof CloudbaseOtpError) {
+    return new TRPCError({ code: "BAD_REQUEST", message: error.message, cause: error.code });
+  }
+  if (error instanceof Error) return error;
+  return new Error("无法完成验证码验证，请重新获取");
+}
+const email
+ = z.string().trim().toLowerCase().email().max(320);
 const password = z.string().min(8, "密码至少需要 8 个字符").max(128, "密码不能超过 128 个字符");
 const state = z.record(z.string(), z.unknown());
 const industryId = z.enum(["canteen", "retail", "ecommerce", "beauty", "stall"]);
@@ -197,7 +207,12 @@ export const appRouter = router({
       }
     }),
     loginWithCloudbaseOtp: publicProcedure.input(z.object({ challengeId: cloudbaseChallengeId, verificationCode: cloudbaseVerificationCode })).mutation(async ({ input, ctx }) => {
-      const identity = await completeCloudbaseOtpChallenge({ ...input, purpose: "login" });
+      let identity: CloudbaseVerifiedIdentity;
+      try {
+        identity = await completeCloudbaseOtpChallenge({ ...input, purpose: "login" });
+      } catch (error) {
+        throw asCloudbaseOtpTrpcError(error);
+      }
       const { identityKeys } = await authenticateCloudbaseIdentity(ctx, identity);
       const user = await getLinkedCloudbaseUser(identity);
       if (!user) {
@@ -223,7 +238,12 @@ export const appRouter = router({
       industryId,
     })).mutation(async ({ input, ctx }) => {
       assertPasswordPolicy(input.password);
-      const identity = await completeCloudbaseOtpChallenge({ challengeId: input.challengeId, verificationCode: input.verificationCode, purpose: "register" });
+      let identity: CloudbaseVerifiedIdentity;
+      try {
+        identity = await completeCloudbaseOtpChallenge({ challengeId: input.challengeId, verificationCode: input.verificationCode, purpose: "register" });
+      } catch (error) {
+        throw asCloudbaseOtpTrpcError(error);
+      }
       const { identityKeys } = await authenticateCloudbaseIdentity(ctx, identity);
       if (await getLinkedCloudbaseUser(identity)) {
         recordAuthFailure(identityKeys);
@@ -236,7 +256,12 @@ export const appRouter = router({
     }),
     resetPasswordWithCloudbaseOtp: publicProcedure.input(z.object({ challengeId: cloudbaseChallengeId, verificationCode: cloudbaseVerificationCode, password })).mutation(async ({ input, ctx }) => {
       assertPasswordPolicy(input.password);
-      const identity = await completeCloudbaseOtpChallenge({ challengeId: input.challengeId, verificationCode: input.verificationCode, purpose: "recover" });
+      let identity: CloudbaseVerifiedIdentity;
+      try {
+        identity = await completeCloudbaseOtpChallenge({ challengeId: input.challengeId, verificationCode: input.verificationCode, purpose: "recover" });
+      } catch (error) {
+        throw asCloudbaseOtpTrpcError(error);
+      }
       const { identityKeys } = await authenticateCloudbaseIdentity(ctx, identity);
       const user = await getLinkedCloudbaseUser(identity);
       if (!user) {

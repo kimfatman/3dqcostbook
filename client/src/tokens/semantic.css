@@ -1,0 +1,117 @@
+/* ============================================================================
+ * 算得清 SDQ 设计令牌 · 层二：语义令牌默认（semantic.css）
+ * 页面消费 --sdq-*，指向层一原语（视觉近等效 ΔE00≤25）。
+ * 此文件承载 :root 浅色默认语义令牌 + .mobile-shell 全局基础规则；
+ * 各皮肤（skins/*.css）在 .mobile-shell.skin-{id} 下覆盖对应令牌。
+ * ========================================================================== */
+
+/* ============ 语义令牌（默认浅色，soft 皮肤） ============ */
+/* 语义色一律指向层一原色阶：与目标色阶 ΔE00≤25 则改用 var() 引用，否则保留原值（行内注明原值便于复核）。 */
+:root {
+  color-scheme: light;
+  --sdq-bg-canvas: var(--sdq-neutral-50);         /* 原 #f7f9fc */
+  --sdq-bg-surface: #ffffff;                       /* 保持纯白，不映射 */
+  --sdq-bg-surface-subtle: #f2f7ff;
+  --sdq-bg-elevated: #ffffff;
+  --sdq-bg-brand: var(--sdq-blue-500);             /* 原 #087aff */
+  --sdq-bg-brand-soft: #e6f1ff;
+  --sdq-bg-warning-soft: #fff4e1;
+  --sdq-bg-success-soft: #e8f8f2;
+  --sdq-bg-danger-soft: #fdedec;
+  --sdq-text-primary: var(--sdq-neutral-900);      /* 原 #1c1c1e */
+  --sdq-text-secondary: var(--sdq-neutral-600);    /* 原 #586174 */
+  --sdq-text-tertiary: var(--sdq-neutral-500);     /* 批次10 调深至 WCAG AA（原 #8b95a7） */
+  --sdq-text-on-brand: #ffffff;
+  --sdq-border-subtle: var(--sdq-neutral-100);     /* 原 #eaecef */
+  --sdq-border-strong: var(--sdq-neutral-300);     /* 原 #c9d4e6 */
+  --sdq-shadow-card: 0 4px 16px rgba(20, 50, 90, 0.08);
+  --sdq-overlay-scrim: rgba(18, 31, 53, 0.42);
+  --sdq-action-primary: var(--sdq-blue-600);       /* 批次10 调深至 WCAG AA（原 #087aff） */
+  --sdq-action-primary-pressed: var(--sdq-blue-700); /* 批次10 随主色同步 */
+  --sdq-income: var(--sdq-blue-600);               /* 批次10 调深至 WCAG AA */
+  --sdq-cost: var(--sdq-warning-500);              /* 原 #f6a623（同值） */
+  --sdq-profit: var(--sdq-success-500);            /* 原 #20a779（同值） */
+  --sdq-risk: var(--sdq-danger-500);               /* 原 #e8534f（同值） */
+  --sdq-info: var(--sdq-info-500);                 /* 原 #5acbfa（同值） */
+  --sdq-icon-default: var(--sdq-neutral-500);      /* 批次10 调深至非文本 3:1 */
+  --sdq-icon-disabled: var(--sdq-neutral-200);     /* 原 #c9cfd9 */
+  /* batch-02 C11：深色信息卡文字令牌（text-inverse 系）。主文字直接用 --sdq-text-on-brand（随皮肤反色），
+   * 次级/三级由它经 color-mix 派生（未覆盖时自动适配各皮肤），不改变既有语义令牌定义。 */
+  --sdq-text-inverse-secondary: color-mix(in srgb, var(--sdq-text-on-brand) 72%, transparent);
+  --sdq-text-inverse-tertiary: color-mix(in srgb, var(--sdq-text-on-brand) 55%, transparent);
+  --sdq-line-inverse: color-mix(in srgb, var(--sdq-text-on-brand) 24%, transparent);
+  /* FAB/固定主按钮避让：由导航+间距令牌派生（≥80px + 安全区），带悬浮按钮的页面底部统一消费。 */
+  --sdq-space-fab-clearance: calc(var(--sdq-height-nav) + var(--sdq-space-section) + var(--sdq-space-card));
+  --sdq-radius-xs: 6px;
+  --sdq-radius-sm: 8px;
+  --sdq-radius-md: 12px;
+  --sdq-radius-lg: 16px;
+  --sdq-radius-pill: 999px;
+  /* batch-03 C12：补齐空间刻度令牌（README 4.3 规范：4/8/12/16/20/24/32/40）
+   * 卡片外边距/内边距统一消费 --sdq-space-4（16px），大卡 --sdq-space-5（20px）。 */
+  --sdq-space-1: 4px;
+  --sdq-space-2: 8px;
+  --sdq-space-3: 12px;
+  --sdq-space-4: 16px;
+  --sdq-space-5: 20px;
+  --sdq-space-6: 24px;
+  --sdq-space-8: 32px;
+  --sdq-space-10: 40px;
+  --sdq-space-page-x: 16px;
+  --sdq-space-section: 24px;
+  --sdq-space-card: 16px;
+  --sdq-height-control: 44px;
+  --sdq-height-nav: calc(56px + env(safe-area-inset-bottom, 0px));
+  /* batch-03 C12：图标尺寸三档（导航 20px / 按钮 16px / 列表 18px，线宽 1.5px），
+   * TSX 中 lucide 图标统一消费这三档与 strokeWidth={1.5}。 */
+  --sdq-icon-nav: 20px;
+  --sdq-icon-btn: 16px;
+  --sdq-icon-list: 18px;
+  --sdq-icon-stroke: 1.5px;
+  --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --sdq-motion-press: 100ms;
+  --sdq-motion-card: 220ms;
+}
+
+/* ============ .mobile-shell 全局基础规则（消费语义令牌） ============ */
+.mobile-shell {
+  background: var(--sdq-bg-canvas);
+  color: var(--sdq-text-primary);
+}
+
+.mobile-shell :where(.app-frame, .app-content, .tabbar, .page-header) {
+  border-color: var(--sdq-border-subtle);
+}
+
+.mobile-shell :where(.home-chart-card, .analysis-stack-card, .analysis-cashflow-card, .analysis-health-card, .ledger-surface, .form-section, .empty-state) {
+  background-color: var(--sdq-bg-surface);
+  border-color: var(--sdq-border-subtle);
+  box-shadow: var(--sdq-shadow-card);
+}
+
+.mobile-shell :where(input, select, textarea) {
+  color: var(--sdq-text-primary);
+  background-color: var(--sdq-bg-surface);
+  border-color: var(--sdq-border-subtle);
+}
+
+.mobile-shell :where(input, select, textarea):focus-visible {
+  border-color: var(--sdq-action-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sdq-action-primary) 16%, transparent);
+}
+
+.mobile-shell :where(button, a) { -webkit-tap-highlight-color: transparent; }
+.mobile-shell :where(button):focus-visible,
+.mobile-shell :where(a):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sdq-action-primary) 24%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-shell :where(*, *::before, *::after) {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

@@ -1,0 +1,13 @@
+/* ============================================================================
+ * 算得清 SDQ 皮肤 · aurora（极光 · 浅色 · 玻璃拟态）
+ * 作者：SDQ Design Tokens
+ * 说明：保留历史皮肤入口，只允许改变场景材质（半透明玻璃表面），
+ *       不改变业务语义色（income/cost/profit/risk/info 继承默认浅色）。
+ * ========================================================================== */
+.mobile-shell.skin-aurora {
+  --sdq-bg-canvas: #f7f9fc;
+  --sdq-bg-surface: rgba(255, 255, 255, 0.94);
+  --sdq-bg-surface-subtle: #f2f7ff;
+  --sdq-bg-elevated: rgba(255, 255, 255, 0.98);
+  --sdq-shadow-card: 0 8px 24px rgba(33, 79, 131, 0.11);
+}

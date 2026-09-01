@@ -18,6 +18,20 @@ type CloudbaseChallenge = {
   attempts: number;
 };
 
+/** OTP 验证失败的错误码，用于前端展示与后续重试策略。 */
+export type CloudbaseOtpErrorCode = "verification_code_invalid" | "challenge_expired" | "challenge_not_found";
+
+/** 携带错误码的 OTP 验证错误，message 为可直接展示给用户的具体中文提示。 */
+export class CloudbaseOtpError extends Error {
+  readonly code: CloudbaseOtpErrorCode;
+
+  constructor(code: CloudbaseOtpErrorCode, message: string) {
+    super(message);
+    this.name = "CloudbaseOtpError";
+    this.code = code;
+  }
+}
+
 type GatewayFailure = { error?: unknown; code?: unknown; error_code?: unknown; error_description?: unknown };
 
 const CLOUD_BASE_GATEWAY_SUFFIX = ".api.tcloudbasegateway.com";
@@ -56,6 +70,17 @@ function providerMessage(failure: GatewayFailure, fallback: string) {
   return fallback;
 }
 
+/**
+ * 根据 CloudBase 校验接口的返回内容把失败归类为具体错误码。
+ * 无法识别时返回 null，由调用方给出兜底文案。
+ */
+function classifyVerifyFailure(failure: GatewayFailure): CloudbaseOtpErrorCode | null {
+  const text = `${failure.error ?? failure.code ?? ""} ${failure.error_description ?? ""}`.toLowerCase();
+  if (text.includes("expired") || text.includes("过期") || text.includes("verification_code_expired")) return "challenge_expired";
+  if (text.includes("invalid") || text.includes("mismatch") || text.includes("验证码错误") || text.includes("verification_code_invalid")) return "verification_code_invalid";
+  return null;
+}
+
 function isUserMissing(failure: GatewayFailure) {
   const text = `${failure.error ?? failure.code ?? ""} ${failure.error_description ?? ""}`.toLowerCase();
   return text.includes("user_not_found") || text.includes("account_not_found") || text.includes("账号不存在") || text.includes("用户不存在");
@@ -90,7 +115,10 @@ export async function requestCloudbaseOtpChallenge(input: { method: CloudbaseOtp
     target: "ANY",
   });
   const verificationId = normalizeOptional(data.verification_id, 8192);
-  if (!response.ok || !verificationId) throw new Error(providerMessage(data, "验证码发送失败，请稍后再试"));
+  if (!response.ok || !verificationId) {
+    console.error("[cloudbase-otp] send challenge failed", { status: response.status, body: data, method: input.method, purpose: input.purpose });
+    throw new Error(providerMessage(data, "验证码发送失败，请稍后再试"));
+  }
 
   const challengeId = randomUUID();
   challenges.set(challengeId, {
@@ -106,12 +134,20 @@ export async function requestCloudbaseOtpChallenge(input: { method: CloudbaseOtp
 
 /**
  * 验证码、verification_token 与 CloudBase access token 均只在服务器内流转；浏览器仅收到既有本地 HttpOnly 会话。
+ * 验证失败按根因抛出携带错误码的 CloudbaseOtpError，message 为可直接展示给用户的具体中文提示。
  */
 export async function completeCloudbaseOtpChallenge(input: { challengeId: string; verificationCode: string; purpose: CloudbaseOtpPurpose }) {
-  removeExpiredChallenges();
   const challenge = challenges.get(input.challengeId);
-  if (!challenge || challenge.purpose !== input.purpose || challenge.attempts >= MAX_CHALLENGE_ATTEMPTS) {
-    throw new Error("验证码已失效，请重新获取");
+  if (!challenge || challenge.purpose !== input.purpose) {
+    throw new CloudbaseOtpError("challenge_not_found", "验证会话不存在，请重新获取验证码");
+  }
+  if (challenge.expiresAt <= Date.now()) {
+    challenges.delete(input.challengeId);
+    throw new CloudbaseOtpError("challenge_expired", "验证码已过期，请重新获取");
+  }
+  if (challenge.attempts >= MAX_CHALLENGE_ATTEMPTS) {
+    challenges.delete(input.challengeId);
+    throw new CloudbaseOtpError("challenge_not_found", "验证会话不存在，请重新获取验证码");
   }
   challenge.attempts += 1;
 
@@ -121,8 +157,12 @@ export async function completeCloudbaseOtpChallenge(input: { challengeId: string
   });
   const verificationToken = normalizeOptional(verified.data.verification_token, 8192);
   if (!verified.response.ok || !verificationToken) {
+    console.error("[cloudbase-otp] verify failed", { status: verified.response.status, body: verified.data, challengeId: input.challengeId, purpose: input.purpose });
     if (challenge.attempts >= MAX_CHALLENGE_ATTEMPTS) challenges.delete(input.challengeId);
-    throw new Error(providerMessage(verified.data, "验证码错误或已过期，请重新获取"));
+    const errorCode = classifyVerifyFailure(verified.data);
+    if (errorCode === "challenge_expired") throw new CloudbaseOtpError("challenge_expired", "验证码已过期，请重新获取");
+    if (errorCode === "verification_code_invalid") throw new CloudbaseOtpError("verification_code_invalid", "验证码错误，请重新输入");
+    throw new CloudbaseOtpError("verification_code_invalid", providerMessage(verified.data, "验证码错误，请重新输入"));
   }
 
   let signedIn = await postGateway("/auth/v1/signin", { verification_token: verificationToken });
@@ -133,7 +173,10 @@ export async function completeCloudbaseOtpChallenge(input: { challengeId: string
       : { email: challenge.target, verification_token: verificationToken });
     accessToken = normalizeOptional(signedIn.data.access_token, 8192);
   }
-  if (!signedIn.response.ok || !accessToken) throw new Error(providerMessage(signedIn.data, "无法完成验证码验证，请重新获取"));
+  if (!signedIn.response.ok || !accessToken) {
+    console.error("[cloudbase-otp] signin/signup failed", { status: signedIn.response.status, body: signedIn.data, challengeId: input.challengeId, purpose: input.purpose });
+    throw new Error(providerMessage(signedIn.data, "无法完成验证码验证，请重新获取"));
+  }
 
   challenges.delete(input.challengeId);
   return verifyCloudbaseAccessToken(accessToken);

@@ -1,0 +1,42 @@
+/* ============================================================================
+ * 算得清 SDQ 设计令牌 · 层一：原色阶原语（primitives.css）
+ * 品牌蓝 11 阶 / 中性灰 11 阶 / 语义色 mini 阶。
+ * 所有皮肤共享，不可修改（新增皮肤只允许引用这些原语，不允许改动）。
+ * ========================================================================== */
+:root {
+  /* 品牌蓝（11 阶，源 #087ff5 h210，blue-500 #0880f7 与品牌色 Δ2） */
+  --sdq-blue-50: #f3f5f6;
+  --sdq-blue-100: #e5ebf0;
+  --sdq-blue-200: #bfd6ee;
+  --sdq-blue-300: #86bdf3;
+  --sdq-blue-400: #439ef9;
+  --sdq-blue-500: #0880f7;
+  --sdq-blue-600: #056dd4;
+  --sdq-blue-700: #0861ba;
+  --sdq-blue-800: #0e4f90;
+  --sdq-blue-900: #15406b;
+  --sdq-blue-950: #152b42;
+
+  /* 中性灰（11 阶，源 #5d738b 灰系聚类 h215） */
+  --sdq-neutral-50: #f5f7fa;
+  --sdq-neutral-100: #ebf0f4;
+  --sdq-neutral-200: #d9e0e8;
+  --sdq-neutral-300: #bcc6d2;
+  --sdq-neutral-400: #8f9dae;
+  --sdq-neutral-500: #697a8c;
+  --sdq-neutral-600: #576575;
+  --sdq-neutral-700: #45515f;
+  --sdq-neutral-800: #333d47;
+  --sdq-neutral-900: #212830;
+  --sdq-neutral-950: #14191f;
+
+  /* 语义色 mini 阶（success=利润绿 / warning=成本橙 / danger=风险红 / info=信息蓝） */
+  --sdq-success-500: #20a779;
+  --sdq-success-600: #1b8f68;
+  --sdq-warning-500: #c88206; /* 批次10 调深：白底对比 3.16:1 达 WCAG AA（保持橙相） */
+  --sdq-warning-600: #b37504; /* 批次10 与 500 同步调深，保持明度梯度 */
+  --sdq-danger-500: #e8534f;
+  --sdq-danger-600: #d43f3b;
+  --sdq-info-500: #1e93cc; /* 批次10 调深：白底对比 3.44:1 达 WCAG AA（保持蓝相） */
+  --sdq-info-600: #1d8ac2; /* 批次10 与 500 同步调深，保持明度梯度 */
+}

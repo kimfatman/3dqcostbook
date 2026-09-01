@@ -1,0 +1,48 @@
+/* ============================================================================
+ * 算得清 SDQ 皮肤 · soft（清蓝 · 浅色 · 默认）
+ * 作者：SDQ Design Tokens
+ * 说明：默认浅色皮肤，语义令牌与 tokens/semantic.css 的 :root 默认一致，
+ *       以 .mobile-shell.skin-soft 显式声明，供视觉皮肤切换时精确命中。
+ * ========================================================================== */
+.mobile-shell.skin-soft {
+  color-scheme: light;
+  --sdq-bg-canvas: var(--sdq-neutral-50);         /* 原 #f7f9fc */
+  --sdq-bg-surface: #ffffff;                       /* 保持纯白，不映射 */
+  --sdq-bg-surface-subtle: #f2f7ff;
+  --sdq-bg-elevated: #ffffff;
+  --sdq-bg-brand: var(--sdq-blue-500);             /* 原 #087aff */
+  --sdq-bg-brand-soft: #e6f1ff;
+  --sdq-bg-warning-soft: #fff4e1;
+  --sdq-bg-success-soft: #e8f8f2;
+  --sdq-bg-danger-soft: #fdedec;
+  --sdq-text-primary: var(--sdq-neutral-900);      /* 原 #1c1c1e */
+  --sdq-text-secondary: var(--sdq-neutral-600);    /* 原 #586174 */
+  --sdq-text-tertiary: var(--sdq-neutral-500);     /* 批次10 调深至 WCAG AA（原 #8b95a7） */
+  --sdq-text-on-brand: #ffffff;
+  --sdq-border-subtle: var(--sdq-neutral-100);     /* 原 #eaecef */
+  --sdq-border-strong: var(--sdq-neutral-300);     /* 原 #c9d4e6 */
+  --sdq-shadow-card: 0 4px 16px rgba(20, 50, 90, 0.08);
+  --sdq-overlay-scrim: rgba(18, 31, 53, 0.42);
+  --sdq-action-primary: var(--sdq-blue-600);       /* 批次10 调深至 WCAG AA（原 #087aff） */
+  --sdq-action-primary-pressed: var(--sdq-blue-700); /* 批次10 随主色同步 */
+  --sdq-income: var(--sdq-blue-600);               /* 批次10 调深至 WCAG AA */
+  --sdq-cost: var(--sdq-warning-500);              /* 原 #f6a623（同值） */
+  --sdq-profit: var(--sdq-success-500);            /* 原 #20a779（同值） */
+  --sdq-risk: var(--sdq-danger-500);               /* 原 #e8534f（同值） */
+  --sdq-info: var(--sdq-info-500);                 /* 原 #5acbfa（同值） */
+  --sdq-icon-default: var(--sdq-neutral-500);      /* 批次10 调深至非文本 3:1 */
+  --sdq-icon-disabled: var(--sdq-neutral-200);     /* 原 #c9cfd9 */
+  --sdq-radius-xs: 6px;
+  --sdq-radius-sm: 8px;
+  --sdq-radius-md: 12px;
+  --sdq-radius-lg: 16px;
+  --sdq-radius-pill: 999px;
+  --sdq-space-page-x: 16px;
+  --sdq-space-section: 24px;
+  --sdq-space-card: 16px;
+  --sdq-height-control: 44px;
+  --sdq-height-nav: calc(56px + env(safe-area-inset-bottom, 0px));
+  --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --sdq-motion-press: 100ms;
+  --sdq-motion-card: 220ms;
+}

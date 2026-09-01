@@ -4,7 +4,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { businessPeriod } from "@/lib/business-date";
+import { seedPeriods } from "@/lib/cost-book";
 import Home from "./Home";
 
 const trpcMocks = vi.hoisted(() => ({
@@ -77,8 +77,8 @@ async function openScreen(screenName: string, heading: string) {
 const format = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const yuan = (amount: number) => `¥${format.format(Number.isFinite(amount) ? amount : 0)}`;
 
-/** 与 Home.tsx 同一 periods 口径：固定月份 + 当期业务月，取最后三个月。 */
-const reportPeriods = () => Array.from(new Set(["2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", businessPeriod()])).sort();
+/** 与 Home.tsx / cost-book.ts 同一 periods 口径（连续 7 个月种子窗口，以当前业务月为终点），取最后三个月。 */
+const reportPeriods = () => seedPeriods();
 
 describe("C5 报表列表速览行：净营收 / 经营利润", () => {
   it("每行在既有信息下追加净营收/经营利润速览行，数值来自报表快照字段（沿用现有格式化）", async () => {

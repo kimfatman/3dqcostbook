@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SelfHostedAccessGate } from "./SelfHostedAccessGate";
 
@@ -201,5 +202,108 @@ describe("SelfHostedAccessGate CloudBase 服务端验证码入口", () => {
     fireEvent.click(screen.getByRole("button", { name: "验证并设置新密码" }));
 
     await waitFor(() => expect(trpcMocks.resetPasswordWithCloudbaseOtp.mutateAsync).toHaveBeenCalledWith({ challengeId: "6d9f7029-39e6-4f8b-8eb2-4ebcd992afe5", verificationCode: "654321", password: "new-secret-456" }));
+  });
+
+  it("验证码错误时在内联区域显示具体提示，验证码输入框保留可重新输入", async () => {
+    trpcMocks.registerWithCloudbaseOtp.mutateAsync.mockRejectedValue(new Error("验证码错误，请重新输入"));
+    render(<SelfHostedAccessGate><div>私有内容</div></SelfHostedAccessGate>);
+
+    fireEvent.click(screen.getByRole("button", { name: "还没有账号？创建你的店铺" }));
+    fireEvent.change(screen.getByLabelText("你的姓名"), { target: { value: "张三" } });
+    fireEvent.change(screen.getByLabelText("店铺名称"), { target: { value: "小满商店" } });
+    fireEvent.change(screen.getByLabelText("邮箱"), { target: { value: "owner@example.com" } });
+    fireEvent.change(screen.getByLabelText("密码"), { target: { value: "secret-pass-123" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "获取邮箱验证码" }));
+    await screen.findByLabelText("6 位验证码");
+    fireEvent.change(screen.getByLabelText("6 位验证码"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "验证并创建店铺" }));
+
+    await waitFor(() => expect(screen.getByText("验证码错误，请重新输入")).toBeTruthy());
+    const inline = screen.getByText("验证码错误，请重新输入");
+    expect(inline.className).toContain("selfhost-otp-error");
+    // 表单底部不出现重复的全局错误，验证码输入框保留
+    expect(screen.getByLabelText("6 位验证码")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBe(inline);
+  });
+
+  it("验证码过期时展示过期提示并保留重新获取入口", async () => {
+    trpcMocks.loginWithCloudbaseOtp.mutateAsync.mockRejectedValue(new Error("验证码已过期，请重新获取"));
+    render(<SelfHostedAccessGate><div>私有内容</div></SelfHostedAccessGate>);
+
+    fireEvent.click(screen.getByRole("button", { name: "验证码登录" }));
+    fireEvent.click(screen.getByRole("button", { name: "邮箱验证码" }));
+    fireEvent.change(screen.getByLabelText("邮箱"), { target: { value: "owner@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "获取邮箱验证码" }));
+    await screen.findByLabelText("6 位验证码");
+    fireEvent.change(screen.getByLabelText("6 位验证码"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "验证并登录" }));
+
+    await waitFor(() => expect(screen.getByText("验证码已过期，请重新获取")).toBeTruthy());
+    expect(screen.getByRole("button", { name: /重新获取/ })).toBeTruthy();
+  });
+
+  it("重新获取验证码保留注册表单状态、不切换模式，并以 register 重新发送", async () => {
+    vi.useFakeTimers();
+    render(<SelfHostedAccessGate><div>私有内容</div></SelfHostedAccessGate>);
+
+    fireEvent.click(screen.getByRole("button", { name: "还没有账号？创建你的店铺" }));
+    fireEvent.change(screen.getByLabelText("你的姓名"), { target: { value: "张三" } });
+    fireEvent.change(screen.getByLabelText("店铺名称"), { target: { value: "小满商店" } });
+    fireEvent.change(screen.getByLabelText("邮箱"), { target: { value: "owner@example.com" } });
+    fireEvent.change(screen.getByLabelText("密码"), { target: { value: "secret-pass-123" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "获取邮箱验证码" }));
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.getByLabelText("6 位验证码")).toBeTruthy();
+    expect(trpcMocks.requestCloudbaseOtp.mutateAsync).toHaveBeenCalledTimes(1);
+
+    // 等待 60s 倒计时结束后点击重新获取
+    act(() => { vi.advanceTimersByTime(60_000); });
+    fireEvent.click(screen.getByRole("button", { name: "重新获取验证码" }));
+    await act(async () => { await Promise.resolve(); });
+
+    // 模式仍为注册，全部表单状态保留
+    expect(screen.getByRole("heading", { name: "创建你的店铺" })).toBeTruthy();
+    expect((screen.getByLabelText("你的姓名") as HTMLInputElement).value).toBe("张三");
+    expect((screen.getByLabelText("店铺名称") as HTMLInputElement).value).toBe("小满商店");
+    expect((screen.getByLabelText("邮箱") as HTMLInputElement).value).toBe("owner@example.com");
+    expect((screen.getByLabelText("密码") as HTMLInputElement).value).toBe("secret-pass-123");
+    expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(true);
+    // 以 register 再次发送，旧验证码清空，60s 倒计时启动
+    expect(trpcMocks.requestCloudbaseOtp.mutateAsync).toHaveBeenCalledTimes(2);
+    expect(trpcMocks.requestCloudbaseOtp.mutateAsync).toHaveBeenLastCalledWith({ method: "email", purpose: "register", email: "owner@example.com" });
+    expect((screen.getByLabelText("6 位验证码") as HTMLInputElement).value).toBe("");
+    expect(screen.getByRole("button", { name: /秒后可重新获取/ })).toBeTruthy();
+  });
+  it("注册页经营行业替换为自定义下拉：展开显示全部行业并可选中", async () => {
+    const user = userEvent.setup();
+    render(<SelfHostedAccessGate><div>私有内容</div></SelfHostedAccessGate>);
+    fireEvent.click(screen.getByRole("button", { name: "还没有账号？创建你的店铺" }));
+
+    const trigger = screen.getByRole("combobox", { name: "经营行业" });
+    expect(trigger).toBeTruthy();
+
+    await user.click(trigger);
+    expect(await screen.findByRole("option", { name: "餐饮" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "零售" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "电商" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "美业服务" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "小商贩" })).toBeTruthy();
+
+    await user.click(screen.getByRole("option", { name: "餐饮" }));
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "经营行业" }).textContent).toContain("餐饮"));
+  });
+
+  it("注册页行业下拉支持键盘打开并导航到选项", async () => {
+    render(<SelfHostedAccessGate><div>私有内容</div></SelfHostedAccessGate>);
+    fireEvent.click(screen.getByRole("button", { name: "还没有账号？创建你的店铺" }));
+
+    const trigger = screen.getByRole("combobox", { name: "经营行业" }) as HTMLElement;
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    expect(await screen.findByRole("option", { name: "餐饮" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "零售" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "小商贩" })).toBeTruthy();
   });
 });

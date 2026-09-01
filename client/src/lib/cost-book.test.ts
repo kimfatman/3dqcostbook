@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calcCard, normalizeState, removeIndirectCostPoolState, seedPeriodFactor, setIndirectCostPoolAllocationModeState, updateIndirectCostPoolState, type CostCard } from "./cost-book";
-import { businessPeriod } from "./business-date";
+import { businessDate, businessPeriod } from "./business-date";
 import type { IndirectCostPool } from "./indirect-costs";
 
 const card: CostCard = {
@@ -65,7 +65,8 @@ describe("历史本地状态兼容", () => {
   });
 
   it("会为历史演示状态中被持久化为 null 的当前账期金额恢复可推导的种子金额", () => {
-    const state = normalizeState({ schemaVersion: 3, workspace: { id: "demo", activeIndustryId: "ecommerce", dataMode: "demo" }, entries: [{ id: "seed-sale", workspaceId: "demo", industryId: "ecommerce", occurredAt: "2026-08-14", eventType: "sale", ledgerRole: "revenue", cashDirection: "inflow", amountFen: null, categoryKey: "sales", merchant: "蓝鲸电商店日结", note: "演示销售日结", status: "posted", hasAttachment: true, createdAt: "2026-08-14T12:00:00.000Z", updatedAt: "2026-08-14T12:00:00.000Z" }] });
+    const occurredAt = businessDate();
+    const state = normalizeState({ schemaVersion: 3, workspace: { id: "demo", activeIndustryId: "ecommerce", dataMode: "demo" }, entries: [{ id: "seed-sale", workspaceId: "demo", industryId: "ecommerce", occurredAt, eventType: "sale", ledgerRole: "revenue", cashDirection: "inflow", amountFen: null, categoryKey: "sales", merchant: "蓝鲸电商店日结", note: "演示销售日结", status: "posted", hasAttachment: true, createdAt: `${occurredAt}T12:00:00.000Z`, updatedAt: `${occurredAt}T12:00:00.000Z` }] });
     expect(state.entries[0]?.amountFen).toBeGreaterThan(0);
   });
 
@@ -113,5 +114,21 @@ describe("成本池状态级分摊", () => {
     expect(removed.indirectCostPools).toEqual([]);
     expect(removed.skus[0]).toMatchObject({ unitCostFen: 3290, allocatedUnitCostFen: 0 });
     expect(removed.orders[0].lines[0].unitCostFen).toBe(3290);
+  });
+});
+
+describe("批次8 视觉皮肤校验", () => {
+  it("normalizeState 保留 5 种合法皮肤（soft/deep/aurora/midnight/forest）", () => {
+    for (const skin of ["soft", "deep", "aurora", "midnight", "forest"]) {
+      const state = normalizeState({ workspace: { visualSkin: skin } });
+      expect(state.workspace.visualSkin).toBe(skin);
+    }
+  });
+
+  it("normalizeState 对未知皮肤值回退默认 soft，保证兼容旧数据", () => {
+    const state = normalizeState({ workspace: { visualSkin: "neon-rainbow" } });
+    expect(state.workspace.visualSkin).toBe("soft");
+    const empty = normalizeState({ workspace: {} });
+    expect(empty.workspace.visualSkin).toBe("soft");
   });
 });
