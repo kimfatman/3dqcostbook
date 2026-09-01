@@ -2530,6 +2530,741 @@ body { line-height: var(--sdq-leading-body); }
 
 ---
 
+### 批次 22：Logo 区苹果风格重构 + 融入主页过渡设计
+
+#### 目标
+基于 `docs/logo-area-redesign-2026-09-01.md` 和 `docs/logo-integration-transition-2026-09-01.md`，将首页 Logo 区重构为苹果风格毛玻璃导航栏，并设计 4 层叠加过渡让 Logo 区平滑融入主页：毛玻璃悬浮导航栏 + 渐变遮罩 + 问候语缓冲区域 + 品牌色渐变细线。
+
+#### 涉及文件
+- `client/src/index.css`（清理 .brand-mini 5 处重复定义 + 新增苹果风格导航栏样式 + 4 层过渡样式）
+- `client/src/pages/Home.tsx`（重构 renderHeader + HomePage 问候语区域 + 滚动折叠交互）
+- `client/src/tokens/primitives.css`（如需要新增动效令牌，可与批次23合并）
+
+#### 前置依赖
+- 批次 11（全局配色与令牌）— 颜色令牌已统一
+- 批次 21（可阅读性专项优化）— 字号/行高/字距规范已建立
+
+#### Trae 指令（直接复制）
+
+```
+我需要对首页 Logo 区进行苹果风格重构 + 融入主页过渡设计，请按以下步骤操作：
+
+## 第一部分：清理 CSS 重复定义（P0，必须先做）
+
+### 1. 删除 .brand-mini 重复定义
+搜索 client/src/index.css 中所有 .brand-mini 相关定义（约 5 处，分布在第 284/307/341/360/390/459 行附近），全部删除。
+包括：.brand-mini / .brand-mini img / .brand-mini strong / .brand-mini em / .brand-mini span::after / .brand-seal-stack / .brand-seal / .brand-store-logo 等相关选择器。
+注意：不要删除其他不相关的样式。
+
+### 2. 清理 page-header 旧样式
+搜索 .page-header / .orders-prototype-header / .header-icon / .back-button 旧样式，保留基础布局，删除与新导航栏冲突的硬编码颜色/边框/阴影。
+
+## 第二部分：新增苹果风格毛玻璃导航栏（P0）
+
+### 3. 在 index.css 新增 .app-nav-bar 系列样式
+
+/* === 苹果风格毛玻璃导航栏 === */
+.app-nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+  background: color-mix(in srgb, var(--sdq-bg-surface) 72%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: none;
+  transition: background 0.3s ease;
+}
+
+/* 滚动时加深背景 */
+.app-nav-bar.scrolled {
+  background: color-mix(in srgb, var(--sdq-bg-surface) 88%, transparent);
+}
+
+/* 深色皮肤调整透明度 */
+.skin-deep .app-nav-bar,
+.skin-midnight .app-nav-bar {
+  background: color-mix(in srgb, var(--sdq-bg-surface) 60%, transparent);
+}
+.skin-deep .app-nav-bar.scrolled,
+.skin-midnight .app-nav-bar.scrolled {
+  background: color-mix(in srgb, var(--sdq-bg-surface) 80%, transparent);
+}
+
+/* 第2层：渐变遮罩（导航栏底部融化到内容） */
+.app-nav-bar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -16px;
+  height: 16px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--sdq-bg-surface) 72%, transparent) 0%,
+    color-mix(in srgb, var(--sdq-bg-surface) 36%, transparent) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+.app-nav-bar.scrolled::after {
+  opacity: 0;
+}
+
+/* 店铺切换器 */
+.store-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 8px 4px 4px;
+  border-radius: 12px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.store-switcher:active {
+  transform: scale(0.97);
+  background: var(--sdq-bg-canvas);
+}
+
+/* 店铺头像 */
+.store-avatar {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--sdq-bg-brand-soft);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.15);
+}
+.store-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 店铺信息 */
+.store-info {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  text-align: left;
+}
+.store-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sdq-text-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.store-meta {
+  font-size: 11px;
+  color: var(--sdq-text-secondary);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.store-chevron {
+  color: var(--sdq-text-tertiary);
+  flex: none;
+}
+
+/* 导航操作按钮 */
+.nav-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+.nav-action-btn {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: var(--sdq-text-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.nav-action-btn:active {
+  transform: scale(0.92);
+  background: var(--sdq-bg-canvas);
+}
+
+/* 通知数字徽章 */
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--sdq-risk);
+  border-radius: 8px;
+  border: 1.5px solid var(--sdq-bg-surface);
+}
+
+## 第三部分：重构 Home.tsx renderHeader（P0）
+
+### 4. 替换 renderHeader 函数
+将 Home.tsx 中 renderHeader 函数的根 Tab header（非 sub-header）替换为新结构：
+
+<header className={`app-nav-bar ${isScrolled ? 'scrolled' : ''}`}>
+  <button className="store-switcher" onClick={openStorePicker} aria-label="切换店铺">
+    <span className="store-avatar">
+      {currentWorkspace?.logoAssetId ? (
+        <img src={`/api/media/${currentWorkspace.logoAssetId}`} alt="店铺logo" />
+      ) : (
+        <BrandStoreLogo preset={currentWorkspace?.logoPreset} alt="店铺标识" size="header" />
+      )}
+    </span>
+    <span className="store-info">
+      <span className="store-name">{currentWorkspace?.name || template.storeName}</span>
+      <span className="store-meta">{template.label} · {currentPeriod.replace("-", " 年 ")} 月</span>
+    </span>
+    <ChevronDown size={14} className="store-chevron" />
+  </button>
+  <div className="nav-actions">
+    <button className="nav-action-btn" onClick={() => goSub("notifications")} aria-label={unreadNotificationCount ? `消息中心，${unreadNotificationCount} 条待查看` : "消息中心"}>
+      <Bell size={20} />
+      {unreadNotificationCount > 0 && (
+        <span className="notification-badge">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>
+      )}
+    </button>
+  </div>
+</header>
+
+注意：
+- 保留 sub-header（返回按钮+标题）的逻辑不变
+- 店铺切换逻辑保持不变（openStorePicker 或现有逻辑）
+- 消息按钮逻辑保持不变
+- 删除旧的 brand-mini / brand-seal-stack / brand-seal / header-icon 结构
+
+### 5. 添加滚动监听
+在 App 根组件或 HomePage 中添加滚动监听：
+
+const [isScrolled, setIsScrolled] = useState(false);
+
+useEffect(() => {
+  const handleScroll = () => setIsScrolled(window.scrollY > 40);
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  return () => window.removeEventListener('scroll', handleScroll);
+}, []);
+
+将 isScrolled 传递给 renderHeader，或在 renderHeader 内部使用。
+
+## 第四部分：新增问候语缓冲区域（P0）
+
+### 6. 在 HomePage 顶部新增问候语区域
+替换当前的 dashboard-kicker home-context（信息重复条），新增：
+
+<section className={`home-greeting-buffer ${isScrolled ? 'collapsed' : ''}`}>
+  <span className="greeting-time">{getGreetingByTime()}</span>
+  <h1 className="greeting-title">{template.storeName}</h1>
+  <p className="greeting-summary">
+    {currentPeriod.replace("-", " 年 ")} 月 · 
+    {homeRangeHasData ? `本月经营利润 ¥${formatMoney(homeRangeTotals.operatingProfit)}` : "开始记录第一笔流水"}
+  </p>
+</section>
+
+### 7. 新增 getGreetingByTime 函数
+function getGreetingByTime() {
+  const hour = new Date().getHours();
+  if (hour < 6) return "夜深了";
+  if (hour < 9) return "早上好";
+  if (hour < 12) return "上午好";
+  if (hour < 14) return "中午好";
+  if (hour < 18) return "下午好";
+  if (hour < 22) return "晚上好";
+  return "夜深了";
+}
+
+### 8. 在 index.css 新增问候语区域样式
+
+/* === 第3层：问候语缓冲区域 === */
+.home-greeting-buffer {
+  padding: 8px 4px 20px;
+  animation: greeting-fade-in 0.6s ease-out 0.1s both;
+}
+
+@keyframes greeting-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.greeting-time {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sdq-text-secondary);
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+
+.greeting-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--sdq-text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.greeting-summary {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--sdq-text-secondary);
+  line-height: 1.4;
+}
+
+/* 第4层：品牌色渐变细线 */
+.home-greeting-buffer::after {
+  content: "";
+  display: block;
+  width: 48px;
+  height: 3px;
+  margin-top: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--sdq-action-primary) 0%,
+    color-mix(in srgb, var(--sdq-action-primary) 50%, var(--sdq-info)) 50%,
+    transparent 100%
+  );
+  border-radius: 2px;
+}
+
+/* 滚动时问候语区域折叠 */
+.home-greeting-buffer.collapsed {
+  opacity: 0;
+  transform: translateY(-12px);
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+## 第五部分：入场动画 stagger（P1）
+
+### 9. 为首页主要内容添加 stagger 入场动画
+为经营概览卡片、图表卡片、列表等添加入场动画类，延迟依次递增：
+
+- 问候语区域：延迟 100ms（已有 greeting-fade-in）
+- 经营概览卡片：延迟 200ms，fade-in + slide-up 8px
+- 图表卡片：延迟 300ms（已有 chart-card-in，调整延迟）
+- 列表区域：延迟 400ms
+
+在 index.css 新增：
+.page-enter {
+  animation: page-enter 0.4s cubic-bezier(.23, 1, .32, 1) both;
+}
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+在 HomePage 中为主要卡片添加 className 和 style={{ animationDelay: '200ms' }} 等。
+
+## 第六步：验证
+1. pnpm check && pnpm test && pnpm build，三门禁全绿
+2. 导航栏毛玻璃效果正常（backdrop-filter: blur 20px）
+3. 导航栏无硬边框，底部渐变遮罩融化到内容
+4. 滚动时导航栏背景加深（72%→88%），渐变遮罩淡出
+5. 问候语区域存在（问候语+大标题+摘要+品牌色细线）
+6. 滚动时问候语区域平滑折叠
+7. 店铺切换点击有缩放反馈（:active scale 0.97）
+8. 消息按钮 40×40，未读显示数字徽章（非 5×5 红点）
+9. 删除了 .brand-mini 5 处重复定义，全局搜索无残留
+10. 5 种皮肤下导航栏颜色/毛玻璃正常
+11. 深色皮肤导航栏背景不透明度 60%（浅色 72%）
+12. 安全区域适配（env(safe-area-inset-top)）
+13. 入场动画 stagger 流畅（导航栏→问候语→概览→图表→列表）
+14. prefers-reduced-motion 下动画禁用
+15. 实际截图对比整改前后
+
+## 注意事项
+- .brand-mini 重复定义清理时，确保其他页面不依赖被删除的样式
+- 毛玻璃效果在 Safari 需要 -webkit-backdrop-filter 前缀
+- 滚动监听使用 passive: true 提升性能
+- 问候语区域的 formatMoney 函数确保存在（如不存在用现有金额格式化函数）
+- 店铺头像如果没有上传 logo，用 BrandStoreLogo 预设组件
+- 所有修改优先引用语义令牌，不硬编码颜色
+```
+
+#### 验收标准
+- [ ] .brand-mini 5 处重复定义已删除，全局搜索无残留
+- [ ] 导航栏毛玻璃效果正常（backdrop-filter: blur 20px + saturate 180%）
+- [ ] 导航栏无硬边框，底部渐变遮罩融化到内容
+- [ ] 滚动时导航栏背景加深（72%→88%），渐变遮罩淡出
+- [ ] 店铺头像 36×36 圆角（单一 logo，无双 logo 叠加）
+- [ ] 店铺名 15px -0.01em（非 -0.16em 过紧），行业月份 11px（非 8px）
+- [ ] 问候语区域存在（问候语+大标题28px+摘要+品牌色渐变细线48px）
+- [ ] 问候语根据时间变化（早上好/下午好/晚上好）
+- [ ] 滚动时问候语区域平滑折叠
+- [ ] 店铺切换点击有缩放反馈（:active scale 0.97）
+- [ ] 消息按钮 40×40，未读显示数字徽章（非 5×5 红点）
+- [ ] 入场动画 stagger 流畅（导航栏→问候语→概览→图表→列表）
+- [ ] 5 种皮肤下导航栏颜色/毛玻璃正常
+- [ ] 深色皮肤导航栏不透明度 60%（浅色 72%）
+- [ ] 安全区域适配（env(safe-area-inset-top)）
+- [ ] prefers-reduced-motion 下动画禁用
+- [ ] 三门禁全绿
+- [ ] 变更已登记到 docs/change-log.md
+
+---
+
+### 批次 23：全局过渡与动效专项优化
+
+#### 目标
+基于 `docs/global-transition-audit-2026-09-01.md`，建立全局动效规范并补齐缺失过渡：新增动效令牌（5级时长+5级缓动）、页面切换过渡、列表/卡片统一入场、折叠展开过渡、弹簧物理动画、数据更新过渡、模态框过渡、加载空态过渡。
+
+#### 涉及文件
+- `client/src/tokens/primitives.css`（新增动效令牌：时长/缓动）
+- `client/src/index.css`（全局过渡规范：页面切换/入场/折叠/交互/模态框/加载）
+- `client/src/pages/Home.tsx`（页面切换过渡 + 列表 stagger 入场）
+- 其他页面组件（折叠展开过渡 + 数据更新过渡）
+
+#### 前置依赖
+- 批次 11（全局配色与令牌）— 颜色令牌已统一
+- 批次 12（全局组件）— 组件样式已统一
+- 批次 22（Logo 区重构+融入过渡）— Logo 区过渡已落地
+
+#### Trae 指令（直接复制）
+
+```
+我需要对全局过渡与动效进行专项优化，请按以下步骤操作：
+
+## 第一部分：新增全局动效令牌（P0，必须先做）
+
+### 1. 在 primitives.css 新增动效令牌
+
+/* === 动效令牌：时长 === */
+:root {
+  --sdq-duration-instant: 80ms;     /* 微交互：hover/高亮/焦点 */
+  --sdq-duration-fast: 160ms;       /* 快速交互：按钮/输入框/折叠箭头 */
+  --sdq-duration-standard: 220ms;   /* 标准过渡：卡片入场/页面切换/开关 */
+  --sdq-duration-slow: 320ms;       /* 慢速过渡：折叠展开/大面板 */
+  --sdq-duration-entrance: 400ms;   /* 入场动画：页面入场/模态框 */
+}
+
+/* === 动效令牌：缓动 === */
+:root {
+  --sdq-ease-standard: cubic-bezier(.23, 1, .32, 1);   /* Apple 标准：ease-out-expo */
+  --sdq-ease-in: cubic-bezier(.42, 0, 1, 1);            /* 进入：加速 */
+  --sdq-ease-out: cubic-bezier(0, 0, .58, 1);           /* 退出：减速 */
+  --sdq-ease-in-out: cubic-bezier(.42, 0, .58, 1);      /* 往返 */
+  --sdq-spring: cubic-bezier(.34, 1.56, .64, 1);        /* 弹簧：轻微过冲 */
+}
+
+## 第二部分：页面切换过渡（P0）
+
+### 2. 在 index.css 新增页面切换过渡样式
+
+/* === 页面切换过渡 === */
+.page-enter-active {
+  animation: page-fade-in var(--sdq-duration-standard) var(--sdq-ease-standard) both;
+}
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 子页面从右侧滑入 */
+.subpage-enter-active {
+  animation: subpage-slide-in 250ms var(--sdq-ease-standard) both;
+}
+@keyframes subpage-slide-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* 子页面向右侧滑出（退出比进入快） */
+.subpage-exit-active {
+  animation: subpage-slide-out 200ms var(--sdq-ease-in) both;
+}
+@keyframes subpage-slide-out {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(24px); }
+}
+
+### 3. 在 Home.tsx 应用页面切换过渡
+在 renderContent 的 main 元素上添加 key={tab + subPage}，触发 React 重新挂载，配合 CSS 动画：
+
+<main className={`app-content ${isSub ? 'sub-content' : ''} page-enter-active`} key={tab + (subPage || '')}>
+  {renderContent()}
+</main>
+
+注意：如果 subPage 切换需要从右侧滑入，根据 isSub 选择 page-enter-active 或 subpage-enter-active。
+
+## 第三部分：列表/卡片统一入场动画（P0）
+
+### 4. 在 index.css 新增统一入场动画类
+
+/* === 统一入场动画 === */
+.fade-in-up {
+  animation: fade-in-up var(--sdq-duration-standard) var(--sdq-ease-standard) both;
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 列表项 stagger 入场 */
+.list-stagger > * {
+  animation: fade-in-up var(--sdq-duration-fast) var(--sdq-ease-standard) both;
+}
+.list-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.list-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.list-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.list-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.list-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.list-stagger > *:nth-child(6) { animation-delay: 200ms; }
+.list-stagger > *:nth-child(7) { animation-delay: 240ms; }
+.list-stagger > *:nth-child(8) { animation-delay: 280ms; }
+.list-stagger > *:nth-child(n+9) { animation-delay: 320ms; }
+
+### 5. 为主要卡片/列表添加入场类
+在 HomePage 中为经营概览卡片、KPI卡片、图表卡片、列表等添加 fade-in-up 类和延迟：
+- 经营概览：style={{ animationDelay: '160ms' }}
+- 图表卡片：style={{ animationDelay: '240ms' }}（调整现有 chart-card-in 延迟）
+- 列表区域：添加 list-stagger 类
+
+注意：图表卡片已有 chart-card-in 动画，保持不变，只调整延迟与整体 stagger 对齐。
+
+## 第四部分：折叠展开过渡（P0）
+
+### 6. 在 index.css 新增折叠展开通用样式
+
+/* === 折叠展开过渡（grid-template-rows 技巧） === */
+.collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--sdq-duration-slow) var(--sdq-ease-standard);
+}
+.collapsible.open {
+  grid-template-rows: 1fr;
+}
+.collapsible > .collapsible-content {
+  overflow: hidden;
+}
+
+/* 折叠内容淡入 */
+.collapsible.open > .collapsible-content {
+  animation: collapsible-fade-in 250ms ease-out 50ms both;
+}
+@keyframes collapsible-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+### 7. 为现有折叠区域应用过渡
+搜索 Home.tsx 中所有折叠区域（analysisReviewOpen / analysisDetailsOpen / recordMoreOpen / showAll / health details 等），将条件渲染（{open && <div>...</div>}）改为：
+
+<div className={`collapsible ${open ? 'open' : ''}`}>
+  <div className="collapsible-content">
+    {/* 原有折叠内容 */}
+  </div>
+</div>
+
+注意：
+- 折叠箭头的旋转动画保持不变（已有 180ms transition）
+- 确保折叠内容的高度由内容撑开，grid-template-rows: 0fr→1fr 会自动处理
+- 如果某些折叠区域内容复杂，先从洞察页大折叠和行业参考估算开始
+
+## 第五部分：弹簧物理动画（P1）
+
+### 8. 按钮点击弹簧回弹
+在 index.css 中为主要按钮添加弹簧回弹（用 CSS cubic-bezier 模拟）：
+
+.button-spring {
+  transition: transform var(--sdq-duration-fast) var(--sdq-spring);
+}
+.button-spring:active {
+  transform: scale(0.97);
+}
+
+为 FAB、主要操作按钮、卡片按钮添加 button-spring 类（替换现有的瞬时 :active scale）。
+
+### 9. 模态框入场弹簧
+在 index.css 新增模态框入场动画：
+
+.modal-enter-active {
+  animation: modal-spring-in var(--sdq-duration-entrance) var(--sdq-spring) both;
+}
+@keyframes modal-spring-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-exit-active {
+  animation: modal-fade-out 200ms var(--sdq-ease-in) both;
+}
+@keyframes modal-fade-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(12px) scale(0.98); }
+}
+
+/* 模态框背景遮罩 */
+.modal-scrim-enter-active {
+  animation: scrim-fade-in 200ms ease-out both;
+}
+@keyframes scrim-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+为现有模态框（凭证放弃确认/删除确认等）添加 modal-enter-active / modal-scrim-enter-active 类。
+
+## 第六部分：数据更新过渡（P1）
+
+### 10. 数字滚动计数动画
+在 Home.tsx 新增 useCountUp hook（或直接在组件中实现）：
+
+function useCountUp(target, duration = 300) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let startTime;
+    const startValue = value;
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out-cubic
+      setValue(Math.round(startValue + (target - startValue) * eased));
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+    return () => {}; // 清理
+  }, [target]);
+  return value;
+}
+
+为经营概览的主要金额数字（利润/收入/成本）应用 useCountUp，切换时间范围时数字平滑滚动。
+
+注意：如果实现复杂，可先只做 CSS transition（数字变化时加 opacity 闪烁），计数动画作为后续优化。
+
+### 11. 图表柱状图高度过渡
+为图表柱状图（sales-bars / cashflow-bars 等）添加 height transition：
+.sales-bars i, .cashflow-bars i {
+  transition: height var(--sdq-duration-standard) var(--sdq-ease-standard);
+}
+
+数据切换时柱状图高度平滑变化，而非硬切。
+
+## 第七部分：加载/空态过渡（P1）
+
+### 12. 骨架屏 pulse 动画
+在 index.css 新增骨架屏样式：
+
+.skeleton {
+  background: linear-gradient(90deg, var(--sdq-bg-canvas) 25%, var(--sdq-bg-surface) 50%, var(--sdq-bg-canvas) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+如果页面有加载状态，用骨架屏替代空白。如果没有加载状态，此步可跳过，保留样式备用。
+
+### 13. 空态入场动画
+为空态组件（empty-state）添加 fade-in-up 入场动画：
+.empty-state {
+  animation: fade-in-up var(--sdq-duration-standard) var(--sdq-ease-standard) 200ms both;
+}
+
+## 第八部分：统一现有过渡时长/缓动（P2）
+
+### 14. 替换硬编码时长/缓动为令牌
+搜索 index.css 中所有硬编码的 transition 时长和缓动，替换为动效令牌：
+- 160ms → var(--sdq-duration-fast)
+- 180ms → var(--sdq-duration-fast)（或 standard，根据场景）
+- 200ms → var(--sdq-duration-standard)
+- 220ms → var(--sdq-duration-standard)
+- 240ms → var(--sdq-duration-standard)
+- 260ms → var(--sdq-duration-standard)
+- 280ms → var(--sdq-duration-standard)
+- 320ms → var(--sdq-duration-slow)
+- ease-out → var(--sdq-ease-out)
+- cubic-bezier(.23,1,.32,1) → var(--sdq-ease-standard)
+
+注意：图表入场动画（chart-card-in 280ms / chart-line-in 720ms / chart-bar-in 460ms）保持不变，这些是精心设计的图表动画。
+
+## 第九步：验证
+1. pnpm check && pnpm test && pnpm build，三门禁全绿
+2. 动效令牌已定义（5级时长+5级缓动）
+3. Tab 切换有 fade-in + slide-up 过渡
+4. 子页面进入有从右侧 slide-in 过渡，退出向右侧 slide-out（退出比进入快）
+5. 所有卡片有统一入场动画（fade-in-up）
+6. 列表项有 stagger 入场（每项延迟40ms）
+7. 折叠展开有 grid-template-rows 过渡（0fr→1fr，320ms）
+8. 折叠内容有淡入动画（延迟50ms）
+9. 按钮点击有弹簧回弹（:active scale + spring 缓动）
+10. 模态框入场有弹簧动画（slide-up + scale + spring）
+11. 模态框退场有 fade-out（200ms，比入场快）
+12. 数字变化有滚动计数动画（或至少 opacity 过渡）
+13. 图表柱状图高度有过渡（220ms）
+14. 空态有入场动画
+15. 现有硬编码时长/缓动已替换为令牌（除图表特殊动画外）
+16. 5 种皮肤下过渡效果正常
+17. prefers-reduced-motion 下所有动画禁用（全局已有，验证不冲突）
+18. 快速连续操作时过渡可中断（无"跳变"）
+19. 实际操作体验：页面切换/折叠展开/按钮点击流畅自然
+
+## 注意事项
+- 动效令牌是基础层，必须先定义再替换
+- 折叠展开用 grid-template-rows 技巧，不要用 height: auto（无法过渡）
+- 页面切换用 key 触发重新挂载，配合 CSS animation
+- 弹簧动画用 CSS cubic-bezier(.34,1.56,.64,1) 模拟，不需要引入动画库
+- 数字计数动画如果实现复杂，可先做 CSS opacity 过渡作为降级
+- 图表入场动画（chart-card-in/line-in/bar-in）保持不变，这些是精心设计的
+- 所有过渡优先引用动效令牌，不硬编码时长/缓动
+- 确保 prefers-reduced-motion 全局适配不被新动画破坏
+```
+
+#### 验收标准
+- [ ] 动效令牌已定义（5级时长：80/160/220/320/400ms + 5级缓动）
+- [ ] Tab 切换有 fade-in + slide-up 过渡（220ms standard）
+- [ ] 子页面进入从右侧 slide-in（250ms），退出向右侧 slide-out（200ms，退出比进入快）
+- [ ] 所有卡片有统一入场动画（fade-in-up 220ms）
+- [ ] 列表项有 stagger 入场（每项延迟40ms，最多320ms）
+- [ ] 折叠展开有 grid-template-rows 过渡（0fr→1fr，320ms slow）
+- [ ] 折叠内容有淡入动画（延迟50ms）
+- [ ] 按钮点击有弹簧回弹（:active scale + spring 缓动）
+- [ ] 模态框入场有弹簧动画（slide-up + scale + spring 400ms）
+- [ ] 模态框退场有 fade-out（200ms ease-in）
+- [ ] 数字变化有滚动计数动画（或 opacity 过渡降级）
+- [ ] 图表柱状图高度有过渡（220ms standard）
+- [ ] 空态有入场动画（fade-in-up 延迟200ms）
+- [ ] 现有硬编码时长/缓动已替换为令牌（除图表特殊动画外）
+- [ ] 快速连续操作时过渡可中断（无"跳变"）
+- [ ] 5 种皮肤下过渡效果正常
+- [ ] prefers-reduced-motion 下所有动画禁用
+- [ ] 三门禁全绿
+- [ ] 变更已登记到 docs/change-log.md
+
+---
+
 ## 完成标准（全部批次完成后）
 
 ### UI 问题修复（批次 1-5）
@@ -2595,6 +3330,26 @@ body { line-height: var(--sdq-leading-body); }
 50. **数字字体统一**：金额/百分比/数量用等宽字体 + tabular-nums
 51. **金额三档**：大28-32px/中16-18px/小13-14px
 52. **标题标签规范**：页面h1 28px/卡片h2 20px/子标题h3 16px，无 strong 代替标题
+
+### Logo 区重构 + 融入过渡（批次 22）
+53. **毛玻璃导航栏**：backdrop-filter blur 20px + saturate 180%，无硬边框，底部渐变遮罩融化
+54. **滚动折叠**：滚动时背景加深（72%→88%），渐变遮罩淡出，问候语区域平滑折叠
+55. **店铺切换器**：单一头像36×36（无双logo叠加），店铺名15px -0.01em，行业月份11px
+56. **问候语缓冲区域**：问候语+大标题28px+摘要+品牌色渐变细线48px，根据时间变化
+57. **消息按钮**：40×40触控目标，未读显示数字徽章（非5×5红点）
+58. **入场stagger**：导航栏→问候语→概览→图表→列表，延迟依次递增
+59. **重复定义清理**：.brand-mini 5处重复定义已删除，全局搜索无残留
+60. **5种皮肤兼容**：浅色72%/深色60%不透明度，安全区域适配，减少动效适配
+
+### 全局过渡与动效（批次 23）
+61. **动效令牌**：5级时长（80/160/220/320/400ms）+ 5级缓动（standard/in/out/in-out/spring）
+62. **页面切换过渡**：Tab fade-in+slide-up 220ms，子页面 slide-in 250ms/slide-out 200ms（退出比进入快）
+63. **统一入场动画**：所有卡片 fade-in-up 220ms，列表项 stagger 40ms（最多320ms）
+64. **折叠展开过渡**：grid-template-rows 0fr→1fr 320ms，内容淡入延迟50ms，可中断
+65. **弹簧物理动画**：按钮点击 spring 回弹，模态框入场 slide-up+scale+spring 400ms
+66. **数据更新过渡**：数字滚动计数300ms，柱状图高度220ms，进度环300ms
+67. **加载空态过渡**：骨架屏 pulse 1.5s，空态 fade-in-up 延迟200ms
+68. **时长缓动统一**：硬编码时长/缓动替换为令牌（除图表特殊动画外），快速操作可中断无跳变
 
 ## References
 - 线上问题清单：docs/live-ui-beauty-audit-2026-08-31.md
