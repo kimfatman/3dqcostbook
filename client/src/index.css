@@ -1557,7 +1557,7 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
   font-size: 12px;
   line-height: 1.5;
 }
-/* ============================================================================
+/* =====================================================================
  * batch-12 全局组件打磨（P0）：按钮 / 卡片 / 输入框 / 标签徽章 / 模态框 / Toast / 空态 / 加载态
  * 规范化全局通用组件样式类（.sdq-* 系列）与既有模式（.app-toast / .voucher-guard-* / .empty-state）状态补齐。
  * 仅展示层：不改任何账本/聚合/筛选逻辑；不触碰 T1-T8/C1-C7 核心结构。
@@ -2053,4 +2053,1862 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
   .home-identity-context .home-quick-entry button,
   .prototype-home .sales-bars span::after,
   .prototype-home .home-reminder-close { transition: none !important; }
+}
+
+/* ============================================================================
+ * batch-15（订单模块打磨）：状态标签统一 / 售后卡温和化 / 退款空态精简
+ * 仅展示层，不改订单、退款、SKU 或成本快照逻辑；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* 订单列表复核状态标签：已复核=success 绿，待复核=warning 橙 */
+.prototype-orders .order-list > button > div > small i.reviewed {
+  color: var(--sdq-profit);
+  background: var(--sdq-bg-success-soft);
+}
+.prototype-orders .order-list > button > div > small i.unreviewed {
+  color: var(--sdq-cost);
+  background: var(--sdq-bg-warning-soft);
+}
+
+/* 订单列表低利润/预警标签：attention 橙色 */
+.prototype-orders .order-list > button > strong em.attention {
+  color: var(--sdq-cost);
+}
+
+/* 售后处理卡：温和 warning 浅色背景，左侧图标，非红色大卡 */
+.prototype-orders .after-sale-status {
+  background: var(--sdq-bg-warning-soft);
+  border-color: color-mix(in srgb, var(--sdq-cost) 18%, var(--sdq-border-subtle));
+}
+.prototype-orders .after-sale-status::before {
+  color: var(--sdq-cost);
+  background: var(--sdq-bg-surface);
+  border-color: color-mix(in srgb, var(--sdq-cost) 24%, var(--sdq-border-subtle));
+}
+.prototype-orders .after-sale-status b {
+  color: var(--sdq-text-primary);
+}
+.prototype-orders .after-sale-status span {
+  color: var(--sdq-text-secondary);
+}
+
+/* 订单详情售后经营口径卡：KPI 布局优化，负贡献红色 */
+.order-after-sales-card .order-after-sales-kpis div.negative b {
+  color: var(--sdq-risk);
+}
+
+/* 订单详情利润预警卡：danger 红色边框 */
+.order-profit-alert.danger {
+  background: var(--sdq-bg-danger-soft);
+  border-color: color-mix(in srgb, var(--sdq-risk) 22%, var(--sdq-border-subtle));
+}
+.order-profit-alert.danger b {
+  color: var(--sdq-risk);
+}
+
+/* 退款空态：无退款时精简显示，不占大空间 */
+.detail-breakdown .empty-state:only-child {
+  min-height: auto;
+  padding: 12px 0;
+  background: transparent;
+  border: 0;
+}
+.detail-breakdown .empty-state:only-child::before {
+  display: none;
+}
+.detail-breakdown .empty-state:only-child b {
+  color: var(--sdq-text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 订单详情 SKU 成交明细：退款按钮禁用态更清晰 */
+.detail-breakdown .bom-list button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+/* 订单批量操作工具栏：选中态高亮 */
+.order-batch-toolbar label input[type="checkbox"]:checked + span {
+  color: var(--sdq-action-primary);
+  font-weight: 700;
+}
+
+/* 订单筛选 chips：active 态使用品牌色填充 */
+.order-filter-chips button.active {
+  color: var(--sdq-text-on-brand);
+  background: var(--sdq-action-primary);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--sdq-action-primary) 20%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prototype-orders .order-list > button,
+  .prototype-orders .after-sale-status {
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+ * batch-16（商品模块打磨）：利润率标签配色 / 成本构成公式卡 / BOM列表 / 操作按钮
+ * 仅展示层，不改成本卡、BOM、定价或 SKU 计算逻辑；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* 商品列表卡状态标签：稳定=success绿，成本上升=warning橙，需复核=risk红 */
+.prototype-products .product-card-head > i.healthy {
+  color: var(--sdq-profit);
+  background: var(--sdq-bg-success-soft);
+}
+.prototype-products .product-card-head > i.attention {
+  color: var(--sdq-cost);
+  background: var(--sdq-bg-warning-soft);
+}
+.prototype-products .product-card-head > i.risk {
+  color: var(--sdq-risk);
+  background: var(--sdq-bg-danger-soft);
+}
+
+/* 商品列表卡 KPI：单件利润正负色 */
+.prototype-products .product-kpis label b.negative {
+  color: var(--sdq-risk);
+}
+.prototype-products .product-kpis label b.positive {
+  color: var(--sdq-profit);
+}
+
+/* 商品详情成本构成公式卡：等号结果突出 */
+.cost-formula {
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-lg);
+  box-shadow: var(--sdq-shadow-card);
+}
+.cost-formula > span {
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.cost-formula div b {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.cost-formula div i {
+  color: var(--sdq-text-tertiary);
+  font-style: normal;
+  font-weight: 700;
+}
+.cost-formula div strong {
+  color: var(--sdq-action-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+/* 商品详情订单成本快照对比：只读标签 */
+.cost-snapshot-compare {
+  background: var(--sdq-bg-brand-soft);
+  border: 1px solid color-mix(in srgb, var(--sdq-action-primary) 12%, var(--sdq-border-subtle));
+  border-radius: var(--sdq-radius-md);
+}
+.cost-snapshot-compare > div span {
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.cost-snapshot-compare > div em {
+  color: var(--sdq-action-primary);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  background: var(--sdq-bg-surface);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.cost-snapshot-compare dl dt {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+}
+.cost-snapshot-compare dl dd {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.cost-snapshot-compare p {
+  color: var(--sdq-text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* BOM 配方列表：每项物料行样式优化 */
+.detail-breakdown .bom-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 56px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sdq-border-subtle);
+}
+.detail-breakdown .bom-list > div:last-child {
+  border-bottom: 0;
+}
+.detail-breakdown .bom-list > div > span b {
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.detail-breakdown .bom-list > div > span em {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  font-style: normal;
+}
+.detail-breakdown .bom-list > div > strong {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+}
+.detail-breakdown .bom-list > div .bom-row-actions {
+  display: flex;
+  gap: 4px;
+}
+.detail-breakdown .bom-list > div .bom-row-actions button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: var(--sdq-icon-default);
+  background: transparent;
+  border: 0;
+  border-radius: var(--sdq-radius-sm);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.detail-breakdown .bom-list > div .bom-row-actions button:hover {
+  color: var(--sdq-action-primary);
+  background: var(--sdq-bg-brand-soft);
+}
+.detail-breakdown .bom-list > div .bom-row-actions button:last-child:hover {
+  color: var(--sdq-risk);
+  background: var(--sdq-bg-danger-soft);
+}
+
+/* 商品详情操作按钮：三按钮统一高度和圆角 */
+.detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+}
+.detail-actions button {
+  min-height: var(--sdq-height-control);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: var(--sdq-radius-sm);
+  transition: transform 100ms ease-out, filter 120ms ease;
+}
+.detail-actions button:active:not(:disabled) {
+  transform: scale(.97);
+}
+.detail-actions button.primary {
+  color: var(--sdq-text-on-brand);
+  background: var(--sdq-action-primary);
+  border: 1px solid var(--sdq-action-primary);
+}
+.detail-actions button:not(.primary):not(.more-trigger) {
+  color: var(--sdq-text-primary);
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-strong);
+}
+.detail-actions .more-trigger {
+  color: var(--sdq-text-secondary);
+  background: var(--sdq-bg-surface-subtle);
+  border: 1px solid var(--sdq-border-subtle);
+}
+
+/* 商品详情更多菜单：删除按钮 danger 色 */
+.detail-more-menu button.danger {
+  color: var(--sdq-risk) !important;
+}
+
+/* 商品详情近6月成本趋势：历史柱当前月高亮 */
+.cost-history span i {
+  border-radius: 3px 3px 0 0;
+  transition: height 200ms ease-out;
+}
+.cost-history-delta b.up {
+  color: var(--sdq-risk);
+}
+.cost-history-delta b.down {
+  color: var(--sdq-profit);
+}
+
+/* 商品详情定价空态提示：温和引导 */
+.pricing-empty-tip {
+  background: var(--sdq-bg-brand-soft);
+  border: 1px solid color-mix(in srgb, var(--sdq-action-primary) 14%, var(--sdq-border-subtle));
+}
+.pricing-empty-tip b {
+  color: var(--sdq-text-primary);
+}
+.pricing-empty-tip em {
+  color: var(--sdq-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prototype-products .product-cost-list > button,
+  .cost-history span i {
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+ * batch-17（洞察模块打磨）：经营利润卡渐变 / 瀑布图配色 / 折叠过渡 / 健康度雷达 / 图表统一
+ * 仅展示层，不改利润、成本、瀑布、健康度或目标计算逻辑；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* 经营利润概览卡：渐变背景 + 高光装饰，文字反色对比度达标 */
+.analysis-profit-overview {
+  background: linear-gradient(145deg, var(--sdq-bg-brand), color-mix(in srgb, var(--sdq-bg-brand) 82%, var(--sdq-action-primary))) !important;
+  border: 0 !important;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--sdq-bg-brand) 22%, transparent) !important;
+  position: relative;
+  overflow: hidden;
+}
+.analysis-profit-overview::after {
+  position: absolute;
+  top: -40px;
+  right: -30px;
+  width: 160px;
+  height: 160px;
+  content: "";
+  background: radial-gradient(circle, rgba(255,255,255,.18), transparent 68%);
+  pointer-events: none;
+}
+.analysis-profit-overview .analysis-card-head h2,
+.analysis-profit-overview .analysis-card-head span {
+  color: rgba(255,255,255,.82) !important;
+}
+.analysis-profit-total span {
+  color: rgba(255,255,255,.78) !important;
+}
+.analysis-profit-total strong {
+  color: var(--sdq-text-on-brand) !important;
+}
+.analysis-profit-total em {
+  color: rgba(255,255,255,.7) !important;
+}
+.analysis-profit-total.is-loss strong {
+  color: color-mix(in srgb, var(--sdq-risk) 45%, var(--sdq-text-on-brand)) !important;
+}
+.analysis-profit-kpis {
+  border-color: rgba(255,255,255,.2) !important;
+}
+.analysis-profit-kpis span {
+  border-color: rgba(255,255,255,.2) !important;
+}
+.analysis-profit-kpis em {
+  color: rgba(255,255,255,.7) !important;
+}
+.analysis-profit-kpis b {
+  color: var(--sdq-text-on-brand) !important;
+}
+
+/* 利润构成瀑布图：收入=success绿，成本=warning橙，利润=primary蓝，亏损=risk红 */
+.waterfall-plot .bar.revenue { fill: var(--sdq-profit); }
+.waterfall-plot .bar.cost { fill: var(--sdq-cost); }
+.waterfall-plot .bar.profit { fill: var(--sdq-action-primary); }
+.waterfall-plot .bar.loss { fill: var(--sdq-risk); }
+.waterfall-plot .bar-label {
+  fill: var(--sdq-text-secondary);
+  font-family: var(--sdq-financial-font);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+.waterfall-plot .connector {
+  stroke: var(--sdq-border-subtle);
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+/* 成本与结构复核折叠：grid-template-rows 过渡 + 箭头旋转 */
+.analysis-review .analysis-more-trigger {
+  min-height: 56px;
+  padding: 12px 0;
+  transition: background 120ms ease;
+}
+.analysis-review .analysis-more-trigger:hover {
+  background: var(--sdq-bg-surface-subtle);
+}
+.analysis-review .analysis-more-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.analysis-review-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 320ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.analysis-review-content > * {
+  overflow: hidden;
+}
+.analysis-more[aria-expanded="true"] .analysis-review-content {
+  grid-template-rows: 1fr;
+}
+
+/* 行业参考估算卡：info 浅色背景，不突兀 */
+.analysis-hidden-cost-card {
+  background: var(--sdq-bg-info-soft);
+  border-color: color-mix(in srgb, var(--sdq-info) 16%, var(--sdq-border-subtle));
+}
+.analysis-hidden-cost-head span {
+  color: var(--sdq-info);
+}
+.analysis-hidden-cost-head h2 {
+  color: var(--sdq-text-primary);
+}
+.analysis-hidden-cost-list > div span b {
+  color: var(--sdq-text-primary);
+}
+.analysis-hidden-cost-list > div span em {
+  color: var(--sdq-text-secondary);
+}
+.analysis-hidden-cost-list > div strong {
+  color: var(--sdq-info);
+  font-family: var(--sdq-financial-font);
+  font-variant-numeric: tabular-nums;
+}
+.analysis-hidden-cost-list > div small {
+  color: var(--sdq-text-secondary);
+}
+
+/* 健康度雷达图：评分环形 + 维度列表，缺失维度虚线 */
+.health-score b {
+  color: var(--sdq-action-primary);
+}
+.health-dimension-list > button.missing {
+  opacity: .7;
+}
+.health-dimension-list > button.missing b {
+  color: var(--sdq-cost);
+}
+.health-formula summary {
+  color: var(--sdq-action-primary);
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+.health-formula summary:hover {
+  color: var(--sdq-bg-brand);
+}
+
+/* 成本结构变化分组对比柱：本期=primary实心，上期=描边 */
+.analysis-grouped-bars > i.current {
+  background: var(--sdq-action-primary) !important;
+}
+.analysis-grouped-bars > i.previous {
+  background: transparent !important;
+  border: 1px solid var(--sdq-border-strong) !important;
+}
+
+/* 供应商排行棒棒糖：排行徽章 + 进度条 */
+.analysis-supplier-list button > i:first-child {
+  background: var(--sdq-bg-brand-soft);
+  color: var(--sdq-action-primary);
+  font-family: var(--sdq-financial-font);
+  font-weight: 800;
+}
+.supplier-lollipop em {
+  background: var(--sdq-action-primary);
+  border-radius: 99px;
+  transition: width 320ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* 商品毛利排行：亏损行红色，进度条品牌色 */
+.analysis-profit-sku-list button .is-loss {
+  color: var(--sdq-risk) !important;
+}
+.analysis-profit-sku-track em {
+  background: var(--sdq-action-primary);
+  border-radius: 99px;
+  transition: width 320ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.analysis-profit-sku-track em.is-loss {
+  background: var(--sdq-risk);
+}
+
+/* 图表 Tooltip 统一样式 */
+.chart-tooltip {
+  background: var(--sdq-bg-elevated);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-sm);
+  box-shadow: 0 8px 24px rgba(11,24,54,.12);
+  padding: 8px 10px;
+  font-size: 11px;
+}
+.chart-tooltip b {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-variant-numeric: tabular-nums;
+}
+.chart-tooltip span {
+  color: var(--sdq-text-secondary);
+}
+
+/* 洞察分组标题：左侧品牌色短竖线 */
+.analysis-group-title {
+  position: relative;
+  padding-left: 10px;
+}
+.analysis-group-title::before {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 3px;
+  height: 14px;
+  content: "";
+  background: var(--sdq-action-primary);
+  border-radius: 2px;
+}
+
+/* 洞察页卡片统一 hover 微提升 */
+.prototype-analysis .ledger-surface {
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+.prototype-analysis .ledger-surface:hover {
+  box-shadow: 0 10px 24px rgba(11,24,54,.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analysis-review-content,
+  .supplier-lollipop em,
+  .analysis-profit-sku-track em,
+  .prototype-analysis .ledger-surface {
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+ * batch-18（我的模块打磨）：账号卡渐变 / 设置分组统一 / 分组标题 / 退出按钮outline
+ * 仅展示层，不改账号、店铺、皮肤或退出登录逻辑；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* 账号身份卡：浅色渐变背景，不使用深色卡，信息层级清晰 */
+.profile-identity-card {
+  background: linear-gradient(145deg, var(--sdq-bg-brand-soft), var(--sdq-bg-surface));
+  border: 1px solid color-mix(in srgb, var(--sdq-action-primary) 12%, var(--sdq-border-subtle));
+  border-radius: var(--sdq-radius-lg);
+  box-shadow: var(--sdq-shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+.profile-identity-card::after {
+  position: absolute;
+  top: -30px;
+  right: -20px;
+  width: 120px;
+  height: 120px;
+  content: "";
+  background: radial-gradient(circle, color-mix(in srgb, var(--sdq-action-primary) 10%, transparent), transparent 68%);
+  pointer-events: none;
+}
+.profile-identity-top h1 {
+  color: var(--sdq-text-primary);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.profile-identity-top p {
+  color: var(--sdq-text-secondary);
+  font-size: 13px;
+}
+.profile-identity-top > span {
+  color: var(--sdq-text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.profile-identity-meta {
+  border-top: 1px solid color-mix(in srgb, var(--sdq-action-primary) 10%, var(--sdq-border-subtle));
+}
+.profile-identity-meta span {
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.profile-identity-meta svg {
+  color: var(--sdq-action-primary);
+}
+.profile-identity-meta i {
+  background: var(--sdq-border-subtle);
+}
+
+/* 我的页面分组：分组标题 + 卡片容器，统一间距和圆角 */
+.profile-group {
+  display: grid;
+  gap: 8px;
+}
+.profile-group > h2 {
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  margin: 0 4px;
+  position: relative;
+  padding-left: 10px;
+}
+.profile-group > h2::before {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 3px;
+  height: 12px;
+  content: "";
+  background: var(--sdq-action-primary);
+  border-radius: 2px;
+}
+.profile-card {
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-lg);
+  box-shadow: var(--sdq-shadow-card);
+  overflow: hidden;
+}
+.profile-card button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  color: var(--sdq-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--sdq-border-subtle);
+  cursor: pointer;
+  transition: background 120ms ease;
+  text-align: left;
+}
+.profile-card button:last-child {
+  border-bottom: 0;
+}
+.profile-card button:hover {
+  background: var(--sdq-bg-surface-subtle);
+}
+.profile-card button:active {
+  background: var(--sdq-bg-brand-soft);
+}
+.profile-card button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.profile-card button > span svg {
+  color: var(--sdq-action-primary);
+  flex: none;
+}
+.profile-card button > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--sdq-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.profile-card button > strong svg {
+  color: var(--sdq-text-tertiary);
+}
+
+/* 账户分组：退出登录按钮 danger outline，非红色实心 */
+.profile-account-group .profile-session {
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-lg);
+  box-shadow: var(--sdq-shadow-card);
+}
+.profile-account-group .profile-session > span {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--sdq-border-subtle);
+}
+.profile-account-group .profile-session em {
+  color: var(--sdq-text-tertiary);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.profile-account-group .profile-session b {
+  color: var(--sdq-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+.profile-account-group .profile-session button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 48px;
+  color: var(--sdq-risk);
+  font-size: 14px;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.profile-account-group .profile-session button:hover {
+  background: var(--sdq-bg-danger-soft);
+}
+.profile-account-group .profile-session button:active {
+  background: color-mix(in srgb, var(--sdq-risk) 12%, transparent);
+}
+.profile-account-group .profile-session button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* 我的页面编辑按钮：圆形图标按钮，不突兀 */
+.profile-identity-top > button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: var(--sdq-text-secondary);
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+  flex: none;
+}
+.profile-identity-top > button:hover {
+  color: var(--sdq-action-primary);
+  background: var(--sdq-bg-brand-soft);
+  border-color: color-mix(in srgb, var(--sdq-action-primary) 24%, var(--sdq-border-subtle));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-card button,
+  .profile-account-group .profile-session button,
+  .profile-identity-top > button {
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+ * batch-19（图表专项优化）：入场动画 / 骨架屏 / 坐标轴 / 图表配色统一
+ * 仅展示层，不改任何图表数据计算逻辑；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* ---- 全局图表卡片统一样式 ---- */
+.chart-card,
+.home-chart-card,
+.analysis-waterfall-card,
+.analysis-trend-card,
+.analysis-stack-card,
+.analysis-cashflow-card,
+.analysis-health-card,
+.pricing-profit-trend,
+.order-refund-chart {
+  position: relative;
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-lg);
+  box-shadow: var(--sdq-shadow-card);
+}
+
+/* 图表标题统一：左侧品牌色短竖线 */
+.chart-card .chart-title,
+.home-chart-head span,
+.analysis-card-head h2 {
+  position: relative;
+}
+
+/* ---- 坐标轴统一：12px text-secondary，网格线 border-subtle ---- */
+.chart-x-axis text,
+.chart-y-axis text,
+.sales-orders-plot em,
+.stack-x-labels span,
+.cashflow-bars em,
+.pricing-profit-trend figcaption span,
+.waterfall-plot .bar-label {
+  fill: var(--sdq-text-secondary);
+  color: var(--sdq-text-secondary);
+  font-family: var(--sdq-financial-font);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.chart-grid line,
+.sales-orders-plot,
+.cashflow-bars {
+  stroke: var(--sdq-border-subtle);
+}
+
+/* ---- 入场动画：卡片 fade-in + slide-up ---- */
+@keyframes chart-card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.chart-card,
+.home-chart-card,
+.analysis-waterfall-card,
+.analysis-trend-card,
+.analysis-stack-card,
+.analysis-cashflow-card,
+.analysis-health-card {
+  animation: chart-card-in 280ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* ---- 柱状图入场：从底部 scaleY 生长 ---- */
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.sales-bars i,
+.cashflow-bars i,
+.analysis-grouped-bars i,
+.cost-history span i {
+  transform-origin: bottom;
+  animation: bar-grow 460ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.sales-bars span:nth-child(1) i { animation-delay: 0ms; }
+.sales-bars span:nth-child(2) i { animation-delay: 40ms; }
+.sales-bars span:nth-child(3) i { animation-delay: 80ms; }
+.sales-bars span:nth-child(4) i { animation-delay: 120ms; }
+.sales-bars span:nth-child(5) i { animation-delay: 160ms; }
+.sales-bars span:nth-child(6) i { animation-delay: 200ms; }
+.sales-bars span:nth-child(7) i { animation-delay: 240ms; }
+
+/* ---- 折线图入场：stroke-dashoffset 描边动画 ---- */
+@keyframes line-draw {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+.sales-orders-line,
+.pricing-profit-line,
+.chart-soft-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: line-draw 720ms cubic-bezier(0.23, 1, 0.32, 1) 100ms forwards;
+}
+
+/* 折线图数据点：延迟淡入 */
+@keyframes point-fade-in {
+  from { opacity: 0; transform: scale(0); }
+  to { opacity: 1; transform: scale(1); }
+}
+.sales-orders-point,
+.pricing-profit-point,
+.home-mini-trend circle {
+  animation: point-fade-in 300ms ease-out 600ms both;
+}
+
+/* ---- 环形图入场：stroke-dashoffset 描边 ---- */
+@keyframes ring-draw {
+  from { stroke-dashoffset: 283; }
+  to { stroke-dashoffset: var(--ring-offset, 0); }
+}
+.cost-ring,
+.sales-target-ring,
+.health-radar .health-shape {
+  animation: ring-draw 600ms cubic-bezier(0.23, 1, 0.32, 1) 150ms both;
+}
+
+/* ---- 面积图入场：opacity 0→1 + translateY ---- */
+@keyframes area-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sales-orders-area,
+.pricing-profit-area,
+.chart-soft-area,
+.stacked-area-chart path {
+  animation: area-fade-in 500ms ease-out 200ms both;
+}
+
+/* ---- 瀑布图柱状入场 ---- */
+.waterfall-plot .bar {
+  transform-origin: bottom;
+  animation: bar-grow 460ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* ---- 图表空态/加载态：骨架屏 pulse ---- */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+.chart-skeleton,
+.chart-loading {
+  background: linear-gradient(90deg, var(--sdq-bg-surface-subtle) 25%, var(--sdq-border-subtle) 50%, var(--sdq-bg-surface-subtle) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: var(--sdq-radius-md);
+}
+
+/* 图表空态：居中引导文案 */
+.chart-empty,
+.home-chart-empty,
+.analysis-empty-copy {
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  min-height: 120px;
+  text-align: center;
+}
+.chart-empty b,
+.home-chart-empty span {
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.chart-empty p,
+.home-chart-empty b,
+.analysis-empty-copy {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ---- 图表配色统一：多系列色板 ---- */
+.chart-series-1 { fill: var(--sdq-action-primary); stroke: var(--sdq-action-primary); }
+.chart-series-2 { fill: var(--sdq-info); stroke: var(--sdq-info); }
+.chart-series-3 { fill: var(--sdq-profit); stroke: var(--sdq-profit); }
+.chart-series-4 { fill: var(--sdq-cost); stroke: var(--sdq-cost); }
+.chart-series-5 { fill: var(--sdq-risk); stroke: var(--sdq-risk); }
+
+/* 成本结构饼图/环形图配色 */
+.cost-structure-body .cost-ring {
+  background: conic-gradient(
+    var(--sdq-action-primary) 0deg,
+    var(--sdq-info) 90deg,
+    var(--sdq-profit) 180deg,
+    var(--sdq-cost) 270deg,
+    var(--sdq-border-subtle) 360deg
+  );
+}
+
+/* 利润趋势折线：主色加粗+阴影 */
+.chart-soft-line,
+.sales-orders-line {
+  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--sdq-action-primary) 16%, transparent));
+}
+
+/* 柱状图渐变：顶部亮底部深 */
+.sales-bars i {
+  background: linear-gradient(180deg, var(--sdq-info), var(--sdq-action-primary));
+  border-radius: 4px 4px 1px 1px;
+}
+
+/* 现金流量柱状图：流入=品牌色，流出=深色 */
+.cashflow-bars .inflow {
+  background: linear-gradient(180deg, var(--sdq-info), var(--sdq-action-primary)) !important;
+}
+.cashflow-bars .outflow {
+  background: var(--sdq-text-primary) !important;
+}
+
+/* 健康度雷达：形状填充品牌色透明 */
+.health-shape {
+  fill: color-mix(in srgb, var(--sdq-action-primary) 18%, transparent);
+  stroke: var(--sdq-action-primary);
+}
+
+/* ---- 减少动效：所有动画禁用 ---- */
+@media (prefers-reduced-motion: reduce) {
+  .chart-card,
+  .home-chart-card,
+  .analysis-waterfall-card,
+  .analysis-trend-card,
+  .analysis-stack-card,
+  .analysis-cashflow-card,
+  .analysis-health-card,
+  .sales-bars i,
+  .cashflow-bars i,
+  .cost-history span i,
+  .sales-orders-line,
+  .pricing-profit-line,
+  .chart-soft-line,
+  .sales-orders-point,
+  .pricing-profit-point,
+  .cost-ring,
+  .sales-target-ring,
+  .sales-orders-area,
+  .pricing-profit-area,
+  .waterfall-plot .bar,
+  .chart-skeleton {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================================================
+ * batch-20（层级收纳专项优化）：信息层级 / 折叠收纳 / 分组标题 / 主次分明
+ * 仅展示层，不改任何业务逻辑或数据结构；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* ---- 全局分组标题：左侧品牌色短竖线 + 12px text-secondary ---- */
+.section-title,
+.analysis-group-title,
+.profile-group > h2,
+.record-group h3,
+.analysis-card-head > span,
+.home-chart-head b {
+  position: relative;
+  padding-left: 10px;
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.section-title::before,
+.analysis-group-title::before,
+.profile-group > h2::before,
+.record-group h3::before {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 3px;
+  height: 12px;
+  content: "";
+  background: var(--sdq-action-primary);
+  border-radius: 2px;
+}
+
+/* ---- 页面大标题：22-28px clamp，字间距收紧，字重800 ---- */
+.ledger-page-heading h1,
+.record-page-heading h1,
+.sub-intro h1 {
+  color: var(--sdq-text-primary);
+  font-size: clamp(22px, 6.2vw, 28px);
+  font-weight: 800;
+  letter-spacing: -.055em;
+  line-height: 1.2;
+}
+
+/* ---- 页面副标题/描述：12px text-secondary，行高1.5 ---- */
+.ledger-page-heading p,
+.record-page-heading p,
+.sub-intro p {
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ---- 卡片内主标题：15px text-primary，字重700 ---- */
+.analysis-card-head h2,
+.home-chart-head span,
+.detail-breakdown h2,
+.section-title h2,
+.pricing-profit-trend-head b {
+  color: var(--sdq-text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
+/* ---- 卡片内副标题/标签：11px text-secondary ---- */
+.analysis-card-head span,
+.home-chart-head b,
+.detail-breakdown .tip-icon + p,
+.section-title span {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ---- KPI 大数字：金融等宽字体，tabular-nums，字间距收紧 ---- */
+.analysis-cost-total strong,
+.analysis-profit-total strong,
+.home-decision-result strong > b,
+.sales-target-ring b,
+.health-score b,
+.cost-formula div strong {
+  font-family: var(--sdq-financial-font);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -.075em;
+  font-weight: 700;
+}
+
+/* ---- KPI 标签：10px text-tertiary，全大写/字间距 ---- */
+.analysis-cost-total > span,
+.analysis-profit-total span,
+.home-decision-result em,
+.analysis-cost-kpis em,
+.analysis-profit-kpis em,
+.home-decision-metrics dt,
+.cost-formula > span {
+  color: var(--sdq-text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .03em;
+}
+
+/* ---- KPI 数值：13-15px text-primary，金融等宽 ---- */
+.analysis-cost-kpis b,
+.analysis-profit-kpis b,
+.home-decision-metrics dd,
+.record-amount,
+.cost-value > b {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ---- 折叠收纳组件：统一过渡语言 ---- */
+.analysis-more-trigger,
+.record-more-trigger,
+.health-formula summary,
+.target-foot button,
+.analysis-chart-action button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 0;
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.analysis-more-trigger:hover,
+.record-more-trigger:hover {
+  background: var(--sdq-bg-surface-subtle);
+}
+.analysis-more-trigger svg,
+.record-more-trigger svg {
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.analysis-more-trigger[aria-expanded="true"] svg,
+.record-more-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+/* 折叠内容：grid-template-rows 0fr→1fr 过渡 */
+.analysis-more-content,
+.record-more-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 320ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.analysis-more-content > *,
+.record-more-content > * {
+  overflow: hidden;
+}
+.analysis-more[aria-expanded="true"] .analysis-more-content,
+.record-more[aria-expanded="true"] .record-more-content {
+  grid-template-rows: 1fr;
+}
+
+/* ---- 列表项层级：主文字13px / 次文字11px / 金额右对齐 ---- */
+.record-row > .record-main b,
+.supplier-list > div > section b,
+.category-manage-list > div > span b,
+.report-list > button b,
+.cost-card-list > button b,
+.analysis-cost-list .cost-name > b,
+.analysis-supplier-list .cost-name > b,
+.analysis-profit-sku-list .cost-name > b {
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.record-row > .record-main em,
+.supplier-list > div > section em,
+.category-manage-list > div > span em,
+.report-list > button em,
+.cost-card-list > button em,
+.analysis-cost-list .cost-name > em,
+.analysis-supplier-list .cost-name > em,
+.analysis-profit-sku-list .cost-name > em {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  font-style: normal;
+}
+
+/* ---- 徽章/标签：9-11px，圆角5px，语义色 ---- */
+.order-filter-chips button,
+.product-tabs button,
+.segment-control button,
+.record-filter > button {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--sdq-radius-sm);
+}
+
+/* ---- 辅助文字/说明：10px text-tertiary ---- */
+.switch-note,
+.indirect-cost-boundary p,
+.pricing-note p,
+.health-settings-note p,
+.archive-target-form em,
+.target-foot p,
+.analysis-chart-action p {
+  color: var(--sdq-text-tertiary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* ---- 主次分明：主操作按钮突出，次操作弱化 ---- */
+.fixed-primary,
+.floating-add,
+.global-record-fab,
+.list-primary,
+.form-save {
+  font-weight: 800;
+  letter-spacing: -.01em;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sdq-action-primary) 22%, transparent);
+}
+.empty-action,
+.orders-empty-secondary,
+.record-export-actions button,
+.detail-actions button:not(.primary) {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analysis-more-content,
+  .record-more-content,
+  .analysis-more-trigger svg,
+  .record-more-trigger svg {
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+ * batch-21（可阅读性专项优化）：字号规范 / 行高 / 字间距 / 对比度 / 截断
+ * 仅展示层，不改任何业务逻辑；建立 8 级 Type Scale 规范。
+ * ========================================================================== */
+
+/* ---- 8 级 Type Scale 规范 ----
+ * Display:  clamp(28px, 8vw, 40px)  页面核心大数字
+ * H1:       clamp(22px, 6.2vw, 28px) 页面标题
+ * H2:       15px                        卡片标题
+ * Body-L:   14px                        列表主文字/按钮
+ * Body:     13px                        正文/表单
+ * Body-S:   12px                        副标题/描述
+ * Caption:  11px                        标签/辅助文字
+ * Micro:    10px                        徽章/KPI标签/时间戳
+ */
+
+/* Display 级：核心经营大数字，行高1，字间距-.075em */
+.analysis-profit-total strong,
+.analysis-cost-total strong,
+.home-decision-result strong > b,
+.detail-hero strong,
+.pricing-recommend strong,
+.pricing-base strong,
+.pricing-quote strong {
+  font-size: clamp(28px, 8vw, 40px);
+  line-height: 1;
+  letter-spacing: -.075em;
+  font-weight: 700;
+}
+
+/* H1 级：页面标题，行高1.2，字间距-.055em */
+.ledger-page-heading h1,
+.record-page-heading h1,
+.sub-intro h1,
+.orders-page-title h1,
+.products-page-title h1,
+.prototype-analysis-title h1 {
+  font-size: clamp(22px, 6.2vw, 28px);
+  line-height: 1.2;
+  letter-spacing: -.055em;
+  font-weight: 800;
+}
+
+/* H2 级：卡片标题，行高1.3，字间距-.02em */
+.analysis-card-head h2,
+.home-chart-head span,
+.detail-breakdown h2,
+.section-title h2,
+.record-group h3,
+.profile-group > h2,
+.pricing-profit-trend-head b,
+.archive-period-picker label,
+.analysis-hidden-cost-head h2 {
+  font-size: 15px;
+  line-height: 1.3;
+  letter-spacing: -.02em;
+  font-weight: 700;
+}
+
+/* Body-L 级：列表主文字/按钮，行高1.4 */
+.record-row > .record-main b,
+.supplier-list > div > section b,
+.category-manage-list > div > span b,
+.report-list > button b,
+.cost-card-list > button b,
+.analysis-cost-list .cost-name > b,
+.analysis-supplier-list .cost-name > b,
+.analysis-profit-sku-list .cost-name > b,
+.profile-card button,
+.fixed-primary,
+.floating-add,
+.global-record-fab,
+.list-primary,
+.form-save,
+.empty-action,
+.detail-actions button,
+.analysis-more-trigger,
+.record-more-trigger {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+/* Body 级：正文/表单输入，行高1.5 */
+.record-form input,
+.record-form select,
+.record-form textarea,
+.secondary-form input,
+.secondary-form select,
+.profile-settings-form input,
+.health-settings-form input,
+.pricing-inputs input,
+.budget-form-card input,
+.archive-target-form input,
+.amount-input input,
+.search-field input {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sdq-text-primary);
+}
+
+/* Body-S 级：副标题/描述/表单标签，行高1.5 */
+.ledger-page-heading p,
+.record-page-heading p,
+.sub-intro p,
+.analysis-card-head span,
+.home-chart-head b,
+.detail-breakdown .tip-icon + p,
+.section-title span,
+.record-form > label,
+.secondary-form > label,
+.profile-settings-form > label,
+.health-settings-form > label,
+.pricing-inputs > label,
+.budget-form-card .budget-input > span,
+.archive-target-form span,
+.result-summary,
+.record-export-panel strong,
+.supplier-search input {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Caption 级：标签/辅助文字/列表次文字，行高1.4 */
+.record-row > .record-main em,
+.supplier-list > div > section em,
+.category-manage-list > div > span em,
+.report-list > button em,
+.cost-card-list > button em,
+.analysis-cost-list .cost-name > em,
+.analysis-supplier-list .cost-name > em,
+.analysis-profit-sku-list .cost-name > em,
+.product-card-head > div em,
+.product-kpis label em,
+.order-list > button > div > em,
+.after-sale-status span,
+.profile-identity-top p,
+.profile-identity-meta span,
+.record-export-panel em,
+.archive-summary em,
+.archive-compare span,
+.health-dimension-list em,
+.analysis-hidden-cost-list > div span em,
+.analysis-hidden-cost-foot span,
+.cost-snapshot-compare dl dt,
+.cost-snapshot-compare p,
+.bom-list > div > span em,
+.order-after-sales-kpis span,
+.order-after-sales-rows span em,
+.order-profit-alert em {
+  font-size: 11px;
+  line-height: 1.4;
+  font-style: normal;
+}
+
+/* Micro 级：徽章/KPI标签/时间戳/坐标轴，行高1.3 */
+.analysis-cost-total > span,
+.analysis-profit-total span,
+.home-decision-result em,
+.analysis-cost-kpis em,
+.analysis-profit-kpis em,
+.home-decision-metrics dt,
+.cost-formula > span,
+.order-time,
+.order-list > button > div > b,
+.order-list > button > div > small,
+.product-card-head > i,
+.profile-identity-top > span,
+.sales-target-ring em,
+.sales-target-ring small,
+.health-score em,
+.health-score small,
+.health-dimension-list small,
+.analysis-hidden-cost-list > div small,
+.analysis-hidden-cost-head span,
+.stack-x-labels span,
+.cashflow-bars em,
+.sales-orders-plot em,
+.pricing-profit-trend figcaption span,
+.waterfall-plot .bar-label,
+.chart-x-axis text,
+.chart-y-axis text,
+.record-group-meta,
+.record-group-date,
+.archive-summary b,
+.archive-compare b,
+.target-unset-body em,
+.budget-burn span,
+.budget-summary span,
+.switch-note,
+.indirect-cost-boundary p,
+.pricing-note p,
+.health-settings-note p,
+.archive-target-form em,
+.target-foot p,
+.analysis-chart-action p,
+.order-filter-chips button,
+.product-tabs button,
+.segment-control button,
+.record-filter > button,
+.month-filter,
+.result-summary {
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+/* ---- 文字截断：单行省略号 ---- */
+.text-ellipsis,
+.record-row > .record-main b,
+.supplier-list > div > section b,
+.category-manage-list > div > span b,
+.report-list > button b,
+.cost-card-list > button b,
+.product-card-head > div b,
+.order-list > button > div > em,
+.analysis-cost-list .cost-name > b,
+.analysis-supplier-list .cost-name > b,
+.analysis-profit-sku-list .cost-name > b,
+.profile-identity-top h1,
+.profile-identity-top p {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---- 对比度增强：次要文字最低对比度 ---- */
+.text-secondary {
+  color: var(--sdq-text-secondary);
+  opacity: .9;
+}
+.text-tertiary {
+  color: var(--sdq-text-tertiary);
+  opacity: .85;
+}
+
+/* ---- 数字等宽：所有金额/数量使用 tabular-nums ---- */
+.record-amount,
+.cost-value > b,
+.analysis-cost-kpis b,
+.analysis-profit-kpis b,
+.home-decision-metrics dd,
+.sales-target-ring b,
+.health-score b,
+.cost-formula div b,
+.cost-formula div strong,
+.bom-list > div > strong,
+.order-after-sales-kpis b,
+.order-after-sales-rows span b,
+.order-list > button > strong,
+.archive-summary b,
+.archive-compare b,
+.report-list > button > strong,
+.supplier-list > div > strong,
+.cost-card-list > button > strong,
+.analysis-cost-list .cost-value > b,
+.analysis-supplier-list .cost-value > b,
+.analysis-profit-sku-list .cost-value > b,
+.pricing-profit-trend-head strong,
+.pricing-keypoints b,
+.detail-hero strong {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ---- 行高优化：长文本行高1.6，短文本1.4 ---- */
+p,
+.switch-note,
+.indirect-cost-boundary p,
+.pricing-note p,
+.health-settings-note p,
+.health-formula p,
+.analysis-hidden-cost-list > div small,
+.cost-snapshot-compare p {
+  line-height: 1.6;
+}
+
+/* ---- 字间距优化：标题收紧，正文正常，标签放宽 ---- */
+h1, h2, h3,
+.ledger-page-heading h1,
+.record-page-heading h1,
+.sub-intro h1 {
+  letter-spacing: -.03em;
+}
+.caption,
+.micro,
+.analysis-card-head span,
+.home-chart-head b,
+.section-title span,
+.KPI-label {
+  letter-spacing: .02em;
+}
+
+/* ---- 焦点可见性：所有可聚焦元素有清晰焦点环 ---- */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sdq-action-primary) 28%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---- 选中态文字对比度 ---- */
+::selection {
+  background: color-mix(in srgb, var(--sdq-action-primary) 22%, transparent);
+  color: var(--sdq-text-primary);
+}
+
+/* ============================================================================
+ * batch-22（Logo区重构+融入过渡）：毛玻璃导航 / 渐变遮罩 / 问候缓冲 / 品牌细线 / stagger入场
+ * 仅展示层，不改导航逻辑或路由；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+.app-header,
+.mobile-shell .app-header,
+.ledger-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: color-mix(in srgb, var(--sdq-bg-surface) 78%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid color-mix(in srgb, var(--sdq-border-subtle) 60%, transparent);
+  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+.app-header.scrolled,
+.mobile-shell .app-header.scrolled {
+  background: color-mix(in srgb, var(--sdq-bg-surface) 92%, transparent);
+  box-shadow: 0 4px 20px rgba(11,24,54,.08);
+}
+
+.brand-logo,
+.app-logo,
+.home-brand-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-logo .logo-mark,
+.app-logo .logo-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  background: linear-gradient(145deg, var(--sdq-action-primary), var(--sdq-bg-brand));
+  border-radius: 10px;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sdq-action-primary) 28%, transparent);
+  color: var(--sdq-text-on-brand);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -.02em;
+}
+.brand-logo .logo-text b,
+.app-logo .logo-text b {
+  color: var(--sdq-text-primary);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+.brand-logo .logo-text span,
+.app-logo .logo-text span {
+  color: var(--sdq-text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
+}
+
+.home-greeting,
+.ledger-greeting {
+  display: grid;
+  gap: 4px;
+  padding: 8px 0 16px;
+}
+.home-greeting .greeting-time,
+.ledger-greeting .greeting-time {
+  color: var(--sdq-text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.home-greeting .greeting-name,
+.ledger-greeting .greeting-name {
+  color: var(--sdq-text-primary);
+  font-size: clamp(20px, 5.5vw, 26px);
+  font-weight: 800;
+  letter-spacing: -.045em;
+  line-height: 1.2;
+}
+.home-greeting .greeting-sub,
+.ledger-greeting .greeting-sub {
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.brand-divider,
+.logo-divider {
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--sdq-action-primary) 30%, transparent) 20%,
+    color-mix(in srgb, var(--sdq-action-primary) 50%, transparent) 50%,
+    color-mix(in srgb, var(--sdq-action-primary) 30%, transparent) 80%,
+    transparent 100%
+  );
+  border: 0;
+  margin: 0;
+}
+
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.home-greeting { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 0ms both; }
+.home-decision-card { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 60ms both; }
+.home-chart-card { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 120ms both; }
+.home-quick-actions { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 180ms both; }
+.home-recent-list { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 240ms both; }
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.app-content > section,
+.mobile-shell .app-content > section {
+  animation: page-enter 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+
+/* ============================================================================
+ * batch-23（全局过渡与动效优化）：5级时长 / 5级缓动 / 页面切换 / 卡片hover / 按钮active / 模态框
+ * 仅展示层，不改任何业务逻辑；建立全局动效令牌体系。
+ * ========================================================================== */
+
+button,
+.fixed-primary,
+.floating-add,
+.global-record-fab,
+.list-primary,
+.form-save,
+.empty-action,
+.detail-actions button,
+.profile-card button,
+.order-filter-chips button,
+.product-tabs button,
+.segment-control button,
+.record-filter > button {
+  transition:
+    background 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 100ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 120ms ease;
+}
+button:active:not(:disabled),
+.fixed-primary:active:not(:disabled),
+.floating-add:active:not(:disabled),
+.global-record-fab:active:not(:disabled),
+.list-primary:active:not(:disabled),
+.form-save:active:not(:disabled),
+.empty-action:active:not(:disabled),
+.detail-actions button:active:not(:disabled) {
+  transform: scale(.97);
+}
+
+.ledger-surface,
+.home-chart-card,
+.analysis-waterfall-card,
+.analysis-trend-card,
+.analysis-stack-card,
+.analysis-cashflow-card,
+.analysis-health-card,
+.profile-card,
+.profile-session,
+.after-sale-status,
+.cost-formula,
+.cost-snapshot-compare {
+  transition:
+    box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.ledger-surface:hover,
+.home-chart-card:hover,
+.analysis-waterfall-card:hover,
+.analysis-trend-card:hover,
+.analysis-stack-card:hover,
+.analysis-cashflow-card:hover,
+.analysis-health-card:hover {
+  box-shadow: 0 10px 28px rgba(11,24,54,.1);
+  transform: translateY(-2px);
+}
+
+.record-row,
+.supplier-list > div,
+.category-manage-list > div,
+.report-list > button,
+.cost-card-list > button,
+.analysis-cost-list > button,
+.analysis-supplier-list > button,
+.analysis-profit-sku-list > button,
+.order-list > button,
+.product-cost-list > button {
+  transition:
+    background 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 100ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.record-row:active,
+.supplier-list > div:active,
+.report-list > button:active,
+.cost-card-list > button:active,
+.analysis-cost-list > button:active,
+.order-list > button:active,
+.product-cost-list > button:active {
+  background: var(--sdq-bg-brand-soft);
+  transform: scale(.99);
+}
+
+input,
+select,
+textarea,
+.search-field input,
+.amount-input input,
+.record-form input,
+.record-form select,
+.record-form textarea,
+.secondary-form input,
+.secondary-form select,
+.profile-settings-form input,
+.health-settings-form input,
+.pricing-inputs input,
+.budget-form-card input,
+.archive-target-form input {
+  transition:
+    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 120ms ease;
+}
+input:focus,
+select:focus,
+textarea:focus,
+.search-field input:focus,
+.amount-input input:focus,
+.record-form input:focus,
+.record-form select:focus,
+.record-form textarea:focus,
+.secondary-form input:focus,
+.secondary-form select:focus,
+.profile-settings-form input:focus,
+.health-settings-form input:focus,
+.pricing-inputs input:focus,
+.budget-form-card input:focus,
+.archive-target-form input:focus {
+  border-color: var(--sdq-action-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sdq-action-primary) 14%, transparent);
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-overlay,
+.drawer-overlay,
+.sheet-overlay {
+  animation: overlay-in 200ms ease both;
+}
+.modal-content,
+.drawer-content,
+.sheet-content {
+  animation: modal-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-16px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast,
+.notification,
+.snackbar {
+  animation: toast-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+.progress-bar.indeterminate::after,
+.loading-bar::after {
+  animation: progress-indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes value-flash {
+  0% { background: color-mix(in srgb, var(--sdq-action-primary) 18%, transparent); }
+  100% { background: transparent; }
+}
+.value-changed,
+.kpi-flash {
+  animation: value-flash 600ms ease-out;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .app-header,
+  .mobile-shell .app-header {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
