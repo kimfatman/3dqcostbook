@@ -47,11 +47,27 @@
   --sdq-radius-md: 12px;
   --sdq-radius-lg: 16px;
   --sdq-radius-pill: 999px;
+  /* batch-03 C12：补齐空间刻度令牌（README 4.3 规范：4/8/12/16/20/24/32/40）
+   * 卡片外边距/内边距统一消费 --sdq-space-4（16px），大卡 --sdq-space-5（20px）。 */
+  --sdq-space-1: 4px;
+  --sdq-space-2: 8px;
+  --sdq-space-3: 12px;
+  --sdq-space-4: 16px;
+  --sdq-space-5: 20px;
+  --sdq-space-6: 24px;
+  --sdq-space-8: 32px;
+  --sdq-space-10: 40px;
   --sdq-space-page-x: 16px;
   --sdq-space-section: 24px;
   --sdq-space-card: 16px;
   --sdq-height-control: 44px;
   --sdq-height-nav: calc(56px + env(safe-area-inset-bottom, 0px));
+  /* batch-03 C12：图标尺寸三档（导航 20px / 按钮 16px / 列表 18px，线宽 1.5px），
+   * TSX 中 lucide 图标统一消费这三档与 strokeWidth={1.5}。 */
+  --sdq-icon-nav: 20px;
+  --sdq-icon-button: 16px;
+  --sdq-icon-list: 18px;
+  --sdq-icon-stroke: 1.5px;
   --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   --sdq-motion-press: 100ms;
   --sdq-motion-card: 220ms;

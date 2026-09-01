@@ -1447,3 +1447,104 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
   .app-content.tab-transition { animation: none; }
   .tabbar button:active { transform: none; }
 }
+/* ============================================================================
+ * batch-03（C12 页面 P1 批量 6 项）：全局样式统一收口
+ * 间距 / 圆角 / 图标 / 按钮状态 / 分割线 / 表单标签对齐 —— 仅展示层，
+ * 不改任何账本、聚合、筛选逻辑；只引用 --sdq-* 语义令牌，不新增色值，五皮肤自动适配。
+ * 作用域特例（注释标注）：五原型布局（prototype-*）保留各自 grid 间隙与圆角；
+ * 分段控件/FAB/月份筛选（pill）保留 --sdq-radius-pill；紧凑双列（form-two-col）保留 40px 控件高。
+ * ========================================================================== */
+
+/* ---- 步骤1 卡片间距：标准卡片外边距/内边距统一 16px（--sdq-space-4），大卡 20px（--sdq-space-5） ---- */
+.app-content > :where(.order-after-sales-card, .order-profit-alert, .detail-breakdown, .cost-formula, .pricing-empty-tip, .pricing-keypoints) {
+  margin-bottom: var(--sdq-space-4);
+}
+.app-content :where(.order-after-sales-card, .analysis-cost-overview, .analysis-cost-structure, .analysis-profit-trend, .analysis-stack-card, .analysis-cashflow-card, .analysis-health-card, .archive-summary, .archive-history-list, .indirect-cost-summary, .budget-form-card, .detail-breakdown, .profile-identity-card, .identity-settings-section, .identity-choice-panel, .profile-account-group > .profile-session) {
+  padding: var(--sdq-space-4);
+}
+/* 大卡（概览/KPI 级）内边距 20px */
+.app-content :where(.operating-snapshot.home-decision, .pricing-recommend, .pricing-base, .profile-identity-card, .analysis-profit-overview) {
+  padding: var(--sdq-space-5);
+}
+
+/* ---- 步骤2 卡片圆角三档：大卡 lg 16px / 标准卡 md 12px / 小徽章 sm 8px ---- */
+.app-content :where(.ledger-surface, .record-group, .home-chart-card, .analysis-stack-card, .analysis-cashflow-card, .analysis-health-card, .analysis-cost-overview, .analysis-cost-structure, .analysis-waterfall-card, .analysis-trend-card, .analysis-ranking-card, .analysis-profit-trend, .chart-card, .budget-form-card, .archive-summary, .archive-history-list, .indirect-cost-summary, .detail-breakdown, .product-cost-list > button, .profile-identity-card, .profile-card, .pricing-base, .pricing-quote, .pricing-recommend, .pricing-profit-trend, .pricing-simulator, .pricing-plans, .pricing-inputs, .order-after-sales-card, .order-refund-chart) {
+  border-radius: var(--sdq-radius-lg);
+}
+.app-content :where(.search-field, .form-section, .material-row, .industry-picker > button, .segment-control, .record-filter, .archive-period-picker, .allocation-targets, .record-export-panel, .indirect-source-choice > div > label, .allocation-mode-options label, .detail-actions button, .template-head, .channel-template-preview, .order-profit-alert, .switch-note, .profile-tip, .profile-pending, .pricing-error, .sim-result, .competitor-results > span, .pricing-keypoints, .indirect-cost-boundary, .identity-editor-card) {
+  border-radius: var(--sdq-radius-md);
+}
+.app-content :where(.record-icon, .cost-card-list > button > span, .report-list > button > span, .top-card-list button > span, .supplier-list > div > span, .cost-rank, .picker-icon, .home-row-icon, .tip-icon, .notification-symbol, .product-card-head > span, .cost-card-thumb, .budget-form-card .budget-input > div, .header-icon, .back-button, .header-primary-action, .order-filter-chips button, .product-tabs button:last-child, .empty-state-actions button, .detail-empty-state .empty-action, .orders-empty-secondary, .record-custom-category > button, .voucher-guard-actions button, .template-head button, .archive-target-form button, .budget-form-card button, .target-editor form button, .material-row-head button, .bom-list button, .supplier-list .row-more-trigger, .category-manage-list .row-more-trigger) {
+  border-radius: var(--sdq-radius-sm);
+}
+
+/* ---- 步骤3 图标风格：TSX 已统一 lucide 库 + 三档尺寸（--sdq-icon-nav/button/list）+ strokeWidth 1.5，无 emoji ---- */
+
+/* ---- 步骤4 按钮状态：hover 亮度 +5% / disabled .5 + not-allowed / active 补全（batch-01 已完成主要 :active） ---- */
+.app-content :where(.fixed-primary, .floating-add, .global-record-fab, .list-primary, .empty-action, .header-primary-action, .record-custom-category > button):hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.app-content :where(button):disabled, .tabbar button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+/* active 补全：仅覆盖 batch-01 未覆盖的次要操作（scale .97 + 背景加深） */
+.app-content :where(.empty-action, .detail-actions button, .template-head button, .industry-picker > button, .target-editor form button, .budget-form-card button, .archive-target-form button, .record-export-actions button, .order-batch-toolbar button, .orders-empty-secondary, .record-custom-category > button):active:not(:disabled) {
+  transform: scale(.97);
+}
+
+/* ---- 步骤5 列表分割线：1px var(--sdq-border-subtle)、左对齐（left 16px）、最后一项无 ---- */
+.app-content :where(.record-row, .order-list > button, .bom-list > div, .report-breakdown span, .notification-list > button, .budget-burn, .budget-summary, .archive-history-list > button, .top-card-list button, .supplier-rank button, .supplier-list > div:not(.empty-state), .report-list > button, .cost-card-list > button, .category-manage-list > div:not(.empty-state), .cost-card-list > div:not(.empty-state), .analysis-cost-list > button):not(:last-child) {
+  border-bottom-color: var(--sdq-border-subtle);
+}
+.app-content :where(.record-row, .order-list > button, .bom-list > div, .report-breakdown span, .notification-list > button, .top-card-list button, .supplier-rank button, .supplier-list > div:not(.empty-state), .report-list > button, .cost-card-list > button, .category-manage-list > div:not(.empty-state), .cost-card-list > div:not(.empty-state), .archive-history-list > button, .budget-burn, .budget-summary, .analysis-cost-list > button):last-child {
+  border-bottom: 0;
+}
+/* ::after 型分割线（页面风格收口遗留）：对齐 left 16px、右通边、颜色 border-subtle */
+.app-content :where(.record-row:not(:last-child), .top-card-list button:not(:last-child), .supplier-rank button:not(:last-child), .supplier-list > div:not(:last-child), .report-list > button:not(:last-child), .cost-card-list > button:not(:last-child), .category-manage-list > div:not(:last-child), .cost-card-list > div:not(:last-child))::after {
+  right: 0;
+  left: 16px;
+  background: var(--sdq-border-subtle);
+}
+/* record-row 已用 border-bottom 作分割线，关闭遗留 ::after 双线 */
+.app-content .record-row:not(:last-child)::after {
+  display: none;
+}
+/* 顶部分割线列表（border-top 型）统一颜色 */
+.app-content :where(.analysis-cost-list > button) {
+  border-top-color: var(--sdq-border-subtle);
+}
+
+/* ---- 步骤6 表单标签对齐：左对齐 14px text-primary；必填红星；输入框 44px；错误 12px risk 在字段下方 ---- */
+.mobile-shell .app-content :where(.record-form, .secondary-form, .indirect-cost-form, .profile-settings-form, .health-settings-form, .pricing-inputs, .pricing-simulator, .budget-form-card, .archive-target-form) > label {
+  text-align: left;
+  color: var(--sdq-text-primary);
+  font-size: 14px;
+}
+.mobile-shell .app-content :where(.record-form, .secondary-form, .indirect-cost-form, .profile-settings-form, .health-settings-form, .pricing-inputs, .pricing-simulator) > label > span.sdq-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.mobile-shell .sdq-label .sdq-req {
+  color: var(--sdq-risk);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+/* 必填红星由 CSS 渲染：保证 label textContent 不含 "*"，getByLabelText/getByRole 名称不受影响 */
+.mobile-shell .sdq-label .sdq-req::after {
+  content: "*";
+}
+.mobile-shell .app-content :where(.record-form, .secondary-form, .indirect-cost-form, .profile-settings-form, .health-settings-form, .pricing-inputs, .pricing-simulator) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea, .amount-input, .profile-industry-trigger) {
+  min-height: var(--sdq-height-control);
+}
+/* 错误提示：输入框下方 12px risk（.record-voucher-error 已符合；budget 表单 .field-error 补全） */
+.mobile-shell .app-content .field-error,
+.mobile-shell .app-content :where(.record-form, .secondary-form, .indirect-cost-form, .profile-settings-form) :where(small[role="alert"], .record-voucher-error) {
+  display: block;
+  margin-top: 2px;
+  color: var(--sdq-risk);
+  font-size: 12px;
+  line-height: 1.5;
+}

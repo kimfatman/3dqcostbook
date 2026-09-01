@@ -141,7 +141,7 @@ describe("五行业模板的真实页面显示", () => {
       expect(screen.getAllByText(scenario.category).length).toBeGreaterThan(0);
       const detailsTrigger = screen.getByRole("button", { name: /行业参考估算/ });
       if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
-      expect(screen.getByRole("heading", { name: `${scenario.label}潜在漏损` })).toBeTruthy();
+      expect(await screen.findByRole("heading", { name: `${scenario.label}潜在漏损` })).toBeTruthy();
     }
   }, 30_000);
 });
