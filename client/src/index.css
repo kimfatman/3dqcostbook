@@ -2544,3 +2544,551 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
     transform: none !important;
   }
 }
+
+/* ============================================================================
+ * batch-20（层级收纳专项优化）：信息层级 / 折叠收纳 / 分组标题 / 主次分明
+ * 仅展示层，不改任何业务逻辑或数据结构；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* ---- 全局分组标题：左侧品牌色短竖线 + 12px text-secondary ---- */
+.section-title,
+.analysis-group-title,
+.profile-group > h2,
+.record-group h3,
+.analysis-card-head > span,
+.home-chart-head b {
+  position: relative;
+  padding-left: 10px;
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.section-title::before,
+.analysis-group-title::before,
+.profile-group > h2::before,
+.record-group h3::before {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 3px;
+  height: 12px;
+  content: "";
+  background: var(--sdq-action-primary);
+  border-radius: 2px;
+}
+
+/* ---- 页面大标题：22-28px clamp，字间距收紧，字重800 ---- */
+.ledger-page-heading h1,
+.record-page-heading h1,
+.sub-intro h1 {
+  color: var(--sdq-text-primary);
+  font-size: clamp(22px, 6.2vw, 28px);
+  font-weight: 800;
+  letter-spacing: -.055em;
+  line-height: 1.2;
+}
+
+/* ---- 页面副标题/描述：12px text-secondary，行高1.5 ---- */
+.ledger-page-heading p,
+.record-page-heading p,
+.sub-intro p {
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ---- 卡片内主标题：15px text-primary，字重700 ---- */
+.analysis-card-head h2,
+.home-chart-head span,
+.detail-breakdown h2,
+.section-title h2,
+.pricing-profit-trend-head b {
+  color: var(--sdq-text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
+/* ---- 卡片内副标题/标签：11px text-secondary ---- */
+.analysis-card-head span,
+.home-chart-head b,
+.detail-breakdown .tip-icon + p,
+.section-title span {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ---- KPI 大数字：金融等宽字体，tabular-nums，字间距收紧 ---- */
+.analysis-cost-total strong,
+.analysis-profit-total strong,
+.home-decision-result strong > b,
+.sales-target-ring b,
+.health-score b,
+.cost-formula div strong {
+  font-family: var(--sdq-financial-font);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -.075em;
+  font-weight: 700;
+}
+
+/* ---- KPI 标签：10px text-tertiary，全大写/字间距 ---- */
+.analysis-cost-total > span,
+.analysis-profit-total span,
+.home-decision-result em,
+.analysis-cost-kpis em,
+.analysis-profit-kpis em,
+.home-decision-metrics dt,
+.cost-formula > span {
+  color: var(--sdq-text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .03em;
+}
+
+/* ---- KPI 数值：13-15px text-primary，金融等宽 ---- */
+.analysis-cost-kpis b,
+.analysis-profit-kpis b,
+.home-decision-metrics dd,
+.record-amount,
+.cost-value > b {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ---- 折叠收纳组件：统一过渡语言 ---- */
+.analysis-more-trigger,
+.record-more-trigger,
+.health-formula summary,
+.target-foot button,
+.analysis-chart-action button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 0;
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.analysis-more-trigger:hover,
+.record-more-trigger:hover {
+  background: var(--sdq-bg-surface-subtle);
+}
+.analysis-more-trigger svg,
+.record-more-trigger svg {
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.analysis-more-trigger[aria-expanded="true"] svg,
+.record-more-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+/* 折叠内容：grid-template-rows 0fr→1fr 过渡 */
+.analysis-more-content,
+.record-more-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 320ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.analysis-more-content > *,
+.record-more-content > * {
+  overflow: hidden;
+}
+.analysis-more[aria-expanded="true"] .analysis-more-content,
+.record-more[aria-expanded="true"] .record-more-content {
+  grid-template-rows: 1fr;
+}
+
+/* ---- 列表项层级：主文字13px / 次文字11px / 金额右对齐 ---- */
+.record-row > .record-main b,
+.supplier-list > div > section b,
+.category-manage-list > div > span b,
+.report-list > button b,
+.cost-card-list > button b,
+.analysis-cost-list .cost-name > b,
+.analysis-supplier-list .cost-name > b,
+.analysis-profit-sku-list .cost-name > b {
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.record-row > .record-main em,
+.supplier-list > div > section em,
+.category-manage-list > div > span em,
+.report-list > button em,
+.cost-card-list > button em,
+.analysis-cost-list .cost-name > em,
+.analysis-supplier-list .cost-name > em,
+.analysis-profit-sku-list .cost-name > em {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  font-style: normal;
+}
+
+/* ---- 徽章/标签：9-11px，圆角5px，语义色 ---- */
+.order-filter-chips button,
+.product-tabs button,
+.segment-control button,
+.record-filter > button {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--sdq-radius-sm);
+}
+
+/* ---- 辅助文字/说明：10px text-tertiary ---- */
+.switch-note,
+.indirect-cost-boundary p,
+.pricing-note p,
+.health-settings-note p,
+.archive-target-form em,
+.target-foot p,
+.analysis-chart-action p {
+  color: var(--sdq-text-tertiary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* ---- 主次分明：主操作按钮突出，次操作弱化 ---- */
+.fixed-primary,
+.floating-add,
+.global-record-fab,
+.list-primary,
+.form-save {
+  font-weight: 800;
+  letter-spacing: -.01em;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sdq-action-primary) 22%, transparent);
+}
+.empty-action,
+.orders-empty-secondary,
+.record-export-actions button,
+.detail-actions button:not(.primary) {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analysis-more-content,
+  .record-more-content,
+  .analysis-more-trigger svg,
+  .record-more-trigger svg {
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+ * batch-21（可阅读性专项优化）：字号规范 / 行高 / 字间距 / 对比度 / 截断
+ * 仅展示层，不改任何业务逻辑；建立 8 级 Type Scale 规范。
+ * ========================================================================== */
+
+/* ---- 8 级 Type Scale 规范 ----
+ * Display:  clamp(28px, 8vw, 40px)  页面核心大数字
+ * H1:       clamp(22px, 6.2vw, 28px) 页面标题
+ * H2:       15px                        卡片标题
+ * Body-L:   14px                        列表主文字/按钮
+ * Body:     13px                        正文/表单
+ * Body-S:   12px                        副标题/描述
+ * Caption:  11px                        标签/辅助文字
+ * Micro:    10px                        徽章/KPI标签/时间戳
+ */
+
+/* Display 级：核心经营大数字，行高1，字间距-.075em */
+.analysis-profit-total strong,
+.analysis-cost-total strong,
+.home-decision-result strong > b,
+.detail-hero strong,
+.pricing-recommend strong,
+.pricing-base strong,
+.pricing-quote strong {
+  font-size: clamp(28px, 8vw, 40px);
+  line-height: 1;
+  letter-spacing: -.075em;
+  font-weight: 700;
+}
+
+/* H1 级：页面标题，行高1.2，字间距-.055em */
+.ledger-page-heading h1,
+.record-page-heading h1,
+.sub-intro h1,
+.orders-page-title h1,
+.products-page-title h1,
+.prototype-analysis-title h1 {
+  font-size: clamp(22px, 6.2vw, 28px);
+  line-height: 1.2;
+  letter-spacing: -.055em;
+  font-weight: 800;
+}
+
+/* H2 级：卡片标题，行高1.3，字间距-.02em */
+.analysis-card-head h2,
+.home-chart-head span,
+.detail-breakdown h2,
+.section-title h2,
+.record-group h3,
+.profile-group > h2,
+.pricing-profit-trend-head b,
+.archive-period-picker label,
+.analysis-hidden-cost-head h2 {
+  font-size: 15px;
+  line-height: 1.3;
+  letter-spacing: -.02em;
+  font-weight: 700;
+}
+
+/* Body-L 级：列表主文字/按钮，行高1.4 */
+.record-row > .record-main b,
+.supplier-list > div > section b,
+.category-manage-list > div > span b,
+.report-list > button b,
+.cost-card-list > button b,
+.analysis-cost-list .cost-name > b,
+.analysis-supplier-list .cost-name > b,
+.analysis-profit-sku-list .cost-name > b,
+.profile-card button,
+.fixed-primary,
+.floating-add,
+.global-record-fab,
+.list-primary,
+.form-save,
+.empty-action,
+.detail-actions button,
+.analysis-more-trigger,
+.record-more-trigger {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+/* Body 级：正文/表单输入，行高1.5 */
+.record-form input,
+.record-form select,
+.record-form textarea,
+.secondary-form input,
+.secondary-form select,
+.profile-settings-form input,
+.health-settings-form input,
+.pricing-inputs input,
+.budget-form-card input,
+.archive-target-form input,
+.amount-input input,
+.search-field input {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sdq-text-primary);
+}
+
+/* Body-S 级：副标题/描述/表单标签，行高1.5 */
+.ledger-page-heading p,
+.record-page-heading p,
+.sub-intro p,
+.analysis-card-head span,
+.home-chart-head b,
+.detail-breakdown .tip-icon + p,
+.section-title span,
+.record-form > label,
+.secondary-form > label,
+.profile-settings-form > label,
+.health-settings-form > label,
+.pricing-inputs > label,
+.budget-form-card .budget-input > span,
+.archive-target-form span,
+.result-summary,
+.record-export-panel strong,
+.supplier-search input {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Caption 级：标签/辅助文字/列表次文字，行高1.4 */
+.record-row > .record-main em,
+.supplier-list > div > section em,
+.category-manage-list > div > span em,
+.report-list > button em,
+.cost-card-list > button em,
+.analysis-cost-list .cost-name > em,
+.analysis-supplier-list .cost-name > em,
+.analysis-profit-sku-list .cost-name > em,
+.product-card-head > div em,
+.product-kpis label em,
+.order-list > button > div > em,
+.after-sale-status span,
+.profile-identity-top p,
+.profile-identity-meta span,
+.record-export-panel em,
+.archive-summary em,
+.archive-compare span,
+.health-dimension-list em,
+.analysis-hidden-cost-list > div span em,
+.analysis-hidden-cost-foot span,
+.cost-snapshot-compare dl dt,
+.cost-snapshot-compare p,
+.bom-list > div > span em,
+.order-after-sales-kpis span,
+.order-after-sales-rows span em,
+.order-profit-alert em {
+  font-size: 11px;
+  line-height: 1.4;
+  font-style: normal;
+}
+
+/* Micro 级：徽章/KPI标签/时间戳/坐标轴，行高1.3 */
+.analysis-cost-total > span,
+.analysis-profit-total span,
+.home-decision-result em,
+.analysis-cost-kpis em,
+.analysis-profit-kpis em,
+.home-decision-metrics dt,
+.cost-formula > span,
+.order-time,
+.order-list > button > div > b,
+.order-list > button > div > small,
+.product-card-head > i,
+.profile-identity-top > span,
+.sales-target-ring em,
+.sales-target-ring small,
+.health-score em,
+.health-score small,
+.health-dimension-list small,
+.analysis-hidden-cost-list > div small,
+.analysis-hidden-cost-head span,
+.stack-x-labels span,
+.cashflow-bars em,
+.sales-orders-plot em,
+.pricing-profit-trend figcaption span,
+.waterfall-plot .bar-label,
+.chart-x-axis text,
+.chart-y-axis text,
+.record-group-meta,
+.record-group-date,
+.archive-summary b,
+.archive-compare b,
+.target-unset-body em,
+.budget-burn span,
+.budget-summary span,
+.switch-note,
+.indirect-cost-boundary p,
+.pricing-note p,
+.health-settings-note p,
+.archive-target-form em,
+.target-foot p,
+.analysis-chart-action p,
+.order-filter-chips button,
+.product-tabs button,
+.segment-control button,
+.record-filter > button,
+.month-filter,
+.result-summary {
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+/* ---- 文字截断：单行省略号 ---- */
+.text-ellipsis,
+.record-row > .record-main b,
+.supplier-list > div > section b,
+.category-manage-list > div > span b,
+.report-list > button b,
+.cost-card-list > button b,
+.product-card-head > div b,
+.order-list > button > div > em,
+.analysis-cost-list .cost-name > b,
+.analysis-supplier-list .cost-name > b,
+.analysis-profit-sku-list .cost-name > b,
+.profile-identity-top h1,
+.profile-identity-top p {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---- 对比度增强：次要文字最低对比度 ---- */
+.text-secondary {
+  color: var(--sdq-text-secondary);
+  opacity: .9;
+}
+.text-tertiary {
+  color: var(--sdq-text-tertiary);
+  opacity: .85;
+}
+
+/* ---- 数字等宽：所有金额/数量使用 tabular-nums ---- */
+.record-amount,
+.cost-value > b,
+.analysis-cost-kpis b,
+.analysis-profit-kpis b,
+.home-decision-metrics dd,
+.sales-target-ring b,
+.health-score b,
+.cost-formula div b,
+.cost-formula div strong,
+.bom-list > div > strong,
+.order-after-sales-kpis b,
+.order-after-sales-rows span b,
+.order-list > button > strong,
+.archive-summary b,
+.archive-compare b,
+.report-list > button > strong,
+.supplier-list > div > strong,
+.cost-card-list > button > strong,
+.analysis-cost-list .cost-value > b,
+.analysis-supplier-list .cost-value > b,
+.analysis-profit-sku-list .cost-value > b,
+.pricing-profit-trend-head strong,
+.pricing-keypoints b,
+.detail-hero strong {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ---- 行高优化：长文本行高1.6，短文本1.4 ---- */
+p,
+.switch-note,
+.indirect-cost-boundary p,
+.pricing-note p,
+.health-settings-note p,
+.health-formula p,
+.analysis-hidden-cost-list > div small,
+.cost-snapshot-compare p {
+  line-height: 1.6;
+}
+
+/* ---- 字间距优化：标题收紧，正文正常，标签放宽 ---- */
+h1, h2, h3,
+.ledger-page-heading h1,
+.record-page-heading h1,
+.sub-intro h1 {
+  letter-spacing: -.03em;
+}
+.caption,
+.micro,
+.analysis-card-head span,
+.home-chart-head b,
+.section-title span,
+.KPI-label {
+  letter-spacing: .02em;
+}
+
+/* ---- 焦点可见性：所有可聚焦元素有清晰焦点环 ---- */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sdq-action-primary) 28%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---- 选中态文字对比度 ---- */
+::selection {
+  background: color-mix(in srgb, var(--sdq-action-primary) 22%, transparent);
+  color: var(--sdq-text-primary);
+}
