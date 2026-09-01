@@ -114,9 +114,9 @@
 | 5 | 洞察模块 | 洞察页/瀑布图/成本结构/报表 | ✅ 方案完成，待执行 | 第五章 |
 | 6 | 我的模块 | 我的/设置/皮肤中心/供应商/流水/记一笔 | ✅ 方案完成，待执行 | 第六章 |
 | 7 | 全局组件 | 弹窗/抽屉/下拉/空态/加载态/Toast | ✅ 方案完成，待执行 | 第七章 |
-| 8 | 全局配色与令牌 | 令牌完整性/对比度/皮肤兼容 | ⏳ 待打磨 | 第八章 |
+| 8 | 全局配色与令牌 | 令牌完整性/对比度/皮肤兼容 | ✅ 方案完成，待执行 | 第八章 |
 
-**进度：** 1/8 模块方案完成（12.5%）
+**进度：** 8/8 模块方案完成（100%），待 Trae 执行
 
 ---
 
@@ -731,11 +731,103 @@
 
 ---
 
-## 第八章：全局配色与令牌（⏳ 待打磨）
+## 第八章：全局配色与令牌（✅ 方案完成）
 
-**状态：** 待打磨 ｜ **包含：** 令牌完整性检查、全局对比度验证、5种皮肤兼容验证、硬编码颜色扫描、业务语义色保护验证
+**打磨日期：** 2026-09-01 ｜ **问题数：** 28 ｜ **执行状态：** 待 Trae 执行
+**审查轮次：** Apple Design ×2 + ui-ux-pro-max ×2（共4轮）
+**包含：** 原色阶（primitives.css）、语义令牌（semantic.css）、5种皮肤（aurora/soft/deep/midnight/forest）、Tailwind桥接、令牌规范文档
 
-（打磨完成后在此填写问题清单和方案）
+### 8.1 当前基线
+- 三层令牌架构：原色阶（层一）→ 语义令牌（层二）→ Tailwind桥（层三）
+- 品牌蓝11阶（50-950）、中性灰11阶（50-950），完整
+- 语义令牌52个，覆盖背景/文本/边框/阴影/动作/业务语义色/圆角/间距/高度/字体/动效
+- 5种皮肤完整覆盖颜色类令牌（与soft对齐）
+- 对比度优化：text-tertiary/action-primary/warning-500/info-500已调深至WCAG AA
+- 深色皮肤text-on-brand改深字，对比6.68:1达AA
+- focus-visible光晕用color-mix，prefers-reduced-motion全局适配
+- 业务语义色（profit/cost/risk/info）在深色皮肤下保持原色阶引用，不改色相
+
+### 8.2 问题清单（28项）
+
+#### P0（8项）
+| # | 问题 | 方案 |
+|---|---|---|
+| 1 | 缺少图表专用令牌：无--sdq-chart-1~8，导致所有图表硬编码颜色（8+处hex） | 新增--sdq-chart-1~8令牌（主色蓝/浅蓝/绿/橙/红/紫/青/灰），浅色+深色双轨定义 |
+| 2 | 部分语义令牌用硬编码hex：bg-surface/bg-brand-soft/bg-warning-soft等10+个 | 全部指向原色阶：bg-surface→neutral-0（新增）、bg-brand-soft→blue-50、bg-warning-soft→warning-50 |
+| 3 | 阴影用硬编码rgba：shadow-card/overlay-scrim用rgba，深色皮肤下不变 | 改为color-mix(in srgb, --sdq-neutral-900, transparent 92%)等 |
+| 4 | 原色阶语义色只有mini阶（各500/600），缺少50/100/200/300/400/700/800/900 | 补全语义色色阶：每色补8阶，共32个新令牌 |
+| 5 | 原色阶缺少图表辅助色：无紫色/青色色阶，图表配色单调 | 新增紫色（violet-50~950）、青色（teal-50~950）各11阶 |
+| 6 | 业务语义色没有明确标注"不可随皮肤修改" | semantic.css加注释标注，皮肤开发指南明确禁止修改 |
+| 7 | 缺少WCAG对比度验证文档 | 新增docs/design-tokens/contrast-checklist.md，列出所有文本/背景组合对比度 |
+| 8 | 深色皮肤部分令牌用硬编码hex：bg-surface/bg-brand-soft等10+个 | 全部指向原色阶：bg-surface→neutral-900、bg-brand-soft→blue-900 |
+
+#### P1（12项）
+| # | 问题 | 方案 |
+|---|---|---|
+| 9 | 缺少玻璃材质令牌：无--sdq-bg-glass，tabbar用硬编码rgba | 新增--sdq-bg-glass/--sdq-bg-glass-strong/--sdq-backdrop-blur，tabbar/弹窗引用 |
+| 10 | 缺少动效easing令牌：只有duration，无easing函数 | 新增--sdq-ease-spring/standard/emphasized |
+| 11 | 缺少动效时长scale：只有2个时长 | 新增--sdq-duration-fast:150ms/normal:250ms/slow:400ms |
+| 12 | 缺少字体族令牌：只有financial-font | 新增--sdq-font-body/display/numeric |
+| 13 | 缺少font-size scale：各页面字号不一致（10-28px混用） | 新增--sdq-text-xs:10px/sm:11px/base:12px/lg:14px/xl:16px/2xl:20px/3xl:28px |
+| 14 | 缺少line-height/letter-spacing scale | 新增leading-tight/normal/relaxed + tracking-tight/normal/relaxed |
+| 15 | 缺少阴影层级令牌：只有shadow-card | 新增--sdq-shadow-elevated/brand/inset/none |
+| 16 | 缺少z-index层级令牌：tabbar z-30/FAB z-40/Toast z-50硬编码 | 新增--sdq-z-base/dropdown/sticky/fab/modal/toast |
+| 17 | 缺少线宽令牌：边框宽度硬编码1/2/3px | 新增--sdq-border-width-thin/medium/thick |
+| 18 | 缺少不透明度令牌：disabled opacity硬编码.58 | 新增--sdq-opacity-disabled/hover/pressed |
+| 19 | 缺少焦点光晕令牌：focus光晕用color-mix但无统一令牌 | 新增--sdq-focus-ring，全局引用 |
+| 20 | 深色皮肤非颜色令牌重复声明：radius/space/font/motion与浅色相同 | 非颜色令牌从:root继承，皮肤只覆盖颜色类令牌 |
+
+#### P2（8项）
+| # | 问题 | 方案 |
+|---|---|---|
+| 21 | 缺少令牌命名规范文档 | 新增docs/design-tokens/naming-convention.md |
+| 22 | 缺少令牌使用规范文档 | 新增docs/design-tokens/usage-guide.md，禁止直接用hex/rgb |
+| 23 | 缺少皮肤开发指南 | 新增docs/design-tokens/skin-development-guide.md |
+| 24 | 缺少令牌与组件映射表 | 新增docs/design-tokens/component-token-map.md |
+| 25 | 缺少令牌变更日志 | 新增docs/design-tokens/changelog.md |
+| 26 | 缺少自动化硬编码颜色检查 | CI加stylelint规则禁止hex/rgb/hsl硬编码 |
+| 27 | 缺少令牌预览页面 | 皮肤中心加令牌预览页，展示所有原色阶/语义令牌 |
+| 28 | 缺少深色模式自动切换 | 可加跟随系统prefers-color-scheme自动切换deep/soft |
+
+### 8.3 配色检查
+- ❌ 缺少图表专用令牌（P0）
+- ❌ 部分语义令牌硬编码hex（P0）
+- ❌ 阴影硬编码rgba（P0）
+- ❌ 原色阶语义色只有mini阶（P0）
+- ❌ 原色阶缺少图表辅助色（P0）
+- ❌ 业务语义色无保护标注（P0）
+- ❌ 缺少WCAG对比度验证文档（P0）
+- ❌ 深色皮肤部分令牌硬编码hex（P0）
+- ⚠️ 缺少玻璃材质/动效/字体/阴影/层级令牌（P1）
+- ⚠️ 缺少文档/指南/映射表/自动化验证（P2）
+- ✅ 三层令牌架构完整
+- ✅ 品牌蓝/中性灰色阶完整
+- ✅ 5种皮肤颜色类令牌完整覆盖
+- ✅ 对比度优化（4个令牌已调深至AA）
+- ✅ 深色皮肤text-on-brand达AA
+- ✅ focus-visible光晕用color-mix
+- ✅ prefers-reduced-motion全局适配
+- ✅ 业务语义色在深色皮肤下不改色相
+
+### 8.4 验收标准
+- [ ] 新增--sdq-chart-1~8图表令牌（浅色+深色双轨）
+- [ ] 所有图表硬编码颜色替换为图表令牌
+- [ ] 语义令牌硬编码hex全部指向原色阶
+- [ ] 阴影/overlay用color-mix替换硬编码rgba
+- [ ] 补全语义色色阶（4色×8阶=32个）
+- [ ] 新增图表辅助色阶（紫色/青色各11阶）
+- [ ] 业务语义色标注"不可随皮肤修改"
+- [ ] 新增WCAG对比度验证文档
+- [ ] 深色皮肤硬编码hex全部指向原色阶
+- [ ] 新增玻璃材质/动效/字体/阴影/层级/线宽/不透明度/焦点光晕令牌
+- [ ] 深色皮肤非颜色令牌从:root继承
+- [ ] 新增令牌命名规范/使用规范/皮肤开发指南/组件映射表/变更日志
+- [ ] CI加stylelint规则禁止硬编码颜色
+- [ ] 皮肤中心加令牌预览页
+- [ ] 5种皮肤下所有页面正常
+- [ ] 减少动效适配
+- [ ] 三门禁全绿
+- [ ] 变更已登记
 
 ---
 
@@ -750,7 +842,10 @@
 | 2026-09-01 | 洞察模块 | 35 | 方案完成，待执行 | AI（4轮审查） |
 | 2026-09-01 | 我的模块 | 28 | 方案完成，待执行 | AI（4轮审查） |
 | 2026-09-01 | 全局组件 | 30 | 方案完成，待执行 | AI（4轮审查） |
+| 2026-09-01 | 全局配色与令牌 | 28 | 方案完成，待执行 | AI（4轮审查） |
 | | | | | |
+
+**总计：8个模块，225项问题，全部方案完成，待 Trae 分批执行。**
 
 ---
 
