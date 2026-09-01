@@ -1641,3 +1641,221 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
     transition: none !important;
   }
 }
+
+/* ============================================================================
+ * batch-16（商品模块打磨）：利润率标签配色 / 成本构成公式卡 / BOM列表 / 操作按钮
+ * 仅展示层，不改成本卡、BOM、定价或 SKU 计算逻辑；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* 商品列表卡状态标签：稳定=success绿，成本上升=warning橙，需复核=risk红 */
+.prototype-products .product-card-head > i.healthy {
+  color: var(--sdq-profit);
+  background: var(--sdq-bg-success-soft);
+}
+.prototype-products .product-card-head > i.attention {
+  color: var(--sdq-cost);
+  background: var(--sdq-bg-warning-soft);
+}
+.prototype-products .product-card-head > i.risk {
+  color: var(--sdq-risk);
+  background: var(--sdq-bg-danger-soft);
+}
+
+/* 商品列表卡 KPI：单件利润正负色 */
+.prototype-products .product-kpis label b.negative {
+  color: var(--sdq-risk);
+}
+.prototype-products .product-kpis label b.positive {
+  color: var(--sdq-profit);
+}
+
+/* 商品详情成本构成公式卡：等号结果突出 */
+.cost-formula {
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-lg);
+  box-shadow: var(--sdq-shadow-card);
+}
+.cost-formula > span {
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.cost-formula div b {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.cost-formula div i {
+  color: var(--sdq-text-tertiary);
+  font-style: normal;
+  font-weight: 700;
+}
+.cost-formula div strong {
+  color: var(--sdq-action-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+/* 商品详情订单成本快照对比：只读标签 */
+.cost-snapshot-compare {
+  background: var(--sdq-bg-brand-soft);
+  border: 1px solid color-mix(in srgb, var(--sdq-action-primary) 12%, var(--sdq-border-subtle));
+  border-radius: var(--sdq-radius-md);
+}
+.cost-snapshot-compare > div span {
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.cost-snapshot-compare > div em {
+  color: var(--sdq-action-primary);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  background: var(--sdq-bg-surface);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.cost-snapshot-compare dl dt {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+}
+.cost-snapshot-compare dl dd {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.cost-snapshot-compare p {
+  color: var(--sdq-text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* BOM 配方列表：每项物料行样式优化 */
+.detail-breakdown .bom-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 56px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sdq-border-subtle);
+}
+.detail-breakdown .bom-list > div:last-child {
+  border-bottom: 0;
+}
+.detail-breakdown .bom-list > div > span b {
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.detail-breakdown .bom-list > div > span em {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  font-style: normal;
+}
+.detail-breakdown .bom-list > div > strong {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+}
+.detail-breakdown .bom-list > div .bom-row-actions {
+  display: flex;
+  gap: 4px;
+}
+.detail-breakdown .bom-list > div .bom-row-actions button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: var(--sdq-icon-default);
+  background: transparent;
+  border: 0;
+  border-radius: var(--sdq-radius-sm);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.detail-breakdown .bom-list > div .bom-row-actions button:hover {
+  color: var(--sdq-action-primary);
+  background: var(--sdq-bg-brand-soft);
+}
+.detail-breakdown .bom-list > div .bom-row-actions button:last-child:hover {
+  color: var(--sdq-risk);
+  background: var(--sdq-bg-danger-soft);
+}
+
+/* 商品详情操作按钮：三按钮统一高度和圆角 */
+.detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+}
+.detail-actions button {
+  min-height: var(--sdq-height-control);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: var(--sdq-radius-sm);
+  transition: transform 100ms ease-out, filter 120ms ease;
+}
+.detail-actions button:active:not(:disabled) {
+  transform: scale(.97);
+}
+.detail-actions button.primary {
+  color: var(--sdq-text-on-brand);
+  background: var(--sdq-action-primary);
+  border: 1px solid var(--sdq-action-primary);
+}
+.detail-actions button:not(.primary):not(.more-trigger) {
+  color: var(--sdq-text-primary);
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-strong);
+}
+.detail-actions .more-trigger {
+  color: var(--sdq-text-secondary);
+  background: var(--sdq-bg-surface-subtle);
+  border: 1px solid var(--sdq-border-subtle);
+}
+
+/* 商品详情更多菜单：删除按钮 danger 色 */
+.detail-more-menu button.danger {
+  color: var(--sdq-risk) !important;
+}
+
+/* 商品详情近6月成本趋势：历史柱当前月高亮 */
+.cost-history span i {
+  border-radius: 3px 3px 0 0;
+  transition: height 200ms ease-out;
+}
+.cost-history-delta b.up {
+  color: var(--sdq-risk);
+}
+.cost-history-delta b.down {
+  color: var(--sdq-profit);
+}
+
+/* 商品详情定价空态提示：温和引导 */
+.pricing-empty-tip {
+  background: var(--sdq-bg-brand-soft);
+  border: 1px solid color-mix(in srgb, var(--sdq-action-primary) 14%, var(--sdq-border-subtle));
+}
+.pricing-empty-tip b {
+  color: var(--sdq-text-primary);
+}
+.pricing-empty-tip em {
+  color: var(--sdq-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prototype-products .product-cost-list > button,
+  .cost-history span i {
+    transition: none !important;
+  }
+}
