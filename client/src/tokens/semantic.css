@@ -65,7 +65,7 @@
   /* batch-03 C12：图标尺寸三档（导航 20px / 按钮 16px / 列表 18px，线宽 1.5px），
    * TSX 中 lucide 图标统一消费这三档与 strokeWidth={1.5}。 */
   --sdq-icon-nav: 20px;
-  --sdq-icon-button: 16px;
+  --sdq-icon-btn: 16px;
   --sdq-icon-list: 18px;
   --sdq-icon-stroke: 1.5px;
   --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;

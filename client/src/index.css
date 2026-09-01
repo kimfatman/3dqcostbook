@@ -1478,7 +1478,7 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
   border-radius: var(--sdq-radius-sm);
 }
 
-/* ---- 步骤3 图标风格：TSX 已统一 lucide 库 + 三档尺寸（--sdq-icon-nav/button/list）+ strokeWidth 1.5，无 emoji ---- */
+/* ---- 步骤3 图标风格：TSX 已统一 lucide 库 + 三档尺寸（--sdq-icon-nav/btn/list）+ strokeWidth 1.5，无 emoji ---- */
 
 /* ---- 步骤4 按钮状态：hover 亮度 +5% / disabled .5 + not-allowed / active 补全（batch-01 已完成主要 :active） ---- */
 .app-content :where(.fixed-primary, .floating-add, .global-record-fab, .list-primary, .empty-action, .header-primary-action, .record-custom-category > button):hover:not(:disabled) {

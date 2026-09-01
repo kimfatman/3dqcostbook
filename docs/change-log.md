@@ -17,6 +17,14 @@
 - 批次 02（C11 页面 P0 修复）：
   - FAB 避让令牌 `--sdq-space-fab-clearance`（导航+间距令牌派生，≥80px+安全区），工作台/订单/商品/洞察根页与流水/表单子页底部统一消费，洞察瀑布图不再被悬浮按钮遮挡（提交：本批次）
   - 深色信息卡文字令牌 text-inverse 系（`--sdq-text-inverse-secondary/tertiary`、`--sdq-line-inverse`，color-mix 派生自动适配五皮肤）：detail-hero/本期核算卡/首页经营概览卡/售后口径卡次要文字统一反色，深色皮肤（deep/midnight）下对比度达标（提交：本批次）
+- 批次 03（C12 页面 P1 批量 6 项，全局样式统一收口）：
+  - 间距：新增空间刻度令牌 `--sdq-space-1~10`（4/8/12/16/20/24/32/40px），卡片外边距/内边距统一 16px（`--sdq-space-4`），大卡 20px（`--sdq-space-5`）
+  - 圆角：卡片圆角三档令牌收口（大卡 lg 16px / 标准卡 md 12px / 小徽章 sm 8px），作用域特例（原型布局/分段控件/FAB/pill）注释标注
+  - 图标：新增图标尺寸三档令牌 `--sdq-icon-nav` 20px / `--sdq-icon-btn` 16px / `--sdq-icon-list` 18px + `--sdq-icon-stroke` 1.5px；Home.tsx 全部 lucide 图标统一尺寸三档 + strokeWidth 1.5，删除 emoji 图标；C5 更多菜单交互结构（row-more/more-trigger/detail-more-menu）保持不动
+  - 按钮状态：补全四态（hover brightness(1.05) / disabled opacity .5+not-allowed / active scale(.97)），batch-01 已覆盖的 tabbar :active 保持；T6 二级表单规格已在前批次规格化，本批仅统一 label/星号/高度
+  - 分割线：列表项间 1px `--sdq-border-subtle`、左对齐 16px、最后一项无分割线，关闭 ::after 双线残留
+  - 表单标签：左对齐 / 14px / text-primary，必填红星由 `.sdq-req::after` CSS 渲染（label 文本不含字面 `*`，无障碍名称不受影响），输入框 min-height 44px，错误提示 12px risk 在字段下方
+  - 回归：新增 `Home.batch03-c12-p1.dom.test.tsx`（14 用例：令牌契约 + CSS 规则存在断言 + C5 更多菜单 DOM 回归 + 表单必填星），既有测试文件零改动（提交：本批次）
 
 ### 修改
 - 演示种子账期：由固定 2026-02~07 + 当期月改为以当前业务月为终点、连续 7 个月窗口，当前账期演示分录锚定今天（月初钳制到今天），并修复旧演示分录 null 金额的跨月恢复推导；同步动态化测试夹具日期，消除月初/跨月脆弱性（提交：本批次）
