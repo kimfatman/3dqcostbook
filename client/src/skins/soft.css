@@ -32,6 +32,17 @@
   --sdq-info: var(--sdq-info-500);                 /* 原 #5acbfa（同值） */
   --sdq-icon-default: var(--sdq-neutral-500);      /* 批次10 调深至非文本 3:1 */
   --sdq-icon-disabled: var(--sdq-neutral-200);     /* 原 #c9cfd9 */
+  /* batch-11 补齐清单缺口（与 semantic.css :root 同值，显式声明供皮肤切换精确命中） */
+  --sdq-text-inverse: var(--sdq-text-on-brand);
+  --sdq-text-link: var(--sdq-action-primary);
+  --sdq-action-primary-hover: color-mix(in srgb, var(--sdq-action-primary) 88%, #ffffff);
+  --sdq-action-primary-active: var(--sdq-action-primary-pressed);
+  --sdq-action-secondary: var(--sdq-bg-brand-soft);
+  --sdq-border-default: var(--sdq-neutral-200);
+  --sdq-success: var(--sdq-profit);
+  --sdq-warning: var(--sdq-cost);
+  --sdq-bg-risk-soft: var(--sdq-bg-danger-soft);
+  --sdq-bg-info-soft: var(--sdq-bg-brand-soft);
   --sdq-radius-xs: 6px;
   --sdq-radius-sm: 8px;
   --sdq-radius-md: 12px;

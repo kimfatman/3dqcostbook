@@ -30,13 +30,51 @@
   --sdq-neutral-900: #212830;
   --sdq-neutral-950: #14191f;
 
-  /* 语义色 mini 阶（success=利润绿 / warning=成本橙 / danger=风险红 / info=信息蓝） */
+  /* 语义色全阶（success=利润绿 / warning=成本橙 / danger=风险红 / info=信息蓝）
+   * 批次11 补齐 50-950 全阶（color-palette 方法论：固定色相+明度曲线，500/600 锚点保持批次10 值不变），
+   * 600（hover）/700（active）作为各功能色的深色按压阶梯。 */
+  --sdq-success-50: #f3fbf9;
+  --sdq-success-100: #e7f8f2;
+  --sdq-success-200: #cbf1e4;
+  --sdq-success-300: #98e6cc;
+  --sdq-success-400: #5fddb3;
   --sdq-success-500: #20a779;
   --sdq-success-600: #1b8f68;
+  --sdq-success-700: #167454;
+  --sdq-success-800: #125e45;
+  --sdq-success-900: #0e4935;
+  --sdq-success-950: #092f22;
+  --sdq-warning-50: #fdf9f2;
+  --sdq-warning-100: #fbf3e4;
+  --sdq-warning-200: #f8e5c3;
+  --sdq-warning-300: #f5ce89;
+  --sdq-warning-400: #f4b548;
   --sdq-warning-500: #c88206; /* 批次10 调深：白底对比 3.16:1 达 WCAG AA（保持橙相） */
   --sdq-warning-600: #b37504; /* 批次10 与 500 同步调深，保持明度梯度 */
+  --sdq-warning-700: #946005;
+  --sdq-warning-800: #7c5004;
+  --sdq-warning-900: #634003;
+  --sdq-warning-950: #452d02;
+  --sdq-danger-50: #fcf3f3;
+  --sdq-danger-100: #f9e7e6;
+  --sdq-danger-200: #f3cac8;
+  --sdq-danger-300: #eb9693;
+  --sdq-danger-400: #e55c57;
   --sdq-danger-500: #e8534f;
   --sdq-danger-600: #d43f3b;
+  --sdq-danger-700: #d4221c;
+  --sdq-danger-800: #be1e19;
+  --sdq-danger-900: #a71b16;
+  --sdq-danger-950: #8c1612;
+  --sdq-info-50: #f3f9fc;
+  --sdq-info-100: #e7f3f9;
+  --sdq-info-200: #c9e5f3;
+  --sdq-info-300: #95cdea;
+  --sdq-info-400: #5ab5e2;
   --sdq-info-500: #1e93cc; /* 批次10 调深：白底对比 3.44:1 达 WCAG AA（保持蓝相） */
   --sdq-info-600: #1d8ac2; /* 批次10 与 500 同步调深，保持明度梯度 */
+  --sdq-info-700: #1979a9;
+  --sdq-info-800: #166992;
+  --sdq-info-900: #13597c;
+  --sdq-info-950: #0f4662;
 }

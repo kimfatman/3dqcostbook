@@ -6,6 +6,13 @@
 
 ## 2026-09-01
 
+### 技术
+- 批次 11（全局配色与令牌打磨）：
+  - 令牌体系补全：primitives.css 功能色补齐 50-950 全阶（success/warning/danger/info 各 11 级，500/600 锚点保持批次 10 值不变，600/700 作为 hover/active 深色阶梯）；semantic.css 补齐批次 11 清单缺口（text-inverse/text-link、action-primary-hover/active/secondary、border-default、success/warning 别名 + bg-risk-soft/bg-info-soft），五皮肤同步覆盖（deep/midnight 取各自中性阶中间值，aurora 继承 :root 并注释说明）
+  - 全局替换硬编码颜色：index.css 与 layout-unification.css 中品牌蓝光晕/焦点环/卡片阴影/深色皮肤表面全部改为 color-mix(in srgb, var(--sdq-action-primary|--sdq-blue-800|--sdq-blue-950|--sdq-neutral-950) X%, transparent) 语义派生（色值同 alpha、同色相族，视觉等效）；ManusDialog 弹窗阴影/边框改走 --sdq-shadow-card/--sdq-border-subtle，logo 盒 bg-white→bg-surface
+  - 保留策略（注释说明）：玻璃/装饰层白色叠加 rgba(255,255,255,.X)、品牌面浅蓝分隔线/文字渲染、图表特殊色（--chart-* 定义、dark 模式图卡边框、峰值绿光）与第三方品牌色（Manus #1a1a19）、业务数据色（分类颜色/palette 数据）保持字面量，与 cashflow-filter.css 已令牌化约定一致
+  - 验证：文字/按钮对比度不受影响（全部为同 alpha 等效替换），五皮肤兼容；三门禁全绿（提交：本批次）
+
 ### 新增
 - F052 功能登记卡片模板：`docs/feature-cards/TEMPLATE.md`，新增功能时复制填写（提交：06da88f）
 - F053 AI 协作变更登记规范：`docs/ai-collaboration-change-log.md`，所有 AI 修改后必须按规范登记（提交：06da88f）
