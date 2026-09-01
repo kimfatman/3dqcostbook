@@ -2187,6 +2187,349 @@ git push
 
 ---
 
+### 批次 21：可阅读性专项优化（字号 + 行高 + 字距 + 对比度 + 数字排版）
+
+#### 目标
+基于 `docs/readability-audit-2026-09-01.md` 审查报告，优化全部界面的可阅读性：消除 8px/9px 极端小字号、建立 8 级 Type Scale 规范、统一行高和字距、修复小字号对比度问题、统一数字字体和金额字号、规范标题标签。
+
+#### 涉及文件
+- `client/src/tokens/primitives.css`（新增 Type Scale 字号/行高/字距令牌）
+- `client/src/tokens/semantic.css`（文字颜色使用规范）
+- `client/src/index.css`（全局字号/行高/字距替换，106处小字号提升）
+- `client/src/pages/Home.tsx`（标题标签规范化 h1/h2/h3，文字截断加 title）
+- 其他页面组件（数字字体统一，金额字号三档）
+
+#### 前置依赖
+- 批次 11（全局配色与令牌）必须已完成，颜色令牌已统一
+- 批次 12（全局组件）必须已完成，组件样式已统一
+
+#### Trae 指令（直接复制）
+
+```
+我需要对全部界面的可阅读性进行专项优化，请按以下步骤操作：
+
+## 第一部分：P0 - 建立 8 级 Type Scale 规范（基础层，必须先做）
+
+### 1. 在 primitives.css 新增 Type Scale 令牌
+在 client/src/tokens/primitives.css 的 :root 中新增以下令牌：
+
+/* === 字号阶梯 Type Scale === */
+--sdq-type-display: 32px;    /* 登录页大标题/hero金额 */
+--sdq-type-h1: 28px;         /* 页面主标题 */
+--sdq-type-h2: 20px;         /* 卡片标题/分组标题 */
+--sdq-type-h3: 16px;         /* 子标题/重要正文 */
+--sdq-type-body: 14px;       /* 正文/列表标题/按钮 */
+--sdq-type-caption: 12px;    /* 辅助文字/表单标签/副标题 */
+--sdq-type-micro: 11px;      /* 标签/KICKER/时间戳 */
+--sdq-type-chart: 10px;      /* 图表图例/坐标轴（仅限图表） */
+
+/* === 行高规范 === */
+--sdq-leading-display: 1.15;
+--sdq-leading-h1: 1.2;
+--sdq-leading-h2: 1.3;
+--sdq-leading-h3: 1.4;
+--sdq-leading-body: 1.5;
+--sdq-leading-caption: 1.5;
+--sdq-leading-micro: 1.45;
+--sdq-leading-chart: 1.4;
+
+/* === 字距规范 === */
+--sdq-tracking-display: -0.02em;
+--sdq-tracking-h1: -0.02em;
+--sdq-tracking-h2: -0.01em;
+--sdq-tracking-h3: 0;
+--sdq-tracking-body: 0;
+--sdq-tracking-caption: 0;
+--sdq-tracking-micro: 0.02em;
+--sdq-tracking-chart: 0;
+
+注意：这些令牌是基础层，后续所有字号/行高/字距修改都引用这些令牌，不再硬编码 px 值。
+
+### 2. 全局默认行高
+在 client/src/index.css 的 :root 或 body 中新增：
+body { line-height: var(--sdq-leading-body); }
+
+确保 80%+ 没有行高的文字继承全局 1.5 行高。
+
+## 第二部分：P0 - 消除 8px 极端小字号（5处）
+
+### 3. 8px 全部提升到 10px
+搜索 client/src/index.css 中所有 font-size: 8px，替换为 var(--sdq-type-chart) 或 10px：
+
+需要修改的 5 处：
+1. .ring i small（环形图中心单位文字）：8px → 10px
+2. .trend-chart em（趋势图X轴月份标签）：8px → 10px
+3. .cost-card-list strong small（商品卡片单位小字）：8px → 10px
+4. .report-list strong small（报表卡片单位小字）：8px → 10px
+5. .supplier-list strong small（供应商卡片单位小字）：8px → 10px
+
+修改方式：将 font-size: 8px 替换为 font-size: var(--sdq-type-chart)（图表相关）或 font-size: 10px（非图表）。
+
+验证：全局搜索 font-size: 8px，确保为 0 处。
+
+## 第三部分：P0 - 9px 严重小字号按场景提升（24处）
+
+### 4. 底部导航 9px → 10px（高频使用，必须可读）
+.tabbar button { font-size: 9px → var(--sdq-type-chart) 或 10px; }
+.tabbar button.active { font-size: 9px → 10px; font-weight: 700; }
+同时修改未选中状态颜色：text-tertiary → text-secondary（提升对比度）。
+
+### 5. KPI标签/列表副标题 9px → 11px（需要阅读的内容）
+搜索以下选择器，将 font-size: 9px 替换为 var(--sdq-type-micro) 或 11px：
+- .cost-kpi-grid span（成本KPI标签）
+- .dashboard-kicker > span（仪表盘KICKER）
+- .equation-result > span（公式结果标签）
+- .analysis-judgment > span（分析判断标签）
+- .cost-card-list em（商品列表副标题）
+- .report-list em（报表列表副标题）
+- .supplier-rank em（供应商列表副标题）
+- .top-card-list em（顶部卡片副标题）
+- .brand-mini em（品牌迷你副标题）
+- .industry-insight-card span（行业洞察标签）
+- .result-summary（结果摘要）
+- .summary-risk span（风险摘要）
+
+### 6. 图表图例/Tooltip辅助 9px → 10px（辅助信息，可接受较小）
+搜索以下选择器，将 font-size: 9px 替换为 var(--sdq-type-chart) 或 10px：
+- .chart-legend（图表图例）
+- .stack-legend（堆叠面积图例）
+- .cashflow-legend（现金流图例）
+- .chart-tooltip em（图表Tooltip辅助文字）
+- .chart-tooltip small（图表Tooltip小字）
+- .pricing-profit-trend figcaption（定价利润图标题）
+- .pricing-profit-tooltip（定价利润Tooltip）
+
+### 7. 头像预设/行业标签/其他 9px → 10px
+搜索以下选择器，将 font-size: 9px 替换为 10px：
+- .avatar-preset-grid label（头像预设标签）
+- .industry-picker small（行业选择标签）
+- .weekly-bars em（周柱状图标签）
+- .pricing-inputs small（定价输入提示）
+- .pricing-note p（定价注意事项）
+- .analysis-compare-list em（窄屏对比列表副标题，@media max-width:375px）
+- .pricing-plans .report-breakdown em（定价计划副标题）
+- .pricing-empty-tip em（定价空态提示）
+
+验证：全局搜索 font-size: 9px，确保为 0 处。
+
+## 第四部分：P0 - 小字号对比度修复
+
+### 8. 小字号禁用 text-tertiary 颜色
+规范：10px/11px 小字号必须用 text-primary 或 text-secondary，禁止用 text-tertiary。
+
+搜索 client/src/index.css 中同时满足以下条件的选择器：
+- font-size: 10px 或 11px
+- color: var(--sdq-text-tertiary)
+
+将 color: var(--sdq-text-tertiary) 替换为 color: var(--sdq-text-secondary)。
+
+典型场景：
+- 列表副标题（10-11px + text-tertiary）→ text-secondary
+- KPI标签（10-11px + text-tertiary）→ text-secondary
+- 底部导航未选中（10px + text-tertiary）→ text-secondary
+- 头像预设标签（10px + text-tertiary）→ text-secondary
+
+注意：text-tertiary 仅限 12px+ 装饰性文字（如时间戳、占位符）。
+
+### 9. 图表文字对比度修复
+.chart-tooltip / .chart-legend 中的 chart-muted 颜色，如果在 10px 下对比度不足 4.5:1，需要调深。
+检查 client/src/tokens/semantic.css 中的 --chart-muted 定义，确保在浅色和深色皮肤下 10px 文字对比度 ≥ 4.5:1。
+如果不足，将 --chart-muted 调深一个色阶（如 neutral-500 → neutral-600）。
+
+## 第五部分：P1 - 文字截断加 title 属性
+
+### 10. 所有截断文字加 title 属性
+搜索 client/src/pages/ 和 client/src/components/ 中使用 white-space: nowrap + text-overflow: ellipsis 的元素，为对应的 JSX 元素添加 title 属性。
+
+典型场景：
+- 商品名称（cost-card-list b）：加 title={商品名称}
+- 供应商名称（supplier-list b）：加 title={供应商名称}
+- 报表名称（report-list b）：加 title={报表名称}
+- 店铺名称（profile-identity-top h1）：加 title={店铺名称}
+- 列表副标题（em 标签）：加 title={完整描述}
+- 品牌名称（brand-mini strong）：加 title={品牌名称}
+
+注意：
+- title 属性值必须是完整的未截断内容
+- 对于动态数据，title={item.name} 或类似
+- 对于静态文字，title="完整文字"
+- 不要为不会截断的短文字加 title（避免冗余）
+
+### 11. 重要内容允许2行，不使用单行截断
+对于商品名称、供应商名称等重要内容，如果经常被截断，改为允许2行：
+- 将 white-space: nowrap 改为 display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+- 同时保留 title 属性作为兜底
+
+优先修改：商品列表名称、供应商列表名称、报表列表名称。
+
+## 第六部分：P1 - 数字字体统一
+
+### 12. 所有金额/百分比/数量数字用等宽字体
+规范：所有金额、百分比、数量数字必须用 --financial-numeric-font + font-variant-numeric: tabular-nums。
+
+搜索 client/src/index.css 中包含金额/百分比/数量的选择器，检查是否已使用等宽字体：
+- 列表中的金额（.cost-card-list strong / .report-list strong / .supplier-rank strong）：如果未用，添加 font-family: var(--financial-numeric-font); font-variant-numeric: tabular-nums;
+- KPI中的百分比：如果未用，添加等宽字体
+- 订单金额：如果未用，添加等宽字体
+
+注意：
+- 图表数字继续用 --chart-numeric（已统一）
+- 日期/时间可用默认字体，但数字部分加 tabular-nums
+- 不要为非数字文字（如中文标签）设置等宽字体
+
+### 13. 金额字号三档规范
+建立金额数字三档规范，替换混乱的字号：
+- 大金额（hero卡/详情页主金额）：28-32px → 使用 var(--sdq-type-display) 或 28px
+- 中金额（列表项金额/KPI金额）：16-18px → 使用 16px
+- 小金额（辅助金额/对比金额）：13-14px → 使用 var(--sdq-type-body) 或 14px
+
+搜索 client/src/index.css 中金额相关选择器，将字号统一到三档：
+- .detail-hero strong（29px）→ 28px（大金额）
+- .pricing-base strong（29px）→ 28px（大金额）
+- .pricing-quote strong（25px）→ 28px（大金额）
+- .pricing-recommend strong（33px）→ 32px（大金额）
+- .amount-input input（27px）→ 28px（大金额，输入框）
+- .amount-input span（22px）→ 20px（中金额，货币符号）
+- 列表金额（12px）→ 14px（小金额，提升可读性）
+
+注意：修改金额字号时，确保行高和字距也对应调整（大金额用 leading-display/tracking-display）。
+
+## 第七部分：P1 - 标题标签规范化
+
+### 14. 页面主标题用 h1，统一 28px
+搜索 client/src/pages/ 中页面主标题，确保：
+- 使用 <h1> 标签（不是 div/span/strong）
+- 字号统一为 var(--sdq-type-h1) 或 28px
+- 行高 var(--sdq-leading-h1) 或 1.2
+- 字距 var(--sdq-tracking-h1) 或 -0.02em
+
+当前页面标题字号有 20px/25px/28px/30px/31px 多种，统一为 28px。
+
+### 15. 卡片标题用 h2，统一 20px
+搜索 client/src/pages/ 和 client/src/components/ 中卡片标题，确保：
+- 使用 <h2> 标签（不是 strong/b/div）
+- 字号统一为 var(--sdq-type-h2) 或 20px
+- 行高 var(--sdq-leading-h2) 或 1.3
+
+当前卡片标题字号有 14px/15px/16px/17px/18px 多种，统一为 20px。
+注意：如果卡片空间有限，可用 18px 作为例外，但必须加注释说明。
+
+### 16. 子标题/分区标题用 h3，统一 16px
+搜索 client/src/pages/ 中子标题/分区标题，确保：
+- 使用 <h3> 标签（不是 p/span）
+- 字号统一为 var(--sdq-type-h3) 或 16px
+
+### 17. 禁止用 strong/b 代替标题标签
+搜索 client/src/pages/ 中用 strong/b 作为标题的场景，替换为 h2/h3：
+- 卡片标题用 strong → 改为 h2
+- 分区标题用 b → 改为 h3
+- 列表项标题用 b → 保留 b（列表项不是标题层级）
+
+注意：strong/b 用于强调正文内容，不用于标题。标题必须用 h1-h6。
+
+## 第八部分：P1 - 字距使用统一
+
+### 18. 按字号设置字距
+规范：
+- ≥20px 标题：负字距 -0.01em ~ -0.02em
+- 14-16px 正文：字距 0
+- 10-12px 标签/辅助：正字距 0.01em ~ 0.02em
+- 图表数字：字距 0 或 -0.05em（紧凑数字）
+
+搜索 client/src/index.css 中 letter-spacing，确保符合规范：
+- 大标题（≥20px）：letter-spacing 应该是负值（-.01em ~ -.08em），如果是 0 或正值，调整为 -0.02em
+- 正文（14-16px）：letter-spacing 应该是 0，如果有值，移除
+- 标签（10-12px）：letter-spacing 应该是正值（.02em ~ .1em），如果是 0，添加 0.02em
+
+注意：当前大标题字距有 -.075em/-.08em（过紧），统一调整为 -0.02em（除了 Display 级可用 -0.02em）。
+
+## 第九部分：P2 - 精致度优化
+
+### 19. 数字对齐统一
+规范：
+- 列表/表格中的数字：右对齐（text-align: right）
+- KPI卡片中的数字：左对齐（与标签对齐）
+- 图表中的数字：根据图表类型（柱状图顶部居中，折线图数据点上方）
+
+搜索 client/src/index.css 中数字相关选择器，检查对齐方式：
+- 列表金额（.cost-card-list strong / .report-list strong）：确保 text-align: right
+- KPI金额：确保 text-align: left 或与标签对齐
+- 如果有不统一的，按规范调整
+
+### 20. 长文本行高统一 1.6-1.7
+搜索 client/src/index.css 中描述文字（p 标签，≥3行的长文本），确保行高 ≥ 1.6：
+- .industry-insight-card p（10px，line-height 1.6）✅ 已符合
+- .detail-breakdown p（11px，line-height 1.7）✅ 已符合
+- .screen-title p / .sub-intro p（12px，line-height 1.7）✅ 已符合
+- .pricing-recommend p（10px，line-height 1.55）→ 调整为 1.6
+- .profile-tip p（10px，line-height 1.6）✅ 已符合
+- 其他长文本 p 标签：如果行高 < 1.6，调整为 1.6
+
+### 21. 中英文混排间距（可选，如时间允许）
+在中文和英文/数字之间添加 0.25em 间距。
+可以用 CSS 实现：.cjk-mixed { word-spacing: 0.25em; } 或用 JS 自动添加。
+如果实现复杂，可跳过，作为后续优化项。
+
+### 22. 中文标点规范（可选，如时间允许）
+统一使用全角标点（，。！？；：""''（）），避免半角标点。
+搜索代码中硬编码的中文文案，检查标点是否统一。
+如果有半角标点，替换为全角标点。
+
+## 第十步：验证
+1. pnpm check && pnpm test && pnpm build，三门禁全绿
+2. 全局搜索 font-size: 8px，确保为 0 处
+3. 全局搜索 font-size: 9px，确保为 0 处
+4. 全局搜索 font-size: 10px，确认仅用于图表辅助文字（chart-legend/tooltip/X轴标签）
+5. 检查 Type Scale 令牌已定义（8级字号/8级行高/8级字距）
+6. 检查全局默认行高 1.5 已设置
+7. 检查小字号（10-11px）不再使用 text-tertiary 颜色
+8. 检查底部导航字号 10px，未选中颜色 text-secondary
+9. 检查截断文字已加 title 属性（抽样验证 10 处）
+10. 检查金额/百分比数字已用等宽字体 + tabular-nums
+11. 检查金额字号三档（大28-32/中16-18/小13-14）
+12. 检查页面标题用 h1 28px，卡片标题用 h2 20px
+13. 检查字距按字号规范（大标题负/正文0/标签正）
+14. 切换 5 种皮肤，文字颜色/对比度正常
+15. 开启 prefers-reduced-motion，无异常
+16. 用浏览器实际查看 5 个核心页面（登录/工作台/订单/商品/洞察），文字清晰可读
+
+## 注意事项
+- Type Scale 令牌是基础层，必须先定义再替换
+- 8px/9px 替换时，注意不要把图表的特殊紧凑数字改得过大（图表可用10px）
+- 标题标签替换（strong→h2）时，确保样式不丢失（h2 默认样式可能与 strong 不同）
+- 金额字号调整时，注意 hero 卡/详情页的大金额布局可能需要微调
+- 字距调整时，大标题 -.075em 过紧，统一为 -0.02em，但 Display 级（32px）可保持 -0.02em
+- 所有修改优先引用 Type Scale 令牌，不硬编码 px 值
+- 修改后确保 5 种皮肤下文字颜色正常
+```
+
+#### 验收标准
+- [ ] 全局无 font-size: 8px（0处）
+- [ ] 全局无 font-size: 9px（0处）
+- [ ] Type Scale 令牌已定义（8级字号/8级行高/8级字距）
+- [ ] 全局默认 line-height 1.5 已设置
+- [ ] 底部导航字号 10px，未选中颜色 text-secondary
+- [ ] KPI标签/列表副标题 11px
+- [ ] 图表图例/Tooltip 10px
+- [ ] 小字号（10-11px）不再使用 text-tertiary 颜色
+- [ ] 图表文字对比度 ≥ 4.5:1（5种皮肤）
+- [ ] 截断文字已加 title 属性（抽样10处验证）
+- [ ] 重要内容（商品/供应商/报表名称）允许2行
+- [ ] 金额/百分比/数量数字已用等宽字体 + tabular-nums
+- [ ] 金额字号三档（大28-32/中16-18/小13-14）
+- [ ] 页面主标题用 h1 28px
+- [ ] 卡片标题用 h2 20px
+- [ ] 子标题用 h3 16px
+- [ ] 无 strong/b 代替标题标签
+- [ ] 字距按字号规范（大标题负/正文0/标签正）
+- [ ] 列表数字右对齐，KPI数字左对齐
+- [ ] 长文本行高 ≥ 1.6
+- [ ] 5 种皮肤下文字颜色/对比度正常
+- [ ] 三门禁全绿
+- [ ] 变更已登记到 docs/change-log.md
+
+---
+
 ## 完成标准（全部批次完成后）
 
 ### UI 问题修复（批次 1-5）
@@ -2240,6 +2583,18 @@ git push
 40. **凭证默认展开**：记录表单凭证上传移出折叠，默认展开
 41. **健康度可折叠**：维度列表默认前3维，可展开全部5维
 42. **折叠触发统一**：所有折叠触发按钮样式统一（.collapsible-trigger）
+
+### 可阅读性专项优化（批次 21）
+43. **无极端小字号**：全局无 8px/9px，最小字号 10px（仅限图表）
+44. **Type Scale 统一**：8级字号阶梯（32/28/20/16/14/12/11/10px），所有文字引用令牌
+45. **行高统一**：全局默认 1.5，按字号调整（小字号≥1.4，长文本≥1.6）
+46. **字距统一**：大标题负字距(-0.02em)/正文0/标签正字距(0.02em)
+47. **小字号对比度**：10-11px 禁用 text-tertiary，必须用 text-secondary 以上
+48. **底部导航可读**：tabbar 10px，未选中 text-secondary，选中 action-primary
+49. **文字截断可访问**：所有截断文字加 title 属性，重要内容允许2行
+50. **数字字体统一**：金额/百分比/数量用等宽字体 + tabular-nums
+51. **金额三档**：大28-32px/中16-18px/小13-14px
+52. **标题标签规范**：页面h1 28px/卡片h2 20px/子标题h3 16px，无 strong 代替标题
 
 ## References
 - 线上问题清单：docs/live-ui-beauty-audit-2026-08-31.md
