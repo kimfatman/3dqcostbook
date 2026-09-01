@@ -1859,3 +1859,227 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
     transition: none !important;
   }
 }
+
+/* ============================================================================
+ * batch-17（洞察模块打磨）：经营利润卡渐变 / 瀑布图配色 / 折叠过渡 / 健康度雷达 / 图表统一
+ * 仅展示层，不改利润、成本、瀑布、健康度或目标计算逻辑；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* 经营利润概览卡：渐变背景 + 高光装饰，文字反色对比度达标 */
+.analysis-profit-overview {
+  background: linear-gradient(145deg, var(--sdq-bg-brand), color-mix(in srgb, var(--sdq-bg-brand) 82%, var(--sdq-action-primary))) !important;
+  border: 0 !important;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--sdq-bg-brand) 22%, transparent) !important;
+  position: relative;
+  overflow: hidden;
+}
+.analysis-profit-overview::after {
+  position: absolute;
+  top: -40px;
+  right: -30px;
+  width: 160px;
+  height: 160px;
+  content: "";
+  background: radial-gradient(circle, rgba(255,255,255,.18), transparent 68%);
+  pointer-events: none;
+}
+.analysis-profit-overview .analysis-card-head h2,
+.analysis-profit-overview .analysis-card-head span {
+  color: rgba(255,255,255,.82) !important;
+}
+.analysis-profit-total span {
+  color: rgba(255,255,255,.78) !important;
+}
+.analysis-profit-total strong {
+  color: var(--sdq-text-on-brand) !important;
+}
+.analysis-profit-total em {
+  color: rgba(255,255,255,.7) !important;
+}
+.analysis-profit-total.is-loss strong {
+  color: #ffd6d6 !important;
+}
+.analysis-profit-kpis {
+  border-color: rgba(255,255,255,.2) !important;
+}
+.analysis-profit-kpis span {
+  border-color: rgba(255,255,255,.2) !important;
+}
+.analysis-profit-kpis em {
+  color: rgba(255,255,255,.7) !important;
+}
+.analysis-profit-kpis b {
+  color: var(--sdq-text-on-brand) !important;
+}
+
+/* 利润构成瀑布图：收入=success绿，成本=warning橙，利润=primary蓝，亏损=risk红 */
+.waterfall-plot .bar.revenue { fill: var(--sdq-profit); }
+.waterfall-plot .bar.cost { fill: var(--sdq-cost); }
+.waterfall-plot .bar.profit { fill: var(--sdq-action-primary); }
+.waterfall-plot .bar.loss { fill: var(--sdq-risk); }
+.waterfall-plot .bar-label {
+  fill: var(--sdq-text-secondary);
+  font-family: var(--sdq-financial-font);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+.waterfall-plot .connector {
+  stroke: var(--sdq-border-subtle);
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+/* 成本与结构复核折叠：grid-template-rows 过渡 + 箭头旋转 */
+.analysis-review .analysis-more-trigger {
+  min-height: 56px;
+  padding: 12px 0;
+  transition: background 120ms ease;
+}
+.analysis-review .analysis-more-trigger:hover {
+  background: var(--sdq-bg-surface-subtle);
+}
+.analysis-review .analysis-more-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.analysis-review-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 320ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.analysis-review-content > * {
+  overflow: hidden;
+}
+.analysis-more[aria-expanded="true"] .analysis-review-content {
+  grid-template-rows: 1fr;
+}
+
+/* 行业参考估算卡：info 浅色背景，不突兀 */
+.analysis-hidden-cost-card {
+  background: var(--sdq-bg-info-soft);
+  border-color: color-mix(in srgb, var(--sdq-info) 16%, var(--sdq-border-subtle));
+}
+.analysis-hidden-cost-head span {
+  color: var(--sdq-info);
+}
+.analysis-hidden-cost-head h2 {
+  color: var(--sdq-text-primary);
+}
+.analysis-hidden-cost-list > div span b {
+  color: var(--sdq-text-primary);
+}
+.analysis-hidden-cost-list > div span em {
+  color: var(--sdq-text-secondary);
+}
+.analysis-hidden-cost-list > div strong {
+  color: var(--sdq-info);
+  font-family: var(--sdq-financial-font);
+  font-variant-numeric: tabular-nums;
+}
+.analysis-hidden-cost-list > div small {
+  color: var(--sdq-text-secondary);
+}
+
+/* 健康度雷达图：评分环形 + 维度列表，缺失维度虚线 */
+.health-score b {
+  color: var(--sdq-action-primary);
+}
+.health-dimension-list > button.missing {
+  opacity: .7;
+}
+.health-dimension-list > button.missing b {
+  color: var(--sdq-cost);
+}
+.health-formula summary {
+  color: var(--sdq-action-primary);
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+.health-formula summary:hover {
+  color: var(--sdq-bg-brand);
+}
+
+/* 成本结构变化分组对比柱：本期=primary实心，上期=描边 */
+.analysis-grouped-bars > i.current {
+  background: var(--sdq-action-primary) !important;
+}
+.analysis-grouped-bars > i.previous {
+  background: transparent !important;
+  border: 1px solid var(--sdq-border-strong) !important;
+}
+
+/* 供应商排行棒棒糖：排行徽章 + 进度条 */
+.analysis-supplier-list button > i:first-child {
+  background: var(--sdq-bg-brand-soft);
+  color: var(--sdq-action-primary);
+  font-family: var(--sdq-financial-font);
+  font-weight: 800;
+}
+.supplier-lollipop em {
+  background: var(--sdq-action-primary);
+  border-radius: 99px;
+  transition: width 320ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* 商品毛利排行：亏损行红色，进度条品牌色 */
+.analysis-profit-sku-list button .is-loss {
+  color: var(--sdq-risk) !important;
+}
+.analysis-profit-sku-track em {
+  background: var(--sdq-action-primary);
+  border-radius: 99px;
+  transition: width 320ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.analysis-profit-sku-track em.is-loss {
+  background: var(--sdq-risk);
+}
+
+/* 图表 Tooltip 统一样式 */
+.chart-tooltip {
+  background: var(--sdq-bg-elevated);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-sm);
+  box-shadow: 0 8px 24px rgba(11,24,54,.12);
+  padding: 8px 10px;
+  font-size: 11px;
+}
+.chart-tooltip b {
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-variant-numeric: tabular-nums;
+}
+.chart-tooltip span {
+  color: var(--sdq-text-secondary);
+}
+
+/* 洞察分组标题：左侧品牌色短竖线 */
+.analysis-group-title {
+  position: relative;
+  padding-left: 10px;
+}
+.analysis-group-title::before {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 3px;
+  height: 14px;
+  content: "";
+  background: var(--sdq-action-primary);
+  border-radius: 2px;
+}
+
+/* 洞察页卡片统一 hover 微提升 */
+.prototype-analysis .ledger-surface {
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+.prototype-analysis .ledger-surface:hover {
+  box-shadow: 0 10px 24px rgba(11,24,54,.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analysis-review-content,
+  .supplier-lollipop em,
+  .analysis-profit-sku-track em,
+  .prototype-analysis .ledger-surface {
+    transition: none !important;
+  }
+}
