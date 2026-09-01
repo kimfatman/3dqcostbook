@@ -2297,3 +2297,250 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
     transition: none !important;
   }
 }
+
+/* ============================================================================
+ * batch-19（图表专项优化）：入场动画 / 骨架屏 / 坐标轴 / 图表配色统一
+ * 仅展示层，不改任何图表数据计算逻辑；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* ---- 全局图表卡片统一样式 ---- */
+.chart-card,
+.home-chart-card,
+.analysis-waterfall-card,
+.analysis-trend-card,
+.analysis-stack-card,
+.analysis-cashflow-card,
+.analysis-health-card,
+.pricing-profit-trend,
+.order-refund-chart {
+  position: relative;
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-lg);
+  box-shadow: var(--sdq-shadow-card);
+}
+
+/* 图表标题统一：左侧品牌色短竖线 */
+.chart-card .chart-title,
+.home-chart-head span,
+.analysis-card-head h2 {
+  position: relative;
+}
+
+/* ---- 坐标轴统一：12px text-secondary，网格线 border-subtle ---- */
+.chart-x-axis text,
+.chart-y-axis text,
+.sales-orders-plot em,
+.stack-x-labels span,
+.cashflow-bars em,
+.pricing-profit-trend figcaption span,
+.waterfall-plot .bar-label {
+  fill: var(--sdq-text-secondary);
+  color: var(--sdq-text-secondary);
+  font-family: var(--sdq-financial-font);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.chart-grid line,
+.sales-orders-plot,
+.cashflow-bars {
+  stroke: var(--sdq-border-subtle);
+}
+
+/* ---- 入场动画：卡片 fade-in + slide-up ---- */
+@keyframes chart-card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.chart-card,
+.home-chart-card,
+.analysis-waterfall-card,
+.analysis-trend-card,
+.analysis-stack-card,
+.analysis-cashflow-card,
+.analysis-health-card {
+  animation: chart-card-in 280ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* ---- 柱状图入场：从底部 scaleY 生长 ---- */
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.sales-bars i,
+.cashflow-bars i,
+.analysis-grouped-bars i,
+.cost-history span i {
+  transform-origin: bottom;
+  animation: bar-grow 460ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.sales-bars span:nth-child(1) i { animation-delay: 0ms; }
+.sales-bars span:nth-child(2) i { animation-delay: 40ms; }
+.sales-bars span:nth-child(3) i { animation-delay: 80ms; }
+.sales-bars span:nth-child(4) i { animation-delay: 120ms; }
+.sales-bars span:nth-child(5) i { animation-delay: 160ms; }
+.sales-bars span:nth-child(6) i { animation-delay: 200ms; }
+.sales-bars span:nth-child(7) i { animation-delay: 240ms; }
+
+/* ---- 折线图入场：stroke-dashoffset 描边动画 ---- */
+@keyframes line-draw {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+.sales-orders-line,
+.pricing-profit-line,
+.chart-soft-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: line-draw 720ms cubic-bezier(0.23, 1, 0.32, 1) 100ms forwards;
+}
+
+/* 折线图数据点：延迟淡入 */
+@keyframes point-fade-in {
+  from { opacity: 0; transform: scale(0); }
+  to { opacity: 1; transform: scale(1); }
+}
+.sales-orders-point,
+.pricing-profit-point,
+.home-mini-trend circle {
+  animation: point-fade-in 300ms ease-out 600ms both;
+}
+
+/* ---- 环形图入场：stroke-dashoffset 描边 ---- */
+@keyframes ring-draw {
+  from { stroke-dashoffset: 283; }
+  to { stroke-dashoffset: var(--ring-offset, 0); }
+}
+.cost-ring,
+.sales-target-ring,
+.health-radar .health-shape {
+  animation: ring-draw 600ms cubic-bezier(0.23, 1, 0.32, 1) 150ms both;
+}
+
+/* ---- 面积图入场：opacity 0→1 + translateY ---- */
+@keyframes area-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sales-orders-area,
+.pricing-profit-area,
+.chart-soft-area,
+.stacked-area-chart path {
+  animation: area-fade-in 500ms ease-out 200ms both;
+}
+
+/* ---- 瀑布图柱状入场 ---- */
+.waterfall-plot .bar {
+  transform-origin: bottom;
+  animation: bar-grow 460ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* ---- 图表空态/加载态：骨架屏 pulse ---- */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+.chart-skeleton,
+.chart-loading {
+  background: linear-gradient(90deg, var(--sdq-bg-surface-subtle) 25%, var(--sdq-border-subtle) 50%, var(--sdq-bg-surface-subtle) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: var(--sdq-radius-md);
+}
+
+/* 图表空态：居中引导文案 */
+.chart-empty,
+.home-chart-empty,
+.analysis-empty-copy {
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  min-height: 120px;
+  text-align: center;
+}
+.chart-empty b,
+.home-chart-empty span {
+  color: var(--sdq-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.chart-empty p,
+.home-chart-empty b,
+.analysis-empty-copy {
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ---- 图表配色统一：多系列色板 ---- */
+.chart-series-1 { fill: var(--sdq-action-primary); stroke: var(--sdq-action-primary); }
+.chart-series-2 { fill: var(--sdq-info); stroke: var(--sdq-info); }
+.chart-series-3 { fill: var(--sdq-profit); stroke: var(--sdq-profit); }
+.chart-series-4 { fill: var(--sdq-cost); stroke: var(--sdq-cost); }
+.chart-series-5 { fill: var(--sdq-risk); stroke: var(--sdq-risk); }
+
+/* 成本结构饼图/环形图配色 */
+.cost-structure-body .cost-ring {
+  background: conic-gradient(
+    var(--sdq-action-primary) 0deg,
+    var(--sdq-info) 90deg,
+    var(--sdq-profit) 180deg,
+    var(--sdq-cost) 270deg,
+    var(--sdq-border-subtle) 360deg
+  );
+}
+
+/* 利润趋势折线：主色加粗+阴影 */
+.chart-soft-line,
+.sales-orders-line {
+  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--sdq-action-primary) 16%, transparent));
+}
+
+/* 柱状图渐变：顶部亮底部深 */
+.sales-bars i {
+  background: linear-gradient(180deg, var(--sdq-info), var(--sdq-action-primary));
+  border-radius: 4px 4px 1px 1px;
+}
+
+/* 现金流量柱状图：流入=品牌色，流出=深色 */
+.cashflow-bars .inflow {
+  background: linear-gradient(180deg, var(--sdq-info), var(--sdq-action-primary)) !important;
+}
+.cashflow-bars .outflow {
+  background: var(--sdq-text-primary) !important;
+}
+
+/* 健康度雷达：形状填充品牌色透明 */
+.health-shape {
+  fill: color-mix(in srgb, var(--sdq-action-primary) 18%, transparent);
+  stroke: var(--sdq-action-primary);
+}
+
+/* ---- 减少动效：所有动画禁用 ---- */
+@media (prefers-reduced-motion: reduce) {
+  .chart-card,
+  .home-chart-card,
+  .analysis-waterfall-card,
+  .analysis-trend-card,
+  .analysis-stack-card,
+  .analysis-cashflow-card,
+  .analysis-health-card,
+  .sales-bars i,
+  .cashflow-bars i,
+  .cost-history span i,
+  .sales-orders-line,
+  .pricing-profit-line,
+  .chart-soft-line,
+  .sales-orders-point,
+  .pricing-profit-point,
+  .cost-ring,
+  .sales-target-ring,
+  .sales-orders-area,
+  .pricing-profit-area,
+  .waterfall-plot .bar,
+  .chart-skeleton {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    transform: none !important;
+  }
+}
