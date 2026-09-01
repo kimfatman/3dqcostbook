@@ -7,6 +7,17 @@
 ## 2026-09-01
 
 ### 技术
+- 批次 12（全局组件打磨）：
+  - 按钮：新增 `.sdq-btn` 类体系（五变体 primary/secondary/ghost/danger/link × 三尺寸 sm 32/md 40/lg 48 × 五状态 default/hover/active/disabled/loading），loading 态旋转图标（.sdq-btn-spin）+「处理中」文字+禁点，图标按钮 40×40 最小触控目标 + :active scale .92；只引用 --sdq-* 语义令牌（action 三态/text-link/radius/space），五皮肤自动适配
+  - 卡片：新增 `.sdq-card` 三变体（default/elevated/brand），内边距 16/20px（--sdq-space-4/5）、圆角 12/16px（--sdq-radius-md/lg）、elevated 阴影 0 2px 8px（--sdq-blue-950 6% 派生）、可点击卡片 :active scale(.98) + 背景加深、标题 h2 20px -0.01em / 内容 14px
+  - 输入框：新增 `.sdq-input` / `.sdq-field` / `.sdq-input-wrap`（44px 高 --sdq-height-control、focus 品牌蓝描边 + 4px 光晕、error risk 描边 + 下方 12px 提示、disabled 态、前缀/后缀图标 16px text-secondary）
+  - 标签/徽章/状态点：新增 `.sdq-tag`（8px 圆角 12px 字重 padding 4px 8px，success/warning/danger/info/neutral 语义变体）、`.sdq-badge`（圆形 ≥16×16 通知数字）、`.sdq-dot`（8px 状态点）
+  - 模态框：新增 `.sdq-modal-layer/scrim/card`（入场 slide-up + spring 400ms、退场 slide-down 200ms、遮罩 fade-in 200ms、顶部抽屉 20px 圆角、内容区 max-height 70vh 滚动、关闭按钮 40×40）；既有 T4 voucher-guard / 登录 consent 确认层接入同一入场动画语言
+  - Toast：`.app-toast` 补齐成功/警告/错误三态（app-toast-success/warning/error + 图标），自动消失改为 3s，入场动画 260ms；Home.tsx notify 支持类型参数（成功保存/失败校验等关键调用点接入）
+  - 空态/加载态：新增 `.sdq-empty`（图标+标题+描述+操作按钮，居中）、骨架屏三型（sdq-skeleton-list/card/chart，pulse 动画）、`.sdq-spinner`/`.sdq-loading`、`.sdq-divider` 分割线类
+  - 回归：新增 `Home.batch12-global-components.dom.test.tsx`（21 用例：组件类体系契约 + 令牌纪律 + 成功/错误 Toast DOM + loading 按钮 + modal 结构不破），既有测试零改动（提交：本批次）
+
+### 新增
 - 批次 11（全局配色与令牌打磨）：
   - 令牌体系补全：primitives.css 功能色补齐 50-950 全阶（success/warning/danger/info 各 11 级，500/600 锚点保持批次 10 值不变，600/700 作为 hover/active 深色阶梯）；semantic.css 补齐批次 11 清单缺口（text-inverse/text-link、action-primary-hover/active/secondary、border-default、success/warning 别名 + bg-risk-soft/bg-info-soft），五皮肤同步覆盖（deep/midnight 取各自中性阶中间值，aurora 继承 :root 并注释说明）
   - 全局替换硬编码颜色：index.css 与 layout-unification.css 中品牌蓝光晕/焦点环/卡片阴影/深色皮肤表面全部改为 color-mix(in srgb, var(--sdq-action-primary|--sdq-blue-800|--sdq-blue-950|--sdq-neutral-950) X%, transparent) 语义派生（色值同 alpha、同色相族，视觉等效）；ManusDialog 弹窗阴影/边框改走 --sdq-shadow-card/--sdq-border-subtle，logo 盒 bg-white→bg-surface

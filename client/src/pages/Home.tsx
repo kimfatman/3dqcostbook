@@ -16,6 +16,9 @@ import {
   Calculator,
   CalendarDays,
   Check,
+  CircleCheck,
+  CircleX,
+  TriangleAlert,
   ChefHat,
   ChevronDown,
   ChevronRight,
@@ -479,7 +482,7 @@ export default function Home() {
   const [cardSearch, setCardSearch] = useState("");
   const [cardMoreOpen, setCardMoreOpen] = useState(false);
   const [reportId, setReportId] = useState<string | null>(null);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null);
   const [analysisPeriod, setAnalysisPeriod] = useState<"current" | "last">("current");
   const [analysisDetailsOpen, setAnalysisDetailsOpen] = useState(false);
   const [analysisReviewOpen, setAnalysisReviewOpen] = useState(false);
@@ -706,9 +709,10 @@ export default function Home() {
     return groups;
   }, [filteredRecords]);
 
-  function notify(message: string) {
-    setToast(message);
-    window.setTimeout(() => setToast(""), 2200);
+  /** batch-12：Toast 支持成功/警告/错误三态（沿用既有 app-toast 模式），3s 自动消失。 */
+  function notify(message: string, type?: "success" | "warning" | "error") {
+    setToast({ message, type });
+    window.setTimeout(() => setToast(null), 3000);
   }
 
   function guardUnsavedVoucher(leave: () => void) {
@@ -842,8 +846,8 @@ export default function Home() {
     setOrderChannel("platform");
     goSub("orderForm");
   }
-  function saveOrder(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const data = new FormData(event.currentTarget); if (!draftOrderLines.length || draftOrderLines.some((line) => !line.skuId || !isPositiveInteger(line.quantity))) return notify("请为每个 SKU 填写正整数数量"); const lines = draftOrderLines.map((line) => ({ skuId: line.skuId, quantity: toNumber(line.quantity) })); const result = book.addOrder({ orderNo: String(data.get("orderNo") || ""), channel: orderChannel, buyer: String(data.get("buyer") || ""), date: String(data.get("date") || today), lines }); if (!result.ok) return notify(result.reason || "订单登记失败"); notify("订单已入账：销售收入、商品成本和渠道费用预警已同步生成"); replaceSubPage("orders"); }
-  function saveRefund(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!activeOrder || !activeOrderLine) return notify("请先选择订单 SKU"); const data = new FormData(event.currentTarget); const quantity = Number(data.get("quantity")); const refundAmount = Number(data.get("refundAmount")); const date = String(data.get("date") || today); if (!Number.isInteger(quantity) || quantity <= 0) return notify("退款数量必须为正整数"); if (refundAmount > activeOrderLine.unitPriceFen / 100 * quantity) return notify("退款金额不能超过该 SKU 的成交收入"); if (date < activeOrder.occurredAt) return notify("退款日期不能早于订单成交日期"); const result = book.createRefund({ orderId: activeOrder.id, lineId: activeOrderLine.id, quantity, refundAmount, refundFee: Number(data.get("refundFee") || 0), reason: String(data.get("reason")) as RefundReason, recoveryStatus: String(data.get("recoveryStatus")) as ReturnRecoveryStatus, date }); if (!result.ok) return notify(result.reason || "退款登记失败"); notify("退款已登记，净营收与商品成本已同步更新"); replaceSubPage("orderDetail"); }
+  function saveOrder(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const data = new FormData(event.currentTarget); if (!draftOrderLines.length || draftOrderLines.some((line) => !line.skuId || !isPositiveInteger(line.quantity))) return notify("请为每个 SKU 填写正整数数量", "error"); const lines = draftOrderLines.map((line) => ({ skuId: line.skuId, quantity: toNumber(line.quantity) })); const result = book.addOrder({ orderNo: String(data.get("orderNo") || ""), channel: orderChannel, buyer: String(data.get("buyer") || ""), date: String(data.get("date") || today), lines }); if (!result.ok) return notify(result.reason || "订单登记失败", "error"); notify("订单已入账：销售收入、商品成本和渠道费用预警已同步生成", "success"); replaceSubPage("orders"); }
+  function saveRefund(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!activeOrder || !activeOrderLine) return notify("请先选择订单 SKU"); const data = new FormData(event.currentTarget); const quantity = Number(data.get("quantity")); const refundAmount = Number(data.get("refundAmount")); const date = String(data.get("date") || today); if (!Number.isInteger(quantity) || quantity <= 0) return notify("退款数量必须为正整数"); if (refundAmount > activeOrderLine.unitPriceFen / 100 * quantity) return notify("退款金额不能超过该 SKU 的成交收入"); if (date < activeOrder.occurredAt) return notify("退款日期不能早于订单成交日期"); const result = book.createRefund({ orderId: activeOrder.id, lineId: activeOrderLine.id, quantity, refundAmount, refundFee: Number(data.get("refundFee") || 0), reason: String(data.get("reason")) as RefundReason, recoveryStatus: String(data.get("recoveryStatus")) as ReturnRecoveryStatus, date }); if (!result.ok) return notify(result.reason || "退款登记失败", "error"); notify("退款已登记，净营收与商品成本已同步更新", "success"); replaceSubPage("orderDetail"); }
   function saveSkuCost(event: FormEvent<HTMLFormElement>, skuId: string) { event.preventDefault(); const cost = Number(new FormData(event.currentTarget).get("unitCost")); const result = book.updateSkuCost(skuId, cost); notify(result.ok ? "SKU 单位成本已更新，仅作用于后续订单" : result.reason || "成本更新失败"); }
 
   function saveRecord(event: FormEvent<HTMLFormElement>) {
@@ -860,18 +864,18 @@ export default function Home() {
     const merchant = formMerchant.trim();
     const date = formDate;
     const note = formNote.trim();
-    if (!amount || amount <= 0) return notify("请填写正确的金额");
-    if (!merchant) return notify("请填写商户或对方名称");
+    if (!amount || amount <= 0) return notify("请填写正确的金额", "error");
+    if (!merchant) return notify("请填写商户或对方名称", "error");
     const data = new FormData(form);
     const refundFee = Number(data.get("refundFee") || 0);
     const recovery = Number(data.get("recovery") || 0);
     const payload = { categoryKey: currentCategoryKey, date, type: recordType, amount, merchant, note, status: "accounted" as const, hasAttachment, attachmentAssetId: attachmentAssetId || undefined, supplierId: recordType === "expense" ? selectedSupplierId || suppliers.find((supplier) => supplier.name === merchant)?.id : undefined, refundFee, recovery };
     if (recordId) {
       book.updateRecord(recordId, payload);
-      notify(`已更新 ${yuan(amount)} 记录`);
+      notify(`已更新 ${yuan(amount)} 记录`, "success");
     } else {
       book.addRecord({ ...payload, id: attachmentAssetId ? recordAttachmentSubjectId || undefined : undefined });
-      notify(continueEntry ? "已保存，可继续录入" : `已新增 ${yuan(amount)} 记录`);
+      notify(continueEntry ? "已保存，可继续录入" : `已新增 ${yuan(amount)} 记录`, "success");
     }
     setRecordId(null);
     setUnsavedVoucherLeave(null);
@@ -915,7 +919,7 @@ export default function Home() {
     setSelectedCategoryKey(key);
     setCustomRecordCategoryLabel("");
     setCustomRecordCategoryOpen(false);
-    notify(`已添加“${label}”标签`);
+    notify(`已添加“${label}”标签`, "success");
   }
 
   function editRecord() {
@@ -939,7 +943,7 @@ export default function Home() {
     if (!activeRecord) return;
     if (!window.confirm(`确认删除“${activeRecord.merchant}”这笔记录吗？`)) return;
     book.removeRecord(activeRecord.id);
-    notify("记录已删除，预算和分析已同步更新");
+    notify("记录已删除，预算和分析已同步更新", "success");
     setRecordId(null);
     replaceSubPage("records");
   }
@@ -959,7 +963,7 @@ export default function Home() {
     if (budgetErrorMessage) { setBudgetError(budgetErrorMessage); return; }
     book.updateBudget(budget);
     setBudgetError("");
-    notify("月度预算已保存，预测已刷新");
+    notify("月度预算已保存，预测已刷新", "success");
     replaceSubPage("budget");
   }
 
@@ -974,7 +978,7 @@ export default function Home() {
     if (!target || target <= 0) return notify("请输入正确的月销售目标");
     book.updateSalesTarget(target);
     setTargetEditOpen(false);
-    notify("月销售目标已保存，完成率与月末预测已刷新");
+    notify("月销售目标已保存，完成率与月末预测已刷新", "success");
   }
 
   function saveHealthSettings(event: FormEvent<HTMLFormElement>) {
@@ -1013,8 +1017,8 @@ export default function Home() {
     if (!items.length || draftMaterials.some((item) => !item.name.trim() || !item.quantity.trim() || !isPositiveMoney(item.amount))) return notify("请至少保留一项材料，并补齐名称、数量和金额");
     const input = { name, kind: String(data.get("kind") || "").trim(), unit: String(data.get("unit") || "").trim(), salePrice, labor, overhead, items };
     setCardFormDirty(false);
-    if (activeCard) { const result = book.updateCard(activeCard.id, input); if (!result.ok) return notify(result.reason); notify("成本卡已更新，SKU 将同步用于后续订单"); replaceSubPage("cardDetail"); }
-    else { const result = book.addCard(input); if (!result.ok) return notify(result.reason); notify("成本卡已新增，并自动创建关联 SKU"); replaceSubPage("cards"); }
+    if (activeCard) { const result = book.updateCard(activeCard.id, input); if (!result.ok) return notify(result.reason, "error"); notify("成本卡已更新，SKU 将同步用于后续订单", "success"); replaceSubPage("cardDetail"); }
+    else { const result = book.addCard(input); if (!result.ok) return notify(result.reason, "error"); notify("成本卡已新增，并自动创建关联 SKU", "success"); replaceSubPage("cards"); }
   }
 
   function deleteCard() {
@@ -1037,8 +1041,8 @@ export default function Home() {
     const name = String(data.get("name") || "").trim();
     if (!name) return notify("请输入供应商名称");
     const input = { name, contact: String(data.get("contact") || ""), categoryKey: String(data.get("categoryKey") || categories[0]?.key || ""), shared: data.get("shared") === "on" };
-    if (supplierEditId) { book.updateSupplier(supplierEditId, input); notify("供应商信息已更新"); }
-    else { book.addSupplier(input); notify("供应商已新增"); }
+    if (supplierEditId) { book.updateSupplier(supplierEditId, input); notify("供应商信息已更新", "success"); }
+    else { book.addSupplier(input); notify("供应商已新增", "success"); }
     setSupplierEditId(null);
     replaceSubPage("suppliers");
   }
@@ -1281,7 +1285,7 @@ export default function Home() {
   function RecordPage() {
     const editing = activeRecord;
     const hasImageVoucher = Boolean(attachmentAssetId);
-    return <><section className="sub-intro compact"><span>{template.label} · 经营交易</span><h1>{editing ? "编辑一笔记录" : "记录一笔收支"}</h1><p>商品销售会同步订单、SKU 与已售成本；其他收入与手工退款保持独立归类。</p></section><form key="manual-record-form" ref={recordFormRef} className="record-form" onSubmit={saveRecord}><label><span className="sdq-label">交易类型<i className="sdq-req" aria-hidden="true" /></span><div className="type-switch record-type-switch"><button type="button" className={recordType === "expense" ? "selected" : ""} onClick={() => changeRecordType("expense")}>支出</button><button type="button" className={recordType === "income" ? "selected" : ""} onClick={() => changeRecordType("income")}>其他收入</button><button type="button" className="record-product-sale" onClick={openNewOrder}><ShoppingCart size={16} strokeWidth={1.5} />商品销售</button><button type="button" className={recordType === "refund" ? "selected" : ""} onClick={() => changeRecordType("refund")}>手工退款</button></div></label><label><span className="sdq-label">{recordType === "refund" ? "退款金额" : "金额"}<i className="sdq-req" aria-hidden="true" /></span><div className="amount-input"><span>¥</span><input name="amount" ref={amountInputRef} type="number" min="0.01" step="0.01" value={formAmount} onChange={(event) => setFormAmount(event.target.value)} placeholder="0.00" autoFocus /></div></label>{recordType === "refund" && <><label>退款手续费（可选）<div className="amount-input"><span>¥</span><input name="refundFee" type="number" min="0" step="0.01" defaultValue="0" /></div></label><label>退货可回收成本（可选）<div className="amount-input"><span>¥</span><input name="recovery" type="number" min="0" step="0.01" defaultValue="0" /></div></label></>}<label><span className="sdq-label">日期<i className="sdq-req" aria-hidden="true" /></span><input name="date" type="date" value={formDate} onChange={(event) => setFormDate(event.target.value)} /></label><label><span className="sdq-label">{recordCategoryTitle}<i className="sdq-req" aria-hidden="true" /></span><div className="category-chips">{recordCategoryOptions.map((item) => <button type="button" key={item.key} className={currentCategoryKey === item.key ? "selected" : ""} onClick={() => setSelectedCategoryKey(item.key)}>{item.label}</button>)}<button type="button" className="category-custom-trigger" onClick={() => setCustomRecordCategoryOpen((open) => !open)}><Plus size={16} strokeWidth={1.5} />自定义</button></div>{customRecordCategoryOpen && <div className="record-custom-category"><input aria-label={`自定义${recordCategoryTitle}`} value={customRecordCategoryLabel} onChange={(event) => setCustomRecordCategoryLabel(event.target.value)} placeholder={`例如：${recordType === "income" ? "押金收入" : recordType === "refund" ? "活动退款" : "临时支出"}`} /><button type="button" onClick={addCustomRecordCategory}>添加</button></div>}<small>{recordType === "income" ? "其他收入不生成订单、SKU 销量、客单价或商品利润；商品销售请点击上方入口。" : recordType === "refund" ? "这是手工退款；已关联订单的售后请从订单详情登记，才会同步退货数量和回收状态。" : "支出标签会决定成本或费用归类。"}</small></label><section className="record-more"><button type="button" className="analysis-more-trigger record-more-trigger" aria-expanded={recordMoreOpen} onClick={() => setRecordMoreOpen((open) => !open)}><span><b>更多信息</b><em>{recordMoreOpen ? "收起供应商、备注与凭证" : recordType === "expense" ? "供应商、备注与凭证（可选）" : "备注与凭证（可选）"}</em></span><ChevronDown size={18} strokeWidth={1.5} /></button>{recordMoreOpen && <div className="analysis-more-content record-more-content"><label>{recordMerchantLabel}<input name="merchant" value={formMerchant} onChange={(event) => setFormMerchant(event.target.value)} placeholder={recordMerchantPlaceholder} /></label>{recordType === "expense" && suppliers.length > 0 && <label>关联供应商（可选）<select value={selectedSupplierId} onChange={(event) => setSelectedSupplierId(event.target.value)}><option value="">未关联供应商</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select><small>关联后可在现金流图按供应商筛选与下钻。</small></label>}<label>备注<input name="note" value={formNote} onChange={(event) => setFormNote(event.target.value)} placeholder={`例如：${recordCategoryOptions[0]?.hint || "本次交易"}`} /></label><fieldset className="record-voucher-field"><legend><Upload size={16} strokeWidth={1.5} />凭证图片</legend>{hasImageVoucher ? <div className="record-voucher-attached"><img src={`/api/media/${attachmentAssetId}`} alt="已附凭证图片" /><span><b>已附私有图片凭证</b><small>仅当前店铺成员可查看；保存记录后关联生效。</small><button type="button" onClick={() => { setAttachmentAssetId(null); setHasAttachment(false); setVoucherUploadError(""); }}>移除图片</button></span></div> : <label className="record-voucher-picker"><input aria-label="上传凭证图片" type="file" accept="image/jpeg,image/png,image/webp" disabled={isUploadingVoucher} onChange={(event) => void uploadRecordVoucher(event.currentTarget.files?.[0])} /><span>{isUploadingVoucher ? "正在上传凭证图片…" : "选择凭证图片"}</span><em>JPEG、PNG 或 WebP，最大 5MB</em></label>}{voucherUploadError && <small className="record-voucher-error" role="alert">{voucherUploadError}</small>}{!hasImageVoucher && <label className="record-voucher-legacy"><input type="checkbox" checked={hasAttachment} onChange={(event) => setHasAttachment(event.currentTarget.checked)} />此笔已有线下凭证（仅标记）</label>}</fieldset></div>}</section><div className="record-form-actions">{!editing && <button type="button" className="record-save-continue" onClick={saveRecordAndContinue} disabled={isUploadingVoucher}><Check size={16} strokeWidth={1.5} />保存并继续</button>}<button type="submit" className="fixed-primary form-save" disabled={isUploadingVoucher}><Plus size={16} strokeWidth={1.5} />{editing ? "保存修改" : "保存记录"}</button></div></form></>;
+    return <><section className="sub-intro compact"><span>{template.label} · 经营交易</span><h1>{editing ? "编辑一笔记录" : "记录一笔收支"}</h1><p>商品销售会同步订单、SKU 与已售成本；其他收入与手工退款保持独立归类。</p></section><form key="manual-record-form" ref={recordFormRef} className="record-form" onSubmit={saveRecord}><label><span className="sdq-label">交易类型<i className="sdq-req" aria-hidden="true" /></span><div className="type-switch record-type-switch"><button type="button" className={recordType === "expense" ? "selected" : ""} onClick={() => changeRecordType("expense")}>支出</button><button type="button" className={recordType === "income" ? "selected" : ""} onClick={() => changeRecordType("income")}>其他收入</button><button type="button" className="record-product-sale" onClick={openNewOrder}><ShoppingCart size={16} strokeWidth={1.5} />商品销售</button><button type="button" className={recordType === "refund" ? "selected" : ""} onClick={() => changeRecordType("refund")}>手工退款</button></div></label><label><span className="sdq-label">{recordType === "refund" ? "退款金额" : "金额"}<i className="sdq-req" aria-hidden="true" /></span><div className="amount-input"><span>¥</span><input name="amount" ref={amountInputRef} type="number" min="0.01" step="0.01" value={formAmount} onChange={(event) => setFormAmount(event.target.value)} placeholder="0.00" autoFocus /></div></label>{recordType === "refund" && <><label>退款手续费（可选）<div className="amount-input"><span>¥</span><input name="refundFee" type="number" min="0" step="0.01" defaultValue="0" /></div></label><label>退货可回收成本（可选）<div className="amount-input"><span>¥</span><input name="recovery" type="number" min="0" step="0.01" defaultValue="0" /></div></label></>}<label><span className="sdq-label">日期<i className="sdq-req" aria-hidden="true" /></span><input name="date" type="date" value={formDate} onChange={(event) => setFormDate(event.target.value)} /></label><label><span className="sdq-label">{recordCategoryTitle}<i className="sdq-req" aria-hidden="true" /></span><div className="category-chips">{recordCategoryOptions.map((item) => <button type="button" key={item.key} className={currentCategoryKey === item.key ? "selected" : ""} onClick={() => setSelectedCategoryKey(item.key)}>{item.label}</button>)}<button type="button" className="category-custom-trigger" onClick={() => setCustomRecordCategoryOpen((open) => !open)}><Plus size={16} strokeWidth={1.5} />自定义</button></div>{customRecordCategoryOpen && <div className="record-custom-category"><input aria-label={`自定义${recordCategoryTitle}`} value={customRecordCategoryLabel} onChange={(event) => setCustomRecordCategoryLabel(event.target.value)} placeholder={`例如：${recordType === "income" ? "押金收入" : recordType === "refund" ? "活动退款" : "临时支出"}`} /><button type="button" onClick={addCustomRecordCategory}>添加</button></div>}<small>{recordType === "income" ? "其他收入不生成订单、SKU 销量、客单价或商品利润；商品销售请点击上方入口。" : recordType === "refund" ? "这是手工退款；已关联订单的售后请从订单详情登记，才会同步退货数量和回收状态。" : "支出标签会决定成本或费用归类。"}</small></label><section className="record-more"><button type="button" className="analysis-more-trigger record-more-trigger" aria-expanded={recordMoreOpen} onClick={() => setRecordMoreOpen((open) => !open)}><span><b>更多信息</b><em>{recordMoreOpen ? "收起供应商、备注与凭证" : recordType === "expense" ? "供应商、备注与凭证（可选）" : "备注与凭证（可选）"}</em></span><ChevronDown size={18} strokeWidth={1.5} /></button>{recordMoreOpen && <div className="analysis-more-content record-more-content"><label>{recordMerchantLabel}<input name="merchant" value={formMerchant} onChange={(event) => setFormMerchant(event.target.value)} placeholder={recordMerchantPlaceholder} /></label>{recordType === "expense" && suppliers.length > 0 && <label>关联供应商（可选）<select value={selectedSupplierId} onChange={(event) => setSelectedSupplierId(event.target.value)}><option value="">未关联供应商</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select><small>关联后可在现金流图按供应商筛选与下钻。</small></label>}<label>备注<input name="note" value={formNote} onChange={(event) => setFormNote(event.target.value)} placeholder={`例如：${recordCategoryOptions[0]?.hint || "本次交易"}`} /></label><fieldset className="record-voucher-field"><legend><Upload size={16} strokeWidth={1.5} />凭证图片</legend>{hasImageVoucher ? <div className="record-voucher-attached"><img src={`/api/media/${attachmentAssetId}`} alt="已附凭证图片" /><span><b>已附私有图片凭证</b><small>仅当前店铺成员可查看；保存记录后关联生效。</small><button type="button" onClick={() => { setAttachmentAssetId(null); setHasAttachment(false); setVoucherUploadError(""); }}>移除图片</button></span></div> : <label className="record-voucher-picker"><input aria-label="上传凭证图片" type="file" accept="image/jpeg,image/png,image/webp" disabled={isUploadingVoucher} onChange={(event) => void uploadRecordVoucher(event.currentTarget.files?.[0])} /><span>{isUploadingVoucher ? "正在上传凭证图片…" : "选择凭证图片"}</span><em>JPEG、PNG 或 WebP，最大 5MB</em></label>}{voucherUploadError && <small className="record-voucher-error" role="alert">{voucherUploadError}</small>}{!hasImageVoucher && <label className="record-voucher-legacy"><input type="checkbox" checked={hasAttachment} onChange={(event) => setHasAttachment(event.currentTarget.checked)} />此笔已有线下凭证（仅标记）</label>}</fieldset></div>}</section><div className="record-form-actions">{!editing && <button type="button" className="record-save-continue" onClick={saveRecordAndContinue} disabled={isUploadingVoucher}><Check size={16} strokeWidth={1.5} />保存并继续</button>}<button type="submit" className="fixed-primary form-save" disabled={isUploadingVoucher}>{isUploadingVoucher ? <span className="sdq-btn-spin" aria-hidden="true" /> : <Plus size={16} strokeWidth={1.5} />}{isUploadingVoucher ? "处理中" : editing ? "保存修改" : "保存记录"}</button></div></form></>;
   }
 
   function RecordDetailPage() {
@@ -1584,7 +1588,7 @@ export default function Home() {
   // C7 宽屏策略（P1-8）：壳常驻 c7-shell-center（≥768px 居中、最大 520px）；
   // 洞察根页与经营流水子页附加 c7-expandable，允许壳内内容宽平滑过渡到 860px。
   const isWideContent = (!isSub && tab === "analysis") || subPage === "records";
-  return <div className={`mobile-shell c7-shell-center skin-${book.visualSkin}`} style={customStyle}><div className="app-frame">{renderHeader()}<main key={tab} className={`app-content${isSub ? " sub-content" : ""} tab-transition${isWideContent ? " c7-expandable" : ""}`}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} strokeWidth={1.5} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={20} strokeWidth={1.5} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}{unsavedVoucherLeave && <div className="voucher-guard-layer" role="alertdialog" aria-modal="true" aria-labelledby="voucher-guard-title" aria-describedby="voucher-guard-copy"><div className="voucher-guard-scrim" aria-hidden="true" onClick={cancelVoucherLeave} /><div className="voucher-guard-card"><CircleAlert size={20} strokeWidth={1.5} aria-hidden="true" /><h2 id="voucher-guard-title">放弃未保存的凭证？</h2><p id="voucher-guard-copy">已上传的凭证图片尚未随流水保存，离开后将不保留。服务器暂存文件将按策略自动清理。</p><div className="voucher-guard-actions"><button type="button" className="voucher-guard-stay" onClick={cancelVoucherLeave}>留在本页</button><button type="button" className="voucher-guard-leave" onClick={discardVoucherAndLeave}>放弃凭证并离开</button></div></div></div>}</div></div>;
+  return <div className={`mobile-shell c7-shell-center skin-${book.visualSkin}`} style={customStyle}><div className="app-frame">{renderHeader()}<main key={tab} className={`app-content${isSub ? " sub-content" : ""} tab-transition${isWideContent ? " c7-expandable" : ""}`}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} strokeWidth={1.5} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={20} strokeWidth={1.5} /><span>{label}</span></button>)}</nav>}{toast && <div className={`app-toast${toast.type ? ` app-toast-${toast.type}` : ""}`} role="status" aria-live="polite">{toast.type === "success" ? <CircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /> : toast.type === "warning" ? <TriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" /> : toast.type === "error" ? <CircleX size={16} strokeWidth={1.5} aria-hidden="true" /> : null}{toast.message}</div>}{unsavedVoucherLeave && <div className="voucher-guard-layer" role="alertdialog" aria-modal="true" aria-labelledby="voucher-guard-title" aria-describedby="voucher-guard-copy"><div className="voucher-guard-scrim" aria-hidden="true" onClick={cancelVoucherLeave} /><div className="voucher-guard-card"><CircleAlert size={20} strokeWidth={1.5} aria-hidden="true" /><h2 id="voucher-guard-title">放弃未保存的凭证？</h2><p id="voucher-guard-copy">已上传的凭证图片尚未随流水保存，离开后将不保留。服务器暂存文件将按策略自动清理。</p><div className="voucher-guard-actions"><button type="button" className="voucher-guard-stay" onClick={cancelVoucherLeave}>留在本页</button><button type="button" className="voucher-guard-leave" onClick={discardVoucherAndLeave}>放弃凭证并离开</button></div></div></div>}</div></div>;
 }
 
 function useCloudBookSync(book: ReturnType<typeof useCostBook>) {
