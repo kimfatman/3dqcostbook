@@ -1548,3 +1548,96 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* ============================================================================
+ * batch-15（订单模块打磨）：状态标签统一 / 售后卡温和化 / 退款空态精简
+ * 仅展示层，不改订单、退款、SKU 或成本快照逻辑；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+/* 订单列表复核状态标签：已复核=success 绿，待复核=warning 橙 */
+.prototype-orders .order-list > button > div > small i.reviewed {
+  color: var(--sdq-profit);
+  background: var(--sdq-bg-success-soft);
+}
+.prototype-orders .order-list > button > div > small i.unreviewed {
+  color: var(--sdq-cost);
+  background: var(--sdq-bg-warning-soft);
+}
+
+/* 订单列表低利润/预警标签：attention 橙色 */
+.prototype-orders .order-list > button > strong em.attention {
+  color: var(--sdq-cost);
+}
+
+/* 售后处理卡：温和 warning 浅色背景，左侧图标，非红色大卡 */
+.prototype-orders .after-sale-status {
+  background: var(--sdq-bg-warning-soft);
+  border-color: color-mix(in srgb, var(--sdq-cost) 18%, var(--sdq-border-subtle));
+}
+.prototype-orders .after-sale-status::before {
+  color: var(--sdq-cost);
+  background: var(--sdq-bg-surface);
+  border-color: color-mix(in srgb, var(--sdq-cost) 24%, var(--sdq-border-subtle));
+}
+.prototype-orders .after-sale-status b {
+  color: var(--sdq-text-primary);
+}
+.prototype-orders .after-sale-status span {
+  color: var(--sdq-text-secondary);
+}
+
+/* 订单详情售后经营口径卡：KPI 布局优化，负贡献红色 */
+.order-after-sales-card .order-after-sales-kpis div.negative b {
+  color: var(--sdq-risk);
+}
+
+/* 订单详情利润预警卡：danger 红色边框 */
+.order-profit-alert.danger {
+  background: var(--sdq-bg-danger-soft);
+  border-color: color-mix(in srgb, var(--sdq-risk) 22%, var(--sdq-border-subtle));
+}
+.order-profit-alert.danger b {
+  color: var(--sdq-risk);
+}
+
+/* 退款空态：无退款时精简显示，不占大空间 */
+.detail-breakdown .empty-state:only-child {
+  min-height: auto;
+  padding: 12px 0;
+  background: transparent;
+  border: 0;
+}
+.detail-breakdown .empty-state:only-child::before {
+  display: none;
+}
+.detail-breakdown .empty-state:only-child b {
+  color: var(--sdq-text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 订单详情 SKU 成交明细：退款按钮禁用态更清晰 */
+.detail-breakdown .bom-list button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+/* 订单批量操作工具栏：选中态高亮 */
+.order-batch-toolbar label input[type="checkbox"]:checked + span {
+  color: var(--sdq-action-primary);
+  font-weight: 700;
+}
+
+/* 订单筛选 chips：active 态使用品牌色填充 */
+.order-filter-chips button.active {
+  color: var(--sdq-text-on-brand);
+  background: var(--sdq-action-primary);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--sdq-action-primary) 20%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prototype-orders .order-list > button,
+  .prototype-orders .after-sale-status {
+    transition: none !important;
+  }
+}
