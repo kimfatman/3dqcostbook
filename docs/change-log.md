@@ -7,9 +7,9 @@
 ## 2026-09-01
 
 ### 新增
-- F052 功能登记卡片模板：`docs/feature-cards/TEMPLATE.md`，新增功能时复制填写（提交：待提交）
-- F053 AI 协作变更登记规范：`docs/ai-collaboration-change-log.md`，所有 AI 修改后必须按规范登记（提交：待提交）
-- 变更日志：本文件，按日期记录所有功能变更（提交：待提交）
+- F052 功能登记卡片模板：`docs/feature-cards/TEMPLATE.md`，新增功能时复制填写（提交：06da88f）
+- F053 AI 协作变更登记规范：`docs/ai-collaboration-change-log.md`，所有 AI 修改后必须按规范登记（提交：06da88f）
+- 变更日志：本文件，按日期记录所有功能变更（提交：06da88f）
 
 ### 技术
 - 功能层级表（IA+功能清单矩阵）：`docs/information-architecture-feature-matrix-2026-09-01.md`，梳理 5 个一级入口、50 项功能（提交：4050f08）
