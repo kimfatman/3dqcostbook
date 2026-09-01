@@ -7,6 +7,15 @@
 ## 2026-09-01
 
 ### 技术
+- 批次 14（工作台打磨，载体 Home.tsx 工作台 Tab 区域 + 工作台子组件函数 + index.css）：
+  - 经营概览卡：利润大数字 28px -0.02em、净营收/总成本 16px -0.02em；利润/净营收/总成本/结果四处数字接入滚动计数动画（AnimatedChartValue 文本插值 + .home-count-roll 容器仅 transform/opacity 淡入上移 260ms，prefers-reduced-motion 降级）；较上月环比升 success 浅绿（--sdq-bg-success-soft）/ 降 risk 浅红（--sdq-bg-danger-soft），有上期基线时展示百分比（较昨日/上周同期/上月同期）、无基线回落绝对值，title 保留原金额；右迷你趋势（profit-sculpture 角标）随环比方向变色（升 --sdq-profit / 降 --sdq-risk）；深色卡文字改为 --home-card-text: var(--sdq-text-inverse)（批次 02 的 color-mix 派生 muted/line 契约保持，视觉等效 rgba(255,255,255,.74)）；时间范围切换（今天/本周/本月）行为与数据流不变
+  - KPI 四卡统一：订单数/客单价/退款影响/利润率（新增利润率卡），统一布局 = 图标左（34px 品牌浅底圆角 8）+ 标签与趋势上行（标签 12px text-secondary、趋势右对齐 10px，升 --sdq-profit 降 --sdq-risk）+ 数字下行（20px -0.01em，金融数字字体 tabular）；卡片 12px 圆角 16px 内边距、2×2 网格、:active scale(.98) + 背景加深；删除旧三列分割条与不统一字号；既有文案契约保持（“退款影响”“今天暂无退款”）；各卡趋势基于与上一周期对比（订单数差/客单价环比%/退款笔数/利润率 pt），title 保留完整说明
+  - 销售动能图：柱状图配色改为 action-primary 渐变，趋势线改为 success（--sdq-profit）；每根柱带 data-tip（日期+金额+环比）与 aria-label，hover/focus-visible 显示迷你 Tooltip（::after attr(data-tip)，bg-elevated + 卡片阴影，仅 opacity 过渡）；入场动画沿用既有 chart-bar-in 460ms 生长 + chart-line-in 720ms 描边（no-preference 下生效，reduced-motion 降级）
+  - 快捷入口：工作台头部身份行下方 4 宫格（记一笔/订单/商品/洞察，按行业统一文案），统一图标 22px 品牌浅底 40px 盒 + 文字 12px、12px 圆角卡片、:active scale(.95) + 背景加深；收纳在 home-identity-context 内（home-redesign 仍为 6 个直系 section，无 home-quick-entry testid，不破批次 C9 轻量工作台契约）；入口复用既有 runQuickAction 导航
+  - 通知列表：静默列表替代轮播（移除未生效的 reminderIndex 自动轮播死代码，reminderIndex/activeReminder 清理）；浅色品牌底（bg-brand-soft 62% + bg-surface）、左图标右文案，分割线 1px border-subtle 左对齐 16px、最后一项无；每条可点击跳转 + 右侧 × 关闭（本次会话 dismissedReminderIds 记忆），全部关闭后显示“提醒已全部处理”空态
+  - 页面入场 stagger：home-redesign 6 个直系区块按 40/80/120/160/200ms 延迟淡入上移（仅 transform/opacity，reduced-motion 降级）
+  - 令牌纪律：批次 14 CSS 段落只消费 --sdq-* 语义令牌与 color-mix 派生，无硬编码色值、不新增令牌，五皮肤自动适配；Home.tsx 图标尺寸仍守既有三档（15/16/18/20/22/35），无新增档位
+  - 回归：新增 Home.batch14-workbench.dom.test.tsx（15 用例：概览卡滚动容器/环比语义类/字号 CSS 契约/范围切换 + KPI 四卡结构与文案契约/销售动能 data-tip 与配色/快捷入口 4 宫格导航与 CSS/通知关闭与静默列表/入场 stagger/令牌纪律），既有工作台回归零改动全绿（提交：本批次）
 - 批次 13（登录/注册页打磨，载体 SelfHostedAccessGate.tsx —— 项目无 pages/Login.tsx、Register.tsx）：
   - Hero 区：官方品牌印鉴（brandAssets.logoMark）放大为 64×64 圆角 16px（hero-mark 由 29px/10px 升级），标语收敛（移除“专属工作区/私有数据”卖点胶囊，对齐 08-30 评审 P3-2）；hero 配色保持方案 A 线上深色品牌渐变（bg-brand-soft 到 transparent 的浅色方案未采用，保证与已上线的方案 A 视觉一致）；入场动画 fade-in + slide-up（@keyframes sdq-rise-in，400ms，卡片延迟 100ms stagger，prefers-reduced-motion 降级为无动画）
   - 输入统一：登录/注册全部输入框接入批次 12 .sdq-input 类体系（44px --sdq-height-control / 圆角 12 --sdq-radius-md / focus 品牌蓝 4px 光晕 / error risk 描边+光晕 / 前缀图标 16px text-secondary），移动端字号保持 16px 防 iOS 缩放，label 统一 14px text-primary 700 + 必填红星 .sdq-required，::-webkit-autofill 自定义背景文字色，经营行业下拉 SelectTrigger 与输入框等高对齐（min-height --sdq-height-control / radius-md / focus 光晕 15%）

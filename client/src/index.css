@@ -1735,3 +1735,322 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
 
 /* ---- 9. 分割线：1px border-subtle、左对齐 16px、最后一项无（批量 03 已收口列表，此处补独立分割线类） ---- */
 .sdq-divider { display: block; height: 1px; margin: 0; background: var(--sdq-border-subtle); }
+
+/* ============================================================================
+ * batch-14 工作台打磨（P0）：经营概览 / KPI 四卡统一 / 销售动能交互 / 快捷入口 / 通知列表
+ * 仅展示层：不改账本/聚合/筛选/导出逻辑；不触碰 T1-T8/C1-C7 核心结构；
+ * 只引用 --sdq-* 语义令牌与 color-mix 派生（玻璃/装饰白叠加沿用保留策略），五皮肤自动适配。
+ * ========================================================================== */
+
+/* ---- 1. 经营概览卡：左大数字（利润 28px -0.02em / 收入成本 16px）+ 右迷你趋势 + 环比升绿降红 ---- */
+.prototype-home .operating-snapshot.home-decision {
+  --home-card-text: var(--sdq-text-inverse);
+}
+.prototype-home .home-decision-result strong > b {
+  font-size: 28px;
+  letter-spacing: -.02em;
+}
+.prototype-home .home-decision-equation label b {
+  font-size: 16px;
+  letter-spacing: -.02em;
+}
+/* 较上月环比：升 success 绿 / 降 risk 红（深色卡上用 success/danger soft 浅色保证对比） */
+.prototype-home .home-decision-metrics > div.is-positive dd { color: var(--sdq-bg-success-soft); }
+/* 右迷你趋势方向色：利润上涨 success 绿、下滑 risk 红 */
+.prototype-home .home-decision-result.is-up .profit-sculpture em {
+  border-top: 3px solid var(--sdq-profit);
+  border-right: 3px solid var(--sdq-profit);
+}
+.prototype-home .home-decision-result.is-up .profit-sculpture em::after { border-left: 9px solid var(--sdq-profit); }
+/* 范围切换数字滚动：数值容器仅 transform/opacity 过渡（reduced-motion 降级） */
+@keyframes home-value-swap {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.home-count-roll { display: inline-block; animation: home-value-swap 260ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .home-count-roll { animation: none; } }
+
+/* ---- 2. KPI 四卡统一：图标左（34px 品牌浅底）+ 数字 20px -0.01em + 趋势右，12px 圆角 16px 内边距 ---- */
+.prototype-home .home-operational-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 16px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.prototype-home .home-operational-metrics > .home-kpi-card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  row-gap: 3px;
+  align-items: center;
+  min-width: 0;
+  min-height: 74px;
+  padding: 14px;
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-md);
+  box-shadow: var(--sdq-shadow-card);
+  transition: transform 160ms var(--sdq-motion-card), background-color 160ms var(--sdq-motion-card);
+}
+.prototype-home .home-operational-metrics > .home-kpi-card:active {
+  transform: scale(.98);
+  background: var(--sdq-bg-surface-subtle);
+}
+.prototype-home .home-kpi-icon {
+  grid-row: 1 / 3;
+  grid-column: 1;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: var(--sdq-action-primary);
+  background: var(--sdq-bg-brand-soft);
+  border-radius: var(--sdq-radius-sm);
+}
+.prototype-home .home-kpi-head {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.prototype-home .home-kpi-head em {
+  overflow: hidden;
+  flex: none;
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-kpi-trend {
+  overflow: hidden;
+  min-width: 0;
+  color: var(--sdq-text-tertiary);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-kpi-trend.up { color: var(--sdq-profit); }
+.prototype-home .home-kpi-trend.down { color: var(--sdq-risk); }
+.prototype-home .home-kpi-value {
+  grid-column: 2;
+  grid-row: 2;
+  overflow: hidden;
+  color: var(--sdq-text-primary);
+  font-family: var(--sdq-financial-font);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-kpi-value small {
+  margin-left: 2px;
+  color: var(--sdq-text-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.prototype-home .home-operational-metrics > .home-kpi-card.has-refund .home-kpi-value { color: var(--sdq-risk); }
+
+/* ---- 3. 销售动能图：柱状图 action-primary、趋势线 success、hover 迷你 Tooltip（日期+金额+环比） ---- */
+.prototype-home .sales-bars i {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sdq-action-primary) 76%, var(--sdq-info)) 0%, var(--sdq-action-primary) 100%);
+}
+.prototype-home .sales-orders-plot .sales-orders-line {
+  stroke: var(--sdq-profit);
+  filter: drop-shadow(0 3px 5px color-mix(in srgb, var(--sdq-profit) 22%, transparent));
+}
+.prototype-home .sales-bars span { position: relative; }
+.prototype-home .sales-bars span::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: 6;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 9px;
+  color: var(--sdq-text-primary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  background: var(--sdq-bg-elevated);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-sm);
+  box-shadow: var(--sdq-shadow-card);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+.prototype-home .sales-bars span:hover::after,
+.prototype-home .sales-bars span:focus-visible::after { opacity: 1; }
+
+/* ---- 4. 快捷入口：工作台头部身份行下方 4 宫格，统一图标 22px + 文字 12px，:active scale(.95) ---- */
+.home-identity-context .home-quick-entry {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 14px 0;
+  padding-bottom: 0;
+}
+.home-identity-context .home-quick-entry button {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  min-height: 66px;
+  padding: 10px 4px 9px;
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--sdq-bg-surface);
+  border: 1px solid var(--sdq-border-subtle);
+  border-radius: var(--sdq-radius-md);
+  box-shadow: var(--sdq-shadow-card);
+  transition: transform 160ms var(--sdq-motion-card), background-color 160ms var(--sdq-motion-card);
+}
+.home-identity-context .home-quick-entry button:active {
+  transform: scale(.95);
+  background: var(--sdq-bg-surface-subtle);
+}
+.home-identity-context .home-quick-entry button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sdq-action-primary) 24%, transparent);
+  outline-offset: 2px;
+}
+.home-identity-context .home-quick-entry button i {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: var(--sdq-action-primary);
+  background: var(--sdq-bg-brand-soft);
+  border-radius: var(--sdq-radius-sm);
+}
+.home-identity-context .home-quick-entry button span {
+  overflow: hidden;
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---- 5. 通知列表：浅色品牌底 + 左图标右文案，可点击跳转、可 × 关闭（本次会话），分割线 1px 左对齐 16px ---- */
+.prototype-home .home-reminders {
+  padding-bottom: 6px;
+  background: color-mix(in srgb, var(--sdq-bg-brand-soft) 62%, var(--sdq-bg-surface));
+  border-color: color-mix(in srgb, var(--sdq-action-primary) 14%, var(--sdq-border-subtle));
+}
+.prototype-home .home-reminder-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+  border-bottom: 1px solid var(--sdq-border-subtle);
+}
+.prototype-home .home-reminder-item:last-child { border-bottom: 0; }
+.prototype-home .home-reminder-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
+  padding: 9px 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+}
+.prototype-home .home-reminder-row > i {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: var(--sdq-risk);
+  background: color-mix(in srgb, var(--sdq-risk) 10%, var(--sdq-bg-surface));
+  border-radius: var(--sdq-radius-sm);
+}
+.prototype-home .home-reminder-item[data-tone="attention"] .home-reminder-row > i {
+  color: var(--sdq-cost);
+  background: color-mix(in srgb, var(--sdq-cost) 12%, var(--sdq-bg-surface));
+}
+.prototype-home .home-reminder-item[data-tone="notice"] .home-reminder-row > i {
+  color: var(--sdq-profit);
+  background: color-mix(in srgb, var(--sdq-profit) 12%, var(--sdq-bg-surface));
+}
+.prototype-home .home-reminder-row > span { display: grid; gap: 3px; min-width: 0; }
+.prototype-home .home-reminder-row b {
+  overflow: hidden;
+  color: var(--sdq-text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-reminder-row em {
+  overflow: hidden;
+  color: var(--sdq-text-secondary);
+  font-size: 11px;
+  font-style: normal;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prototype-home .home-reminder-row small {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  color: var(--sdq-action-primary);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.prototype-home .home-reminder-close {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  color: var(--sdq-text-tertiary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--sdq-radius-sm);
+}
+.prototype-home .home-reminder-close:hover,
+.prototype-home .home-reminder-close:focus-visible {
+  color: var(--sdq-text-secondary);
+  background: var(--sdq-bg-surface-subtle);
+}
+.prototype-home .home-reminder-close:active { transform: scale(.9); }
+
+/* ---- 6. 页面入场 stagger：概览 → KPI → 图表 → 列表（仅 transform/opacity，reduced-motion 降级） ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .prototype-home.home-redesign > * {
+    animation: home-stagger-in 320ms var(--chart-ease) both;
+  }
+  .prototype-home.home-redesign > *:nth-child(2) { animation-delay: 40ms; }
+  .prototype-home.home-redesign > *:nth-child(3) { animation-delay: 80ms; }
+  .prototype-home.home-redesign > *:nth-child(4) { animation-delay: 120ms; }
+  .prototype-home.home-redesign > *:nth-child(5) { animation-delay: 160ms; }
+  .prototype-home.home-redesign > *:nth-child(6) { animation-delay: 200ms; }
+}
+@keyframes home-stagger-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prototype-home.home-redesign > * { animation: none !important; }
+  .prototype-home .home-operational-metrics > .home-kpi-card,
+  .home-identity-context .home-quick-entry button,
+  .prototype-home .sales-bars span::after,
+  .prototype-home .home-reminder-close { transition: none !important; }
+}
