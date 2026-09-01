@@ -1427,3 +1427,22 @@ button.bg-primary { border-radius: var(--sdq-radius-sm); }
 .mobile-shell * {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
+
+/* ===== batch-01 C9 导航重构：Tab 切换过渡 + 底部导航反馈 ===== */
+@keyframes tab-content-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.app-content.tab-transition {
+  animation: tab-content-in 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.tabbar button {
+  transition: transform 100ms ease-out;
+}
+.tabbar button:active {
+  transform: scale(0.92);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-content.tab-transition { animation: none; }
+  .tabbar button:active { transform: none; }
+}

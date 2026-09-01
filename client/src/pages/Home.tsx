@@ -445,6 +445,9 @@ export default function Home() {
   const [tab, setTab] = useState<TabId>(initialTab);
   const [subPage, setSubPage] = useState<SubPage>(initialSubPage);
   const [pageStack, setPageStack] = useState<NavigationState[]>([]);
+  // batch-01 C9：每 Tab 独立子页面栈（内存态，URL 仍为唯一真相源）
+  const [stashedStacks, setStashedStacks] = useState<Partial<Record<TabId, { stack: NavigationState[]; subPage: SubPage }>>>({});
+  const tabSwitchGuardRef = useRef(0);
   const historyNavigationMode = useRef<"push" | "replace" | "pop">("push");
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryId>(book.activeIndustryId);
   const [recordFilter, setRecordFilter] = useState<RecordFilter>(initialRecordFilter);
@@ -727,7 +730,16 @@ export default function Home() {
   function navigateToSubPage(page: SubPage) { setPageStack((current) => [...current, { tab, subPage, recordContext: { filter: recordFilter, month: recordMonth, query: recordSearch, categoryKey: recordCategoryFilter, skuId: recordSkuFilter } }]); setSubPage(page); }
   function replaceSubPage(page: SubPage) { historyNavigationMode.current = "replace"; setPageStack((current) => current.slice(0, -1)); setSubPage(page); }
   function openRootTab(nextTab: TabId) { if (guardUnsavedVoucher(() => switchRootTab(nextTab))) return; switchRootTab(nextTab); }
-  function switchRootTab(nextTab: TabId) { setPageStack([]); setSubPage(null); setTab(nextTab); }
+  function switchRootTab(nextTab: TabId) {
+    const now = Date.now();
+    if (nextTab === tab && Date.now() - tabSwitchGuardRef.current < 200) return; // batch-01：过渡期间 200ms 防抖
+    tabSwitchGuardRef.current = now;
+    setStashedStacks((current) => ({ ...current, [tab]: { stack: pageStack, subPage } }));
+    const restored = stashedStacks[nextTab];
+    setPageStack(restored?.stack ?? []);
+    setSubPage(restored?.subPage ?? null);
+    setTab(nextTab);
+  }
   function openOrdersContext(filter: "all" | "low_profit" | "refund" = "all") {
     setOrderStatusFilter(filter);
     setOrderSearchOpen(false);
@@ -1565,7 +1577,7 @@ export default function Home() {
   // C7 宽屏策略（P1-8）：壳常驻 c7-shell-center（≥768px 居中、最大 520px）；
   // 洞察根页与经营流水子页附加 c7-expandable，允许壳内内容宽平滑过渡到 860px。
   const isWideContent = (!isSub && tab === "analysis") || subPage === "records";
-  return <div className={`mobile-shell c7-shell-center skin-${book.visualSkin}`} style={customStyle}><div className="app-frame">{renderHeader()}<main className={`${isSub ? "app-content sub-content" : "app-content"}${isWideContent ? " c7-expandable" : ""}`}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}{unsavedVoucherLeave && <div className="voucher-guard-layer" role="alertdialog" aria-modal="true" aria-labelledby="voucher-guard-title" aria-describedby="voucher-guard-copy"><div className="voucher-guard-scrim" aria-hidden="true" onClick={cancelVoucherLeave} /><div className="voucher-guard-card"><CircleAlert size={22} aria-hidden="true" /><h2 id="voucher-guard-title">放弃未保存的凭证？</h2><p id="voucher-guard-copy">已上传的凭证图片尚未随流水保存，离开后将不保留。服务器暂存文件将按策略自动清理。</p><div className="voucher-guard-actions"><button type="button" className="voucher-guard-stay" onClick={cancelVoucherLeave}>留在本页</button><button type="button" className="voucher-guard-leave" onClick={discardVoucherAndLeave}>放弃凭证并离开</button></div></div></div>}</div></div>;
+  return <div className={`mobile-shell c7-shell-center skin-${book.visualSkin}`} style={customStyle}><div className="app-frame">{renderHeader()}<main key={tab} className={`app-content${isSub ? " sub-content" : ""} tab-transition${isWideContent ? " c7-expandable" : ""}`}>{renderContent()}</main>{showQuickRecord && <button className="global-record-fab" onClick={openNewRecord} aria-label="新增记一笔"><Plus size={20} aria-hidden="true" /><span>记一笔</span></button>}{!isSub && <nav className="tabbar" aria-label="主导航">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => { openRootTab(id); setRecordSearch(""); }}><Icon size={21} /><span>{label}</span></button>)}</nav>}{toast && <div className="app-toast" role="status" aria-live="polite">{toast}</div>}{unsavedVoucherLeave && <div className="voucher-guard-layer" role="alertdialog" aria-modal="true" aria-labelledby="voucher-guard-title" aria-describedby="voucher-guard-copy"><div className="voucher-guard-scrim" aria-hidden="true" onClick={cancelVoucherLeave} /><div className="voucher-guard-card"><CircleAlert size={22} aria-hidden="true" /><h2 id="voucher-guard-title">放弃未保存的凭证？</h2><p id="voucher-guard-copy">已上传的凭证图片尚未随流水保存，离开后将不保留。服务器暂存文件将按策略自动清理。</p><div className="voucher-guard-actions"><button type="button" className="voucher-guard-stay" onClick={cancelVoucherLeave}>留在本页</button><button type="button" className="voucher-guard-leave" onClick={discardVoucherAndLeave}>放弃凭证并离开</button></div></div></div>}</div></div>;
 }
 
 function useCloudBookSync(book: ReturnType<typeof useCostBook>) {

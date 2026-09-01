@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calcCard, normalizeState, removeIndirectCostPoolState, seedPeriodFactor, setIndirectCostPoolAllocationModeState, updateIndirectCostPoolState, type CostCard } from "./cost-book";
-import { businessPeriod } from "./business-date";
+import { businessDate, businessPeriod } from "./business-date";
 import type { IndirectCostPool } from "./indirect-costs";
 
 const card: CostCard = {
@@ -65,7 +65,8 @@ describe("历史本地状态兼容", () => {
   });
 
   it("会为历史演示状态中被持久化为 null 的当前账期金额恢复可推导的种子金额", () => {
-    const state = normalizeState({ schemaVersion: 3, workspace: { id: "demo", activeIndustryId: "ecommerce", dataMode: "demo" }, entries: [{ id: "seed-sale", workspaceId: "demo", industryId: "ecommerce", occurredAt: "2026-08-14", eventType: "sale", ledgerRole: "revenue", cashDirection: "inflow", amountFen: null, categoryKey: "sales", merchant: "蓝鲸电商店日结", note: "演示销售日结", status: "posted", hasAttachment: true, createdAt: "2026-08-14T12:00:00.000Z", updatedAt: "2026-08-14T12:00:00.000Z" }] });
+    const occurredAt = businessDate();
+    const state = normalizeState({ schemaVersion: 3, workspace: { id: "demo", activeIndustryId: "ecommerce", dataMode: "demo" }, entries: [{ id: "seed-sale", workspaceId: "demo", industryId: "ecommerce", occurredAt, eventType: "sale", ledgerRole: "revenue", cashDirection: "inflow", amountFen: null, categoryKey: "sales", merchant: "蓝鲸电商店日结", note: "演示销售日结", status: "posted", hasAttachment: true, createdAt: `${occurredAt}T12:00:00.000Z`, updatedAt: `${occurredAt}T12:00:00.000Z` }] });
     expect(state.entries[0]?.amountFen).toBeGreaterThan(0);
   });
 

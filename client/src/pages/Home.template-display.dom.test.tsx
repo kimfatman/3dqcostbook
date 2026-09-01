@@ -4,6 +4,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { businessDate } from "@/lib/business-date";
 import Home from "./Home";
 
 const trpcMocks = vi.hoisted(() => ({
@@ -163,9 +164,10 @@ describe("首页第一期经营总览", () => {
 
     const decisionCard = home.querySelector(".operating-snapshot.home-decision") as HTMLElement;
     expect(decisionCard).toBeTruthy();
-    expect(decisionCard.classList.contains("is-empty")).toBe(true);
-    expect(within(decisionCard).getByText("今天尚无已入账数据")).toBeTruthy();
-    expect(within(decisionCard).getByText("从一笔流水或订单开始")).toBeTruthy();
+    // 演示种子把当前账期演示分录锚定到今天（月初钳制到今天），因此“今天”主卡默认展示演示数据而非空态；
+    // 空态引导由本 describe 新增的“当天无任何已入账数据”用例单独覆盖。
+    expect(decisionCard.classList.contains("is-empty")).toBe(false);
+    expect(within(decisionCard).getByText("今天经营结果")).toBeTruthy();
     expect(within(decisionCard).getByRole("group", { name: "经营概览时间范围" })).toBeTruthy();
 
     const metricStrip = screen.getByTestId("home-operational-metrics");
@@ -176,13 +178,13 @@ describe("首页第一期经营总览", () => {
 
     const rangeSwitcher = screen.getByRole("group", { name: "经营概览时间范围" });
     expect(within(rangeSwitcher).getByRole("button", { name: "今天" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByText("今天尚无已入账数据")).toBeTruthy();
+    expect(screen.getByText("较昨日")).toBeTruthy();
     await user.click(within(rangeSwitcher).getByRole("button", { name: "本月" }));
     expect(within(rangeSwitcher).getByRole("button", { name: "本月" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText("较上月同期")).toBeTruthy();
     await user.click(within(rangeSwitcher).getByRole("button", { name: "本周" }));
     expect(within(rangeSwitcher).getByRole("button", { name: "本周" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByText("本周尚无已入账数据")).toBeTruthy();
+    expect(screen.getByText("较上周同期")).toBeTruthy();
     await user.click(within(rangeSwitcher).getByRole("button", { name: "今天" }));
 
     expect(screen.queryByTestId("home-quick-entry")).toBeNull();
@@ -197,7 +199,31 @@ describe("首页第一期经营总览", () => {
     expect(screen.getAllByText("消息中心").length).toBeGreaterThan(0);
   });
 
+  it("当天无任何已入账数据时，工作台主卡呈现可行动的空态引导", async () => {
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    const today = businessDate();
+    saved.entries = saved.entries.filter((entry: { industryId: string; occurredAt: string }) => !(entry.industryId === "ecommerce" && entry.occurredAt.startsWith(today)));
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
+    const user = userEvent.setup();
+    renderHome();
+    const decisionCard = document.querySelector(".operating-snapshot.home-decision") as HTMLElement;
+    expect(decisionCard.classList.contains("is-empty")).toBe(true);
+    expect(within(decisionCard).getByText("今天尚无已入账数据")).toBeTruthy();
+    expect(within(decisionCard).getByText("从一笔流水或订单开始")).toBeTruthy();
+  });
+
   it("当天只有成本时显式显示亏损与不可计算的净营收比率，不误显示为盈利或零比率", async () => {
+    // 演示种子在当前账期锚定今天；先清空今日演示分录，保证只验证“当天只有成本”的亏损口径
+    const initial = renderHome();
+    initial.unmount();
+    const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
+    const today = businessDate();
+    saved.entries = saved.entries.filter((entry: { industryId: string; occurredAt: string }) => !(entry.industryId === "ecommerce" && entry.occurredAt.startsWith(today)));
+    window.localStorage.setItem("sqd-mobile-book-v3", JSON.stringify(saved));
+
     const user = userEvent.setup();
     renderHome();
 

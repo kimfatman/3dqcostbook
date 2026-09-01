@@ -37,7 +37,14 @@ const V2_STORAGE_KEY = "sqd-mobile-book-v2";
 const LEGACY_STORAGE_KEY = "sqd-mobile-book-v1";
 const now = () => new Date().toISOString();
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-const periods = Array.from(new Set(["2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", businessPeriod()])).sort();
+/** 演示账期窗口：以当前业务月为终点、连续 7 个月，保证“上月”基线始终存在（不再硬编码固定月份，避免跨月后“上月”无数据）。 */
+const seedPeriodCount = 7;
+export const seedPeriods = (): string[] => Array.from({ length: seedPeriodCount }, (_, index) => {
+  const [year, month] = businessPeriod().split("-").map(Number);
+  const point = new Date(Date.UTC(year, month - 1 - (seedPeriodCount - 1 - index), 1));
+  return `${point.getUTCFullYear()}-${String(point.getUTCMonth() + 1).padStart(2, "0")}`;
+});
+const periods = seedPeriods();
 const defaultChannelPricing = (): Record<OrderChannel, ChannelPricingSnapshot> => ({ platform: { commissionRatePct: 0, fulfillmentCost: 0, targetContributionMarginPct: 40 }, live: { commissionRatePct: 0, fulfillmentCost: 0, targetContributionMarginPct: 40 }, store: { commissionRatePct: 0, fulfillmentCost: 0, targetContributionMarginPct: 40 }, private: { commissionRatePct: 0, fulfillmentCost: 0, targetContributionMarginPct: 40 }, other: { commissionRatePct: 0, fulfillmentCost: 0, targetContributionMarginPct: 40 } });
 const defaultSalesTargets = (): Record<IndustryId, number> => Object.fromEntries((Object.keys(industryTemplates) as IndustryId[]).map((id) => [id, 0])) as Record<IndustryId, number>;
 const defaultHealthSettings = (): Record<IndustryId, HealthSettings> => Object.fromEntries((Object.keys(industryTemplates) as IndustryId[]).map((id) => [id, { targetOperatingMarginPct: 0, refundTolerancePct: 0 }])) as Record<IndustryId, HealthSettings>;
@@ -61,7 +68,8 @@ const seedCards: Record<IndustryId, Omit<CostCard, "id" | "workspaceId" | "indus
 
 function createCategories(industryId: IndustryId) { return industryTemplates[industryId].categories.map((category) => ({ ...category, id: `${industryId}-${category.key}`, workspaceId: WORKSPACE_ID, industryId })); }
 function makeEntry(industryId: IndustryId, input: Omit<LedgerEntry, "id" | "workspaceId" | "industryId" | "templateVersion" | "createdAt" | "updatedAt">): LedgerEntry { const time = `${input.occurredAt}T12:00:00.000Z`; return { ...input, id: uid("seed"), workspaceId: WORKSPACE_ID, industryId, templateVersion: 2, createdAt: time, updatedAt: time }; }
-function createSeedEntries(industryId: IndustryId) { const template = industryTemplates[industryId]; return periods.flatMap((period, periodIndex) => { const factor = seedPeriodFactor(periodIndex); const date = `${period}-14`; const sale = makeEntry(industryId, { occurredAt: date, eventType: "sale", ledgerRole: "revenue", cashDirection: "inflow", amountFen: toFen(Math.round(sales[industryId] * factor)), categoryKey: "sales", merchant: `${template.storeName}日结`, note: "演示销售日结", status: "posted", hasAttachment: true }); const expenses = template.categories.map((category, index) => makeEntry(industryId, { occurredAt: date, eventType: "expense", ledgerRole: category.ledgerRole === "cogs" ? "cogs" : "opex", cashDirection: "outflow", amountFen: toFen(Math.round((amounts[industryId][index] || 0) * factor)), categoryKey: category.key, merchant: `${category.label}结算`, note: category.hint, status: "posted", hasAttachment: index % 2 === 0 })); return [sale, ...expenses]; }); }
+/** 演示账期种子分录：当前账期锚定今天并钳制在当前月内（月初只有今天可用），保证首页“本月”区间始终有演示数据。 */
+function createSeedEntries(industryId: IndustryId) { const template = industryTemplates[industryId]; const currentPeriodKey = businessPeriod(); const today = businessDate(); return periods.flatMap((period, periodIndex) => { const factor = seedPeriodFactor(periodIndex); const date = period === currentPeriodKey ? today : `${period}-14`; const sale = makeEntry(industryId, { occurredAt: date, eventType: "sale", ledgerRole: "revenue", cashDirection: "inflow", amountFen: toFen(Math.round(sales[industryId] * factor)), categoryKey: "sales", merchant: `${template.storeName}日结`, note: "演示销售日结", status: "posted", hasAttachment: true }); const expenses = template.categories.map((category, index) => makeEntry(industryId, { occurredAt: date, eventType: "expense", ledgerRole: category.ledgerRole === "cogs" ? "cogs" : "opex", cashDirection: "outflow", amountFen: toFen(Math.round((amounts[industryId][index] || 0) * factor)), categoryKey: category.key, merchant: `${category.label}结算`, note: category.hint, status: "posted", hasAttachment: index % 2 === 0 })); return [sale, ...expenses]; }); }
 function createCards(industryId: IndustryId) { return seedCards[industryId].map((card, index) => ({ ...card, id: `${industryId}-card-${index + 1}`, workspaceId: WORKSPACE_ID, industryId })); }
 function createSuppliers(industryId: IndustryId): Supplier[] { return industryTemplates[industryId].categories.slice(0, 4).map((category, index) => ({ id: `${industryId}-supplier-${index + 1}`, workspaceId: WORKSPACE_ID, industryIds: [industryId], name: `${category.label}${index === 0 ? "供应商" : "服务商"}`, contact: `联系人 ${index + 1}`, categoryKey: category.key, spend: Math.round((amounts[industryId][index] || 1000) * .65), orders: 3 + index * 4, trend: index % 2 === 0 ? "up" : "down" })); }
 function createSkus(industryId: IndustryId): Sku[] { return createCards(industryId).map((card, index) => { const value = calcCard(card); return { id: `${industryId}-sku-${index + 1}`, workspaceId: WORKSPACE_ID, industryId, cardId: card.id, code: `${industryId.slice(0, 3).toUpperCase()}-${String(index + 1).padStart(3, "0")}`, name: card.name, unit: card.unit, unitPriceFen: toFen(card.salePrice), unitCostFen: toFen(value.cost), active: true }; }); }
@@ -71,11 +79,25 @@ function createEmptyState(): BookState { const ids = Object.keys(industryTemplat
 function migrateLegacy(legacy: any): BookState { const state = createSeedState(); const migratedEntries: LedgerEntry[] = (legacy.records || []).map((record: any) => { const eventType: LedgerEventType = record.type === "refund" ? "customer_refund" : record.type === "income" ? "income" : "expense"; const category = (legacy.categories || []).find((item: any) => item.key === record.categoryKey); const ledgerRole: LedgerRole = eventType === "income" ? "other_income" : eventType === "customer_refund" ? "revenue" : category?.ledgerRole || roleFor(record.categoryKey); const cashDirection: CashDirection = eventType === "income" ? "inflow" : "outflow"; return { id: record.id || uid("legacy"), workspaceId: record.workspaceId || WORKSPACE_ID, industryId: record.industryId, templateVersion: 1, occurredAt: record.date, eventType, ledgerRole, cashDirection, amountFen: toFen(Number(record.amount || 0)), categoryKey: record.categoryKey, merchant: record.merchant || "历史记录", note: record.note || "", status: record.status === "pending" ? "draft" : "posted", hasAttachment: Boolean(record.hasAttachment), createdAt: record.createdAt || now(), updatedAt: now() }; }); const budgets = Object.fromEntries((Object.keys(industryTemplates) as IndustryId[]).map((id) => [id, { amountFen: toFen(legacy.workspace?.budgetByIndustry?.[id] || industryTemplates[id].budget), basis: "operating_cost" as BudgetBasis }])) as Record<IndustryId, Budget>; return { ...state, workspace: { ...state.workspace, activeIndustryId: legacy.workspace?.activeIndustryId || "ecommerce", budgets, dataMode: "legacy_review" }, categories: legacy.categories?.map((category: any) => ({ ...category, ledgerRole: category.ledgerRole || roleFor(category.key) })) || state.categories, entries: migratedEntries, cards: legacy.cards || state.cards, suppliers: legacy.suppliers || state.suppliers, switchLog: legacy.switchLog || [] }; }
 function migrateV2(legacy: any): BookState { const ids = Object.keys(industryTemplates) as IndustryId[]; return normalizeState({ ...legacy, schemaVersion: 6, skus: legacy.skus?.length ? legacy.skus : ids.flatMap(createSkus), orders: legacy.orders || [], refunds: legacy.refunds || [], indirectCostPools: legacy.indirectCostPools || [] }); }
 function recoverSkusForCards(cards: CostCard[], skus: Sku[]): Sku[] { const linkedCardIds = new Set(skus.map((sku) => sku.cardId).filter(Boolean)); const recovered = cards.filter((card) => !linkedCardIds.has(card.id)).map((card, index) => { const cost = calcCard(card).cost; return { id: `recovered-sku-${card.id}`, workspaceId: card.workspaceId, industryId: card.industryId, cardId: card.id, code: `REC-${String(index + 1).padStart(3, "0")}`, name: card.name, unit: card.unit, unitPriceFen: toFen(card.salePrice), unitCostFen: toFen(cost), active: true }; }); return recovered.length ? [...skus, ...recovered] : skus; }
+/** 两个 YYYY-MM 账期之间的月数差（to 晚于 from 为正）。 */
+const monthDistance = (from: string, to: string) => {
+  const [fromYear, fromMonth] = from.split("-").map(Number);
+  const [toYear, toMonth] = to.split("-").map(Number);
+  return (toYear - fromYear) * 12 + (toMonth - fromMonth);
+};
+/** 演示种子期序：窗口内直接定位；窗口外按与当前账期的月距推导（更早→最早系数，未来→最新系数），避免跨月后旧演示分录无法恢复金额。 */
+const demoSeedPeriodIndex = (period: string): number => {
+  const index = periods.indexOf(period);
+  if (index >= 0) return index;
+  if (!/^\d{4}-\d{2}$/.test(period)) return -1;
+  const distance = monthDistance(period, businessPeriod());
+  return Math.min(periods.length - 1, Math.max(0, periods.length - 1 - distance));
+};
 function repairDemoEntryAmount(entry: any) {
   if (Number.isFinite(entry?.amountFen)) return entry;
   const industryId = entry?.industryId as IndustryId;
   const template = industryTemplates[industryId];
-  const periodIndex = periods.indexOf(String(entry?.occurredAt || "").slice(0, 7));
+  const periodIndex = demoSeedPeriodIndex(String(entry?.occurredAt || "").slice(0, 7));
   if (!template || periodIndex < 0) return { ...entry, amountFen: 0 };
   const factor = seedPeriodFactor(periodIndex);
   if (entry.eventType === "sale" && entry.categoryKey === "sales") return { ...entry, amountFen: toFen(Math.round(sales[industryId] * factor)) };
