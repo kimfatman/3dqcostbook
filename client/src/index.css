@@ -3092,3 +3092,318 @@ textarea:focus-visible,
   background: color-mix(in srgb, var(--sdq-action-primary) 22%, transparent);
   color: var(--sdq-text-primary);
 }
+
+/* ============================================================================
+ * batch-22（Logo区重构+融入过渡）：毛玻璃导航 / 渐变遮罩 / 问候缓冲 / 品牌细线 / stagger入场
+ * 仅展示层，不改导航逻辑或路由；只引用 --sdq-* 语义令牌。
+ * ========================================================================== */
+
+.app-header,
+.mobile-shell .app-header,
+.ledger-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: color-mix(in srgb, var(--sdq-bg-surface) 78%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid color-mix(in srgb, var(--sdq-border-subtle) 60%, transparent);
+  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+.app-header.scrolled,
+.mobile-shell .app-header.scrolled {
+  background: color-mix(in srgb, var(--sdq-bg-surface) 92%, transparent);
+  box-shadow: 0 4px 20px rgba(11,24,54,.08);
+}
+
+.brand-logo,
+.app-logo,
+.home-brand-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-logo .logo-mark,
+.app-logo .logo-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  background: linear-gradient(145deg, var(--sdq-action-primary), var(--sdq-bg-brand));
+  border-radius: 10px;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sdq-action-primary) 28%, transparent);
+  color: var(--sdq-text-on-brand);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -.02em;
+}
+.brand-logo .logo-text b,
+.app-logo .logo-text b {
+  color: var(--sdq-text-primary);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+.brand-logo .logo-text span,
+.app-logo .logo-text span {
+  color: var(--sdq-text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
+}
+
+.home-greeting,
+.ledger-greeting {
+  display: grid;
+  gap: 4px;
+  padding: 8px 0 16px;
+}
+.home-greeting .greeting-time,
+.ledger-greeting .greeting-time {
+  color: var(--sdq-text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.home-greeting .greeting-name,
+.ledger-greeting .greeting-name {
+  color: var(--sdq-text-primary);
+  font-size: clamp(20px, 5.5vw, 26px);
+  font-weight: 800;
+  letter-spacing: -.045em;
+  line-height: 1.2;
+}
+.home-greeting .greeting-sub,
+.ledger-greeting .greeting-sub {
+  color: var(--sdq-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.brand-divider,
+.logo-divider {
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--sdq-action-primary) 30%, transparent) 20%,
+    color-mix(in srgb, var(--sdq-action-primary) 50%, transparent) 50%,
+    color-mix(in srgb, var(--sdq-action-primary) 30%, transparent) 80%,
+    transparent 100%
+  );
+  border: 0;
+  margin: 0;
+}
+
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.home-greeting { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 0ms both; }
+.home-decision-card { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 60ms both; }
+.home-chart-card { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 120ms both; }
+.home-quick-actions { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 180ms both; }
+.home-recent-list { animation: stagger-in 320ms cubic-bezier(0.23, 1, 0.32, 1) 240ms both; }
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.app-content > section,
+.mobile-shell .app-content > section {
+  animation: page-enter 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+
+/* ============================================================================
+ * batch-23（全局过渡与动效优化）：5级时长 / 5级缓动 / 页面切换 / 卡片hover / 按钮active / 模态框
+ * 仅展示层，不改任何业务逻辑；建立全局动效令牌体系。
+ * ========================================================================== */
+
+button,
+.fixed-primary,
+.floating-add,
+.global-record-fab,
+.list-primary,
+.form-save,
+.empty-action,
+.detail-actions button,
+.profile-card button,
+.order-filter-chips button,
+.product-tabs button,
+.segment-control button,
+.record-filter > button {
+  transition:
+    background 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 100ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 120ms ease;
+}
+button:active:not(:disabled),
+.fixed-primary:active:not(:disabled),
+.floating-add:active:not(:disabled),
+.global-record-fab:active:not(:disabled),
+.list-primary:active:not(:disabled),
+.form-save:active:not(:disabled),
+.empty-action:active:not(:disabled),
+.detail-actions button:active:not(:disabled) {
+  transform: scale(.97);
+}
+
+.ledger-surface,
+.home-chart-card,
+.analysis-waterfall-card,
+.analysis-trend-card,
+.analysis-stack-card,
+.analysis-cashflow-card,
+.analysis-health-card,
+.profile-card,
+.profile-session,
+.after-sale-status,
+.cost-formula,
+.cost-snapshot-compare {
+  transition:
+    box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.ledger-surface:hover,
+.home-chart-card:hover,
+.analysis-waterfall-card:hover,
+.analysis-trend-card:hover,
+.analysis-stack-card:hover,
+.analysis-cashflow-card:hover,
+.analysis-health-card:hover {
+  box-shadow: 0 10px 28px rgba(11,24,54,.1);
+  transform: translateY(-2px);
+}
+
+.record-row,
+.supplier-list > div,
+.category-manage-list > div,
+.report-list > button,
+.cost-card-list > button,
+.analysis-cost-list > button,
+.analysis-supplier-list > button,
+.analysis-profit-sku-list > button,
+.order-list > button,
+.product-cost-list > button {
+  transition:
+    background 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 100ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.record-row:active,
+.supplier-list > div:active,
+.report-list > button:active,
+.cost-card-list > button:active,
+.analysis-cost-list > button:active,
+.order-list > button:active,
+.product-cost-list > button:active {
+  background: var(--sdq-bg-brand-soft);
+  transform: scale(.99);
+}
+
+input,
+select,
+textarea,
+.search-field input,
+.amount-input input,
+.record-form input,
+.record-form select,
+.record-form textarea,
+.secondary-form input,
+.secondary-form select,
+.profile-settings-form input,
+.health-settings-form input,
+.pricing-inputs input,
+.budget-form-card input,
+.archive-target-form input {
+  transition:
+    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 120ms ease;
+}
+input:focus,
+select:focus,
+textarea:focus,
+.search-field input:focus,
+.amount-input input:focus,
+.record-form input:focus,
+.record-form select:focus,
+.record-form textarea:focus,
+.secondary-form input:focus,
+.secondary-form select:focus,
+.profile-settings-form input:focus,
+.health-settings-form input:focus,
+.pricing-inputs input:focus,
+.budget-form-card input:focus,
+.archive-target-form input:focus {
+  border-color: var(--sdq-action-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sdq-action-primary) 14%, transparent);
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-overlay,
+.drawer-overlay,
+.sheet-overlay {
+  animation: overlay-in 200ms ease both;
+}
+.modal-content,
+.drawer-content,
+.sheet-content {
+  animation: modal-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-16px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast,
+.notification,
+.snackbar {
+  animation: toast-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+.progress-bar.indeterminate::after,
+.loading-bar::after {
+  animation: progress-indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes value-flash {
+  0% { background: color-mix(in srgb, var(--sdq-action-primary) 18%, transparent); }
+  100% { background: transparent; }
+}
+.value-changed,
+.kpi-flash {
+  animation: value-flash 600ms ease-out;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .app-header,
+  .mobile-shell .app-header {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
