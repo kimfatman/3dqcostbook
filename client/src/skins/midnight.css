@@ -32,6 +32,9 @@
   --sdq-info: var(--sdq-info-500);
   --sdq-icon-default: var(--sdq-neutral-400);
   --sdq-icon-disabled: var(--sdq-neutral-600);
+  /* batch-02 C11：深色信息卡文字令牌（text-inverse 系，本地派生保证深色皮肤下反色）。 */
+  --sdq-text-inverse-secondary: color-mix(in srgb, var(--sdq-text-on-brand) 72%, transparent);
+  --sdq-text-inverse-tertiary: color-mix(in srgb, var(--sdq-text-on-brand) 55%, transparent);
   /* ---- 非颜色令牌（批次10 补全，与 soft 一致） ---- */
   --sdq-radius-xs: 6px;
   --sdq-radius-sm: 8px;

@@ -483,14 +483,14 @@
 .order-after-sales-rows em { color: var(--sdq-text-secondary); font-size: 10px; font-style: normal; }
 .order-after-sales-rows b { color: var(--sdq-text-primary); font-family: var(--financial-numeric-font); font-size: 10px; font-variant-numeric: tabular-nums; letter-spacing: -.04em; }
 .order-after-sales-card > p { margin: 10px 0 0; color: var(--sdq-text-secondary); font-size: 9px; line-height: 1.55; }
-.skin-deep .order-after-sales-card { color: var(--sdq-bg-brand-soft); background: rgba(11,35,61,.92); border-color: rgba(162,216,255,.18); }
+.skin-deep .order-after-sales-card { color: var(--sdq-text-primary); background: var(--sdq-bg-surface); border-color: rgba(162,216,255,.18); }
 .skin-deep .order-after-sales-head, .skin-deep .order-after-sales-kpis { border-color: rgba(162,216,255,.2); }
-.skin-deep .order-after-sales-head span, .skin-deep .order-after-sales-kpis b, .skin-deep .order-after-sales-rows b, .skin-deep .order-list > button .order-after-sales-metric > b { color: var(--sdq-bg-brand-soft); }
-.skin-deep .order-after-sales-head small, .skin-deep .order-after-sales-kpis span, .skin-deep .order-after-sales-rows em, .skin-deep .order-after-sales-card > p, .skin-deep .order-list > button .order-after-sales-metric > em, .skin-deep .order-list > button .order-after-sales-metric > small { color: var(--sdq-text-tertiary); }
+.skin-deep .order-after-sales-head span, .skin-deep .order-after-sales-kpis b, .skin-deep .order-after-sales-rows b, .skin-deep .order-list > button .order-after-sales-metric > b { color: var(--sdq-text-primary); }
+.skin-deep .order-after-sales-head small, .skin-deep .order-after-sales-kpis span, .skin-deep .order-after-sales-rows em, .skin-deep .order-after-sales-card > p, .skin-deep .order-list > button .order-after-sales-metric > em, .skin-deep .order-list > button .order-after-sales-metric > small { color: var(--sdq-text-secondary); }
 .skin-deep .order-after-sales-kpis > div + div, .skin-deep .order-after-sales-rows > span { border-color: rgba(162,216,255,.14); }
 
 /* 全局共享页面模块：订单、商品和分析页采用同一标题层级、白底承载面与数字列。 */
-.ledger-page-shell { --ledger-ink: var(--sdq-text-primary); --ledger-muted: var(--sdq-text-secondary); --ledger-line: rgba(18,58,95,.13); --ledger-grid: color-mix(in srgb, var(--sdq-action-primary) 4%, transparent); display: grid; gap: 12px; padding-bottom: 96px; }
+.ledger-page-shell { --ledger-ink: var(--sdq-text-primary); --ledger-muted: var(--sdq-text-secondary); --ledger-line: rgba(18,58,95,.13); --ledger-grid: color-mix(in srgb, var(--sdq-action-primary) 4%, transparent); display: grid; gap: 12px; padding-bottom: var(--sdq-space-fab-clearance); }
 .ledger-page-heading { position: relative; display: grid; gap: 4px; min-height: 42px; padding: 3px 0 11px; overflow: hidden; background: transparent; border-bottom: 1px solid var(--ledger-line); }
 .ledger-page-heading::before, .ledger-page-heading::after { display: none; }
 .ledger-page-heading h1 { margin: 0; color: var(--ledger-ink); font-size: 20px; letter-spacing: -.06em; }

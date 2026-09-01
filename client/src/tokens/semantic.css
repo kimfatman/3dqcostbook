@@ -35,6 +35,13 @@
   --sdq-info: var(--sdq-info-500);                 /* 原 #5acbfa（同值） */
   --sdq-icon-default: var(--sdq-neutral-500);      /* 批次10 调深至非文本 3:1 */
   --sdq-icon-disabled: var(--sdq-neutral-200);     /* 原 #c9cfd9 */
+  /* batch-02 C11：深色信息卡文字令牌（text-inverse 系）。主文字直接用 --sdq-text-on-brand（随皮肤反色），
+   * 次级/三级由它经 color-mix 派生（未覆盖时自动适配各皮肤），不改变既有语义令牌定义。 */
+  --sdq-text-inverse-secondary: color-mix(in srgb, var(--sdq-text-on-brand) 72%, transparent);
+  --sdq-text-inverse-tertiary: color-mix(in srgb, var(--sdq-text-on-brand) 55%, transparent);
+  --sdq-line-inverse: color-mix(in srgb, var(--sdq-text-on-brand) 24%, transparent);
+  /* FAB/固定主按钮避让：由导航+间距令牌派生（≥80px + 安全区），带悬浮按钮的页面底部统一消费。 */
+  --sdq-space-fab-clearance: calc(var(--sdq-height-nav) + var(--sdq-space-section) + var(--sdq-space-card));
   --sdq-radius-xs: 6px;
   --sdq-radius-sm: 8px;
   --sdq-radius-md: 12px;

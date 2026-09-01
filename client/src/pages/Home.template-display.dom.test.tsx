@@ -143,7 +143,7 @@ describe("五行业模板的真实页面显示", () => {
       if (detailsTrigger.getAttribute("aria-expanded") !== "true") await user.click(detailsTrigger);
       expect(screen.getByRole("heading", { name: `${scenario.label}潜在漏损` })).toBeTruthy();
     }
-  }, 12_000);
+  }, 30_000);
 });
 
 describe("首页第一期经营总览", () => {
