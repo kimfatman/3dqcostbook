@@ -60,4 +60,12 @@
   --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   --sdq-motion-press: 100ms;
   --sdq-motion-card: 220ms;
+
+  /* ===== 深色皮肤图表适配（feat/dark-chart-adapt） ===== */
+  /* 深色背景下图表渐变更亮、更饱和，保证可读性 */
+  --sdq-chart-gradient-income: linear-gradient(180deg, color-mix(in srgb, var(--sdq-income) 35%, transparent), color-mix(in srgb, var(--sdq-income) 5%, transparent));
+  --sdq-chart-gradient-profit: linear-gradient(180deg, color-mix(in srgb, var(--sdq-profit) 40%, transparent), color-mix(in srgb, var(--sdq-profit) 5%, transparent));
+  --sdq-chart-gradient-cost: linear-gradient(180deg, color-mix(in srgb, var(--sdq-cost) 35%, transparent), color-mix(in srgb, var(--sdq-cost) 5%, transparent));
+  --sdq-chart-grid-line: rgba(255, 255, 255, 0.08);
+  --sdq-chart-axis-text: var(--sdq-text-tertiary);
 }
