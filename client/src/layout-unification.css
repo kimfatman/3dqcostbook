@@ -102,7 +102,7 @@
 .sub-intro.compact { display: grid; gap: 3px; }.sub-intro.compact > p { display: -webkit-box; max-width: 38em; margin: 2px 0 0; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .home-decision-topline { justify-content: flex-start; }.home-redesign .home-decision-result > div { gap: 2px; }.home-redesign .home-decision-result p { overflow: hidden; max-width: 25em; white-space: nowrap; text-overflow: ellipsis; }
 .home-redesign .home-promotion { position: relative; min-height: 112px; overflow: hidden; border-radius: 18px; isolation: isolate; }.home-redesign .promotion-track { display: flex; width: 500%; height: 112px; transition: transform 340ms var(--ease-out); will-change: transform; }.home-redesign .promotion-slide { position: relative; flex: 0 0 20%; width: 20%; min-height: 112px; padding: 0; overflow: hidden; color: var(--sdq-bg-brand-soft); background: linear-gradient(135deg, var(--sdq-text-primary), var(--sdq-action-primary)); border-radius: 0; }.home-redesign .promotion-3d-asset { position: absolute; top: 0; right: 0; z-index: 0; width: min(52%, 212px); max-height: none; height: 100%; object-fit: cover; object-position: right center; opacity: 1; }.home-redesign .promotion-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, color-mix(in srgb, var(--sdq-blue-950) 96%, transparent) 0%, color-mix(in srgb, var(--sdq-blue-800) 80%, transparent) 45%, color-mix(in srgb, var(--sdq-action-primary) 18%, transparent) 76%, color-mix(in srgb, var(--sdq-action-primary) 4%, transparent) 100%); }.home-redesign .promotion-copy { position: relative; z-index: 2; min-height: 112px; padding: 15px 17px; }.home-redesign .promotion-dots { z-index: 3; }
-.app-content .sub-intro.compact { gap: 3px; padding: 2px 1px 1px; margin: 0; }.app-content .sub-intro.compact > span { color: var(--sdq-text-secondary); font-size: 10px; font-weight: 750; }.app-content .sub-intro.compact h1 { margin: 0; color: var(--sdq-text-primary); font-size: clamp(22px, 6.2vw, 26px); line-height: 1.18; letter-spacing: -.055em; }.app-content .sub-intro.compact p { margin: 2px 0 0; color: var(--sdq-text-secondary); font-size: 10px; line-height: 1.45; }.app-content .record-form, .app-content .indirect-cost-form, .app-content .pricing-inputs, .app-content .pricing-simulator, .app-content .supplier-form, .app-content .category-form, .app-content .profile-settings-form { gap: 12px; }.app-content :is(.record-form, .indirect-cost-form, .pricing-inputs, .pricing-simulator, .supplier-form, .category-form, .profile-settings-form) > label { gap: 6px; color: var(--sdq-text-secondary); font-size: 11px; font-weight: 750; }.app-content :is(.record-form, .indirect-cost-form, .pricing-inputs, .pricing-simulator, .supplier-form, .category-form, .profile-settings-form) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, .amount-input) { min-height: 46px; border-radius: 12px; }.app-content :is(.record-form, .indirect-cost-form, .pricing-inputs, .pricing-simulator, .supplier-form, .category-form, .profile-settings-form) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .app-content :is(.record-form, .indirect-cost-form, .pricing-inputs, .pricing-simulator, .supplier-form, .category-form, .profile-settings-form) select { padding-right: 11px; padding-left: 11px; font-size: 14px; }.record-custom-category { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 8px; }.record-custom-category > button { min-width: 54px; min-height: 46px; padding: 0 11px; color: var(--sdq-text-on-brand); font-size: 11px; font-weight: 750; background: var(--sdq-action-primary); border: 0; border-radius: 12px; }.category-chips .category-custom-trigger { display: inline-flex; gap: 3px; align-items: center; color: var(--sdq-action-primary); background: var(--sdq-bg-brand-soft); border-color: var(--sdq-border-strong); }.record-form .category-chips + .record-custom-category + small { display: block; margin-top: 6px; color: var(--sdq-text-secondary); font-size: 9px; line-height: 1.4; }
+.app-content .sub-intro.compact { gap: 3px; padding: 2px 1px 1px; margin: 0; }.app-content .sub-intro.compact > span { color: var(--sdq-text-secondary); font-size: 10px; font-weight: 750; }.app-content .sub-intro.compact h1 { margin: 0; color: var(--sdq-text-primary); font-size: clamp(22px, 6.2vw, 26px); line-height: 1.18; letter-spacing: -.055em; }.app-content .sub-intro.compact p { margin: 2px 0 0; color: var(--sdq-text-secondary); font-size: 10px; line-height: 1.45; }.app-content .record-form, .app-content .indirect-cost-form, .app-content .pricing-inputs, .app-content .pricing-simulator, .app-content .supplier-form, .app-content .category-form, .app-content .profile-settings-form { gap: 12px; }.app-content :is(.record-form, .indirect-cost-form, .pricing-inputs, .pricing-simulator, .app-content .supplier-form, .app-content .category-form, .app-content .profile-settings-form) > label { gap: 6px; color: var(--sdq-text-secondary); font-size: 11px; font-weight: 750; }.app-content :is(.record-form, .indirect-cost-form, .pricing-inputs, .pricing-simulator, .app-content .supplier-form, .app-content .category-form, .app-content .profile-settings-form) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, .amount-input) { min-height: 46px; border-radius: 12px; }.app-content :is(.record-form, .indirect-cost-form, .pricing-inputs, .pricing-simulator, .app-content .supplier-form, .app-content .category-form, .app-content .profile-settings-form) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .app-content :is(.record-form, .indirect-cost-form, .pricing-inputs, .pricing-simulator, .app-content .supplier-form, .app-content .category-form, .app-content .profile-settings-form) select { padding-right: 11px; padding-left: 11px; font-size: 14px; }.record-custom-category { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 8px; }.record-custom-category > button { min-width: 54px; min-height: 46px; padding: 0 11px; color: var(--sdq-text-on-brand); font-size: 11px; font-weight: 750; background: var(--sdq-action-primary); border: 0; border-radius: 12px; }.category-chips .category-custom-trigger { display: inline-flex; gap: 3px; align-items: center; color: var(--sdq-action-primary); background: var(--sdq-bg-brand-soft); border-color: var(--sdq-border-strong); }.record-form .category-chips + .record-custom-category + small { display: block; margin-top: 6px; color: var(--sdq-text-secondary); font-size: 9px; line-height: 1.4; }
 .analysis-trend-card, .analysis-trend-card .trend-chart, .analysis-trend-card .trend-columns i { backface-visibility: hidden; -webkit-backface-visibility: hidden; }.analysis-trend-card .trend-chart { contain: paint; }.analysis-trend-card .trend-columns i { transition: none !important; animation: none !important; }.analysis-trend-card { animation: none !important; }.analysis-stack-card .stacked-area-chart path { animation: none !important; }
 @media (max-width: 374px) { .home-redesign .home-promotion, .home-redesign .promotion-track, .home-redesign .promotion-slide, .home-redesign .promotion-copy { min-height: 106px; height: 106px; }.home-redesign .promotion-copy { padding: 13px 14px; }.home-redesign .promotion-copy small { max-width: 190px; }.home-redesign .promotion-3d-asset { width: 116px; } }
 .skin-deep .app-content .sub-intro.compact h1 { color: var(--sdq-bg-brand-soft); }.skin-deep .app-content .sub-intro.compact > span, .skin-deep .app-content .sub-intro.compact p { color: var(--sdq-text-tertiary); }.skin-deep .record-custom-category > button { background: var(--sdq-info); }.skin-deep .category-chips .category-custom-trigger { color: var(--sdq-info); background: color-mix(in srgb, var(--sdq-info) 12%, transparent); border-color: color-mix(in srgb, var(--sdq-info) 30%, transparent); }
@@ -147,7 +147,7 @@
 .skin-deep .analysis-diagnosis-overview { background: linear-gradient(135deg, color-mix(in srgb, var(--sdq-blue-950) 94%, transparent), color-mix(in srgb, var(--sdq-blue-950) 94%, transparent)); }.skin-deep .analysis-diagnosis-overview .analysis-card-head > div > span, .skin-deep .analysis-diagnosis-page .ledger-page-heading p { color: var(--sdq-text-tertiary); }.skin-deep .analysis-diagnosis-action { background: color-mix(in srgb, var(--sdq-info) 22%, transparent); border-color: color-mix(in srgb, var(--sdq-info) 25%, transparent); }.skin-deep .analysis-diagnosis-action b { color: var(--sdq-bg-brand-soft); }.skin-deep .analysis-diagnosis-action small { color: var(--sdq-text-tertiary); }.skin-deep .analysis-diagnosis-action:focus-visible, .skin-deep .analysis-diagnosis-action:hover { border-color: var(--sdq-info); box-shadow: none; }
 @media (min-width: 768px) { .analysis-diagnosis-page { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }.analysis-diagnosis-page .ledger-page-heading, .analysis-diagnosis-page .analysis-risk-review { grid-column: 1 / -1; }.analysis-diagnosis-overview, .analysis-diagnosis-page .analysis-cost-composition { height: 100%; }.analysis-diagnosis-supplement { grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); align-items: start; }.analysis-diagnosis-supplement .analysis-structure-compare { height: 100%; } }
 
-/* T3 记一笔表单分层：供应商/备注/凭证收进“更多信息”折叠，底部“保存并继续”次按钮。 */
+/* T3 记一笔表单分层：供应商/备注/凭证收进"更多信息"折叠，底部"保存并继续"次按钮。 */
 .record-more { display: grid; gap: 0; padding: 2px 0 0; }
 .record-more .record-more-trigger { min-height: 52px; padding: 10px 0; }
 .record-more-content { gap: 12px; padding: 12px 0 2px; }
@@ -157,7 +157,7 @@
 .record-more-content .record-voucher-field { margin-top: 2px; }
 .record-form-actions { display: grid; grid-template-columns: minmax(0, 1fr) 1.7fr; gap: 10px; align-items: stretch; padding-top: 2px; }
 .record-form-actions > .form-save { min-height: var(--sq-hit-target, 44px); margin: 0; }
-.record-save-continue { display: flex; gap: 6px; align-items: center; justify-content: center; min-height: var(--sq-hit-target, 44px); padding: 12px 14px; color: var(--sdq-action-primary); font-size: 13px; font-weight: 750; background: var(--sdq-bg-brand-soft); border: 1px solid var(--sdq-border-strong); border-radius: 14px; }
+.record-save-continue { display: flex; gap: 6px; align-items: center; justify-content: center; min-height: var(--sdq-height-control); padding: 12px 14px; color: var(--sdq-action-primary); font-size: 13px; font-weight: 750; background: var(--sdq-bg-brand-soft); border: 1px solid var(--sdq-border-strong); border-radius: 14px; }
 .record-save-continue:disabled { opacity: .55; }
 .record-save-continue:active { transform: scale(.98); }
 .skin-deep .record-save-continue { color: var(--sdq-info); background: color-mix(in srgb, var(--sdq-info) 12%, transparent); border-color: color-mix(in srgb, var(--sdq-info) 30%, transparent); }
@@ -176,3 +176,100 @@
 .app-content .secondary-form .form-actions > .form-secondary { display: flex; gap: 6px; align-items: center; justify-content: center; min-height: var(--sdq-height-control); padding: 12px 14px; color: var(--sdq-text-secondary); font-size: 13px; font-weight: 750; background: var(--sdq-bg-surface-subtle); border: 1px solid var(--sdq-border-subtle); border-radius: var(--sdq-radius-md); }
 .app-content .secondary-form .form-actions > .form-secondary:active { transform: scale(.98); }
 .skin-deep .secondary-form .form-actions > .form-secondary { color: var(--sdq-text-tertiary); }
+
+/* ===== 全局卡片对齐统一（fix/card-alignment） ===== */
+/* 所有卡片统一：标题左对齐、内容基线对齐、内边距一致、卡片间距统一 */
+.home-chart-card,
+.analysis-stack-card,
+.analysis-cashflow-card,
+.analysis-health-card,
+.ledger-surface,
+.form-section,
+.empty-state {
+  /* 标题区域统一对齐 */
+}
+.home-chart-card .analysis-card-head,
+.analysis-stack-card .analysis-card-head,
+.analysis-cashflow-card .analysis-card-head,
+.analysis-health-card .analysis-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.home-chart-card .analysis-card-head h2,
+.analysis-stack-card .analysis-card-head h2,
+.analysis-cashflow-card .analysis-card-head h2,
+.analysis-health-card .analysis-card-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.home-chart-card .analysis-card-head > span,
+.analysis-stack-card .analysis-card-head > span,
+.analysis-cashflow-card .analysis-card-head > span,
+.analysis-health-card .analysis-card-head > span {
+  font-size: 11px;
+  color: var(--sdq-text-secondary);
+  line-height: 1.4;
+}
+
+/* KPI 四卡统一对齐：图标 + 数字 + 趋势线垂直居中 */
+.home-kpi-card {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 14px 16px;
+}
+.home-kpi-card .kpi-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+.home-kpi-card .kpi-content {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.home-kpi-card .kpi-label {
+  font-size: 12px;
+  color: var(--sdq-text-secondary);
+  line-height: 1.3;
+}
+.home-kpi-card .kpi-value {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.home-kpi-card .kpi-trend {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* 卡片网格统一对齐 */
+.home-redesign .home-kpi-grid,
+.home-sku-template-grid {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 390px) {
+  .home-redesign .home-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 柱状图/图表卡片统一底部对齐 */
+.analysis-grouped-bars,
+.sales-orders-bars {
+  align-items: flex-end;
+}
