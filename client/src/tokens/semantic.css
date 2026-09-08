@@ -102,12 +102,38 @@
   --sdq-chart-bar-radius: 6px;
   --sdq-chart-grid-line: rgba(0, 0, 0, 0.06);
   --sdq-chart-axis-text: var(--sdq-text-tertiary);
+
+  /* ===== 字号层级令牌（feat/typography-polish） ===== */
+  /* Apple 风格六级字号层级：Display / Heading / Title / Body / Caption / Footnote */
+  --sdq-text-display: 28px;      /* 大数字、核心指标 */
+  --sdq-text-heading: 22px;      /* 页面标题、Hero 数字 */
+  --sdq-text-title: 16px;        /* 卡片标题、模块标题 */
+  --sdq-text-body: 14px;         /* 正文、列表项 */
+  --sdq-text-caption: 12px;     /* 副标题、说明文字 */
+  --sdq-text-footnote: 11px;     /* 辅助文字、标签、时间戳 */
+
+  /* 字重层级 */
+  --sdq-weight-regular: 400;
+  --sdq-weight-medium: 500;
+  --sdq-weight-semibold: 600;
+  --sdq-weight-bold: 700;
+
+  /* 行高层级 */
+  --sdq-leading-tight: 1.2;      /* 大标题、数字 */
+  --sdq-leading-normal: 1.4;     /* 标题、副标题 */
+  --sdq-leading-relaxed: 1.5;    /* 正文、说明文字 */
 }
 
 /* ============ .mobile-shell 全局基础规则（消费语义令牌） ============ */
 .mobile-shell {
   background: var(--sdq-bg-canvas);
   color: var(--sdq-text-primary);
+  font-size: var(--sdq-text-body);
+  line-height: var(--sdq-leading-normal);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .mobile-shell :where(.app-frame, .app-content, .tabbar, .page-header) {
@@ -144,6 +170,53 @@
 
 .mobile-shell :where(.analysis-cost-pie slice, .cost-pie-slice) {
   stroke: none;
+}
+
+/* ===== 字号层级统一（feat/typography-polish） ===== */
+/* 卡片标题统一：16px semibold */
+.mobile-shell :where(.home-chart-card h2, .analysis-stack-card h2, .analysis-cashflow-card h2, .analysis-health-card h2, .analysis-card-head h2) {
+  font-size: var(--sdq-text-title);
+  font-weight: var(--sdq-weight-semibold);
+  line-height: var(--sdq-leading-normal);
+  letter-spacing: -0.01em;
+}
+
+/* 卡片副标题/说明统一：12px secondary */
+.mobile-shell :where(.home-chart-card .analysis-card-head > span, .analysis-stack-card .analysis-card-head > span, .analysis-cashflow-card .analysis-card-head > span, .analysis-health-card .analysis-card-head > span) {
+  font-size: var(--sdq-text-caption);
+  color: var(--sdq-text-secondary);
+  line-height: var(--sdq-leading-relaxed);
+}
+
+/* 页面标题统一：22px semibold tight */
+.mobile-shell :where(.sub-intro.compact h1, .ledger-page-heading h1) {
+  font-size: var(--sdq-text-heading);
+  font-weight: var(--sdq-weight-semibold);
+  line-height: var(--sdq-leading-tight);
+  letter-spacing: -0.02em;
+}
+
+/* 大数字/核心指标统一：28px bold tight */
+.mobile-shell :where(.home-decision-result strong, .pricing-base > strong, .analysis-diagnosis-action > strong) {
+  font-size: var(--sdq-text-display);
+  font-weight: var(--sdq-weight-bold);
+  line-height: var(--sdq-leading-tight);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 正文统一：14px regular */
+.mobile-shell :where(p, li, td) {
+  font-size: var(--sdq-text-body);
+  font-weight: var(--sdq-weight-regular);
+  line-height: var(--sdq-leading-relaxed);
+}
+
+/* 辅助文字统一：11px tertiary */
+.mobile-shell :where(em, small, .muted, .tertiary) {
+  font-size: var(--sdq-text-footnote);
+  color: var(--sdq-text-tertiary);
+  line-height: var(--sdq-leading-relaxed);
 }
 
 .mobile-shell :where(input, select, textarea) {
