@@ -86,6 +86,22 @@
   --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   --sdq-motion-press: 100ms;
   --sdq-motion-card: 220ms;
+
+  /* ===== Glass / 图表美化令牌（feat/glass-charts） ===== */
+  /* 玻璃材质：默认浅色皮肤不启用，aurora 皮肤覆盖为真正的 backdrop-blur */
+  --sdq-glass-blur: 0px;
+  --sdq-glass-bg: rgba(255, 255, 255, 1);
+  --sdq-glass-border: rgba(255, 255, 255, 0.4);
+  --sdq-glass-shadow: 0 4px 16px rgba(20, 50, 90, 0.08);
+
+  /* 图表渐变：清新低饱和配色 */
+  --sdq-chart-gradient-income: linear-gradient(180deg, color-mix(in srgb, var(--sdq-income) 20%, transparent), color-mix(in srgb, var(--sdq-income) 0%, transparent));
+  --sdq-chart-gradient-profit: linear-gradient(180deg, color-mix(in srgb, var(--sdq-profit) 24%, transparent), color-mix(in srgb, var(--sdq-profit) 0%, transparent));
+  --sdq-chart-gradient-cost: linear-gradient(180deg, color-mix(in srgb, var(--sdq-cost) 20%, transparent), color-mix(in srgb, var(--sdq-cost) 0%, transparent));
+  --sdq-chart-line-width: 2px;
+  --sdq-chart-bar-radius: 6px;
+  --sdq-chart-grid-line: rgba(0, 0, 0, 0.06);
+  --sdq-chart-axis-text: var(--sdq-text-tertiary);
 }
 
 /* ============ .mobile-shell 全局基础规则（消费语义令牌） ============ */
@@ -99,9 +115,35 @@
 }
 
 .mobile-shell :where(.home-chart-card, .analysis-stack-card, .analysis-cashflow-card, .analysis-health-card, .ledger-surface, .form-section, .empty-state) {
-  background-color: var(--sdq-bg-surface);
+  background-color: var(--sdq-glass-bg);
+  backdrop-filter: blur(var(--sdq-glass-blur));
+  -webkit-backdrop-filter: blur(var(--sdq-glass-blur));
   border-color: var(--sdq-border-subtle);
-  box-shadow: var(--sdq-shadow-card);
+  box-shadow: var(--sdq-glass-shadow);
+}
+
+/* ===== 图表卡片专用玻璃质感 ===== */
+.mobile-shell :where(.home-chart-card, .analysis-stack-card, .analysis-cashflow-card) {
+  border: 1px solid var(--sdq-glass-border);
+}
+
+/* ===== 图表线条与渐变美化 ===== */
+.mobile-shell :where(.analysis-profit-trend svg path, .profit-trend-line) {
+  stroke-width: var(--sdq-chart-line-width);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mobile-shell :where(.analysis-profit-trend svg path.area, .profit-trend-area) {
+  fill: var(--sdq-chart-gradient-income);
+}
+
+.mobile-shell :where(.analysis-grouped-bars > i, .analysis-bar) {
+  border-radius: var(--sdq-chart-bar-radius) var(--sdq-chart-bar-radius) 0 0;
+}
+
+.mobile-shell :where(.analysis-cost-pie slice, .cost-pie-slice) {
+  stroke: none;
 }
 
 .mobile-shell :where(input, select, textarea) {
