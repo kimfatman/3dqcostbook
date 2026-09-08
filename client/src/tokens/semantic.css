@@ -1,6 +1,6 @@
 /* ============================================================================
  * 算得清 SDQ 设计令牌 · 层二：语义令牌默认（semantic.css）
- * 页面消费 --sdq-*，指向层一原语（视觉近等效 ΔE00≤25）。
+ * 页面消费 --sdq-*，指向层一原色阶（视觉近等效 ΔE00≤25）。
  * 此文件承载 :root 浅色默认语义令牌 + .mobile-shell 全局基础规则；
  * 各皮肤（skins/*.css）在 .mobile-shell.skin-{id} 下覆盖对应令牌。
  * ========================================================================== */
@@ -86,6 +86,21 @@
   --sdq-financial-font: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   --sdq-motion-press: 100ms;
   --sdq-motion-card: 220ms;
+
+  /* ============ 图表语义令牌（批次 chart-polish） ============
+   * 清新现代调色板：收入/主用蓝、辅助浅蓝、绿/橙/红业务语义、紫/青补充区分度、灰为中性。
+   * 所有图表组件消费 --sdq-chart-*，禁止在组件内硬编码 hex；深色皮肤在 skins/*.css 下调明度覆盖。
+   * 业务语义色（chart-3 绿=盈利 / chart-4 橙=成本 / chart-5 红=亏损）与 profit/cost/risk 对齐。 */
+  --sdq-chart-1: var(--sdq-blue-500);       /* 主蓝：主系列、收入、主趋势线 */
+  --sdq-chart-2: var(--sdq-info-400);       /* 浅蓝：第二系列、辅助趋势 */
+  --sdq-chart-3: var(--sdq-success-500);    /* 绿：盈利/正向 */
+  --sdq-chart-4: var(--sdq-warning-500);    /* 橙：成本/支出 */
+  --sdq-chart-5: var(--sdq-danger-500);     /* 红：亏损/风险 */
+  --sdq-chart-6: var(--sdq-violet-500);    /* 紫：分类区分 */
+  --sdq-chart-7: var(--sdq-teal-500);      /* 青：分类区分 */
+  --sdq-chart-8: var(--sdq-neutral-400);   /* 灰：中性/基准/轨道 */
+  --sdq-chart-grid: var(--sdq-neutral-200); /* 图表横向/纵向网格线（淡灰，不抢数据） */
+  --sdq-chart-track: var(--sdq-neutral-100);/* 未填充轨道（进度条/排行底槽） */
 }
 
 /* ============ .mobile-shell 全局基础规则（消费语义令牌） ============ */
