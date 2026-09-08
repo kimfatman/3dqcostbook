@@ -353,3 +353,64 @@
 .skin-midnight .empty-state strong {
   color: var(--sdq-text-primary);
 }
+
+/* ===== 订单卡片 stagger 入场动画（feat/card-stagger-animation） ===== */
+/* 卡片列表逐个入场，Apple 风格阻尼弹簧 */
+@keyframes card-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 订单卡片列表 stagger */
+.prototype-orders .order-list > article,
+.orders-page .order-list > article,
+.ledger-list > article {
+  animation: card-stagger-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.prototype-orders .order-list > article:nth-child(1),
+.orders-page .order-list > article:nth-child(1),
+.ledger-list > article:nth-child(1) { animation-delay: 80ms; }
+.prototype-orders .order-list > article:nth-child(2),
+.orders-page .order-list > article:nth-child(2),
+.ledger-list > article:nth-child(2) { animation-delay: 160ms; }
+.prototype-orders .order-list > article:nth-child(3),
+.orders-page .order-list > article:nth-child(3),
+.ledger-list > article:nth-child(3) { animation-delay: 240ms; }
+.prototype-orders .order-list > article:nth-child(4),
+.orders-page .order-list > article:nth-child(4),
+.ledger-list > article:nth-child(4) { animation-delay: 320ms; }
+.prototype-orders .order-list > article:nth-child(5),
+.orders-page .order-list > article:nth-child(5),
+.ledger-list > article:nth-child(5) { animation-delay: 400ms; }
+.prototype-orders .order-list > article:nth-child(6),
+.orders-page .order-list > article:nth-child(6),
+.ledger-list > article:nth-child(6) { animation-delay: 480ms; }
+.prototype-orders .order-list > article:nth-child(n+7),
+.orders-page .order-list > article:nth-child(n+7),
+.ledger-list > article:nth-child(n+7) { animation-delay: 560ms; }
+
+/* KPI 卡片 stagger 入场 */
+.home-kpi-grid > .home-kpi-card {
+  animation: card-stagger-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+.home-kpi-grid > .home-kpi-card:nth-child(1) { animation-delay: 100ms; }
+.home-kpi-grid > .home-kpi-card:nth-child(2) { animation-delay: 200ms; }
+.home-kpi-grid > .home-kpi-card:nth-child(3) { animation-delay: 300ms; }
+.home-kpi-grid > .home-kpi-card:nth-child(4) { animation-delay: 400ms; }
+
+/* 尊重 reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .prototype-orders .order-list > article,
+  .orders-page .order-list > article,
+  .ledger-list > article,
+  .home-kpi-grid > .home-kpi-card {
+    animation: none;
+  }
+}
