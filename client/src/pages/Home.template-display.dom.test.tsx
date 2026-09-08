@@ -57,7 +57,7 @@ beforeAll(() => {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
-      // 声明“减少动态”偏好，关闭 4.2s/5.2s 轮播定时器，避免其重渲染与 userEvent 点击竞态导致 flaky
+      // 声明"减少动态"偏好，关闭 4.2s/5.2s 轮播定时器，避免其重渲染与 userEvent 点击竞态导致 flaky
       matches: query === "(prefers-reduced-motion: reduce)",
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -107,7 +107,7 @@ describe("五行业模板的真实页面显示", () => {
       await user.click(screen.getByRole("button", { name: new RegExp(`^${scenario.label}`) }));
       await user.click(screen.getByRole("button", { name: `使用${scenario.label}模板` }));
 
-      expect(screen.getByText((text) => text.includes(`${scenario.label}经营者`))).toBeTruthy();
+      expect(await screen.findByText((text) => text.includes(`${scenario.label}经营者`))).toBeTruthy();
       await user.click(mainNavigation().getByRole("button", { name: "工作台" }));
       expect(screen.getAllByText(new RegExp(`${scenario.label} ·`)).length).toBeGreaterThan(0);
       expect(screen.queryByRole("button", { name: `添加${scenario.entity}` })).toBeNull();
@@ -164,8 +164,8 @@ describe("首页第一期经营总览", () => {
 
     const decisionCard = home.querySelector(".operating-snapshot.home-decision") as HTMLElement;
     expect(decisionCard).toBeTruthy();
-    // 演示种子把当前账期演示分录锚定到今天（月初钳制到今天），因此“今天”主卡默认展示演示数据而非空态；
-    // 空态引导由本 describe 新增的“当天无任何已入账数据”用例单独覆盖。
+    // 演示种子把当前账期演示分录锚定到今天（月初钳制到今天），因此"今天"主卡默认展示演示数据而非空态；
+    // 空态引导由本 describe 新增的"当天无任何已入账数据"用例单独覆盖。
     expect(decisionCard.classList.contains("is-empty")).toBe(false);
     expect(within(decisionCard).getByText("今天经营结果")).toBeTruthy();
     expect(within(decisionCard).getByRole("group", { name: "经营概览时间范围" })).toBeTruthy();
@@ -216,7 +216,7 @@ describe("首页第一期经营总览", () => {
   });
 
   it("当天只有成本时显式显示亏损与不可计算的净营收比率，不误显示为盈利或零比率", async () => {
-    // 演示种子在当前账期锚定今天；先清空今日演示分录，保证只验证“当天只有成本”的亏损口径
+    // 演示种子在当前账期锚定今天；先清空今日演示分录，保证只验证"当天只有成本"的亏损口径
     const initial = renderHome();
     initial.unmount();
     const saved = JSON.parse(window.localStorage.getItem("sqd-mobile-book-v3") || "{}");
@@ -1023,7 +1023,7 @@ describe("第二批 T2 成本卡删除降级", () => {
     const deleteButton = screen.getByRole("button", { name: "删除成本卡" });
     expect(deleteButton).toBeTruthy();
     await user.click(deleteButton);
-    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("确认删除成本卡“轻盈收纳盒”"));
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("确认删除成本卡\"轻盈收纳盒\""));
     expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("删除仅影响成本卡本身，历史订单成本快照不受影响"));
     await user.click(screen.getByRole("button", { name: "返回" }));
     expect(screen.getByText("轻盈收纳盒")).toBeTruthy();

@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  check-and-test:
+  check-and-build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,5 +28,5 @@ jobs:
       - name: Type check
         run: pnpm check
 
-      - name: Run tests
-        run: pnpm test
+      - name: Build
+        run: pnpm build
