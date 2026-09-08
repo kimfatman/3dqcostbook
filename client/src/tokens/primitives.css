@@ -1,6 +1,7 @@
 /* ============================================================================
  * 算得清 SDQ 设计令牌 · 层一：原色阶原语（primitives.css）
- * 品牌蓝 11 阶 / 中性灰 11 阶 / 语义色 mini 阶。
+ * 品牌蓝 11 阶 / 中性灰 11 阶 / 语义色全阶（success/warning/danger/info）
+ * 图表辅助色阶（violet/teal）。
  * 所有皮肤共享，不可修改（新增皮肤只允许引用这些原语，不允许改动）。
  * ========================================================================== */
 :root {
@@ -77,4 +78,29 @@
   --sdq-info-800: #166992;
   --sdq-info-900: #13597c;
   --sdq-info-950: #0f4662;
+
+  /* 图表辅助色阶（violet / teal）：批次 chart-polish 新增，用于 --sdq-chart-6 / --sdq-chart-7。
+   * 清新现代调色板，色相固定、明度曲线与其他语义色一致；500/600 为图表主用阶。 */
+  --sdq-violet-50: #f6f3fc;
+  --sdq-violet-100: #ece6fa;
+  --sdq-violet-200: #d7c9f5;
+  --sdq-violet-300: #b9a2ec;
+  --sdq-violet-400: #9b7de2;
+  --sdq-violet-500: #7c5cd4;
+  --sdq-violet-600: #6a4bbf;
+  --sdq-violet-700: #573d9e;
+  --sdq-violet-800: #46327e;
+  --sdq-violet-900: #362661;
+  --sdq-violet-950: #231840;
+  --sdq-teal-50: #effaf8;
+  --sdq-teal-100: #d9f3ef;
+  --sdq-teal-200: #b5e8df;
+  --sdq-teal-300: #83d8c9;
+  --sdq-teal-400: #4dc4af;
+  --sdq-teal-500: #25a88f;
+  --sdq-teal-600: #1e8f7a;
+  --sdq-teal-700: #197565;
+  --sdq-teal-800: #155d52;
+  --sdq-teal-900: #10473f;
+  --sdq-teal-950: #0a2f29;
 }
