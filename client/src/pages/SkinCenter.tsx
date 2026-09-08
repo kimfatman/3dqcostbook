@@ -88,11 +88,17 @@ export function SkinCenter({ visualSkin, activeCustomSkin, onApplyOfficial, onAp
   const applyOfficial = (id: VisualSkin) => {
     setFollowSystem(false);
     window.localStorage.setItem(FOLLOW_KEY, "0");
+    // 同步预览区到刚应用的皮肤
+    setSelectedSkinId(id);
+    setSelectedCustomId(null);
     onApplyOfficial(id);
   };
   const applyCustom = (skin: CustomSkin) => {
     setFollowSystem(false);
     window.localStorage.setItem(FOLLOW_KEY, "0");
+    // 同步预览区到刚应用的自定义皮肤
+    setSelectedCustomId(skin.id);
+    setSelectedSkinId(skin.baseSkin);
     onApplyCustom(skin);
   };
 
