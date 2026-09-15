@@ -204,7 +204,7 @@ export function SelfHostedAccessGate({ children }: { children: ReactNode }) {
   const strength = passwordStrength(password);
 
   return <main className="selfhost-access">
-    <section className="selfhost-hero" aria-hidden="true"><div className="selfhost-hero-brand"><span className="selfhost-hero-mark"><img src={brandAssets.logoMark.path} alt="算得清品牌印鉴" /></span><b>算得清</b><em>商家经营账本</em></div><div className="selfhost-hero-copy"><span>今日经营，心中有数</span><strong>每一笔成本<br />都算得清楚</strong></div><i className="selfhost-orbit one" /><i className="selfhost-orbit two" /></section>
+    <section className="selfhost-hero" aria-hidden="true"><div className="selfhost-hero-brand"><span className="selfhost-hero-mark"><img src={brandAssets.logoMark.path} alt="算得清品牌印鉴" /></span></div><div className="selfhost-hero-copy"><span>今日经营，心中有数</span><strong>每一笔成本<br />都算得清楚</strong></div><i className="selfhost-orbit one" /><i className="selfhost-orbit two" /></section>
     <section className="selfhost-access-card">
       <div className="selfhost-card-head"><div className="selfhost-brand"><div className="selfhost-brand-mark"><img src={brandAssets.logoMark.path} alt="算得清品牌印鉴" /></div><div><p>算得清</p><small>商家成本管家</small></div></div><span className="selfhost-security"><LockKeyhole size={13} />安全登录</span></div>
       <div className="selfhost-title"><h1>{title}</h1><p>{intro}</p></div>

@@ -60,3 +60,54 @@
     right: max(20px, calc((100vw - 860px) / 2 + 18px));
   }
 }
+
+/* ============================================================================
+ * P0-03 fix: 经营概览 home-decision 卡片固定品牌深蓝底,
+ * 避免浅色皮肤下 --sdq-action-primary 变浅导致白字对比度 < 4.5:1
+ * ========================================================================== */
+.c7-shell-center .prototype-home .home-decision {
+  background-color: var(--sdq-blue-600) !important;
+  background-image: radial-gradient(circle at 89% 18%, rgba(141,209,255,.28), transparent 26%), linear-gradient(136deg, var(--sdq-blue-600) 0%, #0a4cc0 100%) !important;
+}
+.c7-shell-center .prototype-home .home-decision::before {
+  background: var(--sdq-bg-surface) !important;
+}
+
+
+/* ============================================================================
+ * P0-04 fix: 桌面端 C7 壳内内容底部留白加大, 避免 TabBar 遮挡图表/利润构成
+ * ========================================================================== */
+@media (min-width: 768px) {
+  .c7-shell-center .app-content {
+    padding-bottom: 150px;
+  }
+  .c7-shell-center .sub-content {
+    padding-bottom: 132px;
+  }
+}
+
+
+
+/* ============================================================================
+ * P0-02+ fix (v2): 压过 iOS 皮肤覆盖块对 FAB 的 right:20px!important 强制定位
+ * 特异性 .c7-shell-center .global-record-fab (0,2,0) + !important 胜出
+ * 仅修正位置，保留其他样式（含 iOS 圆形按钮样式）
+ * ========================================================================== */
+@media (min-width: 768px) {
+  .c7-shell-center .global-record-fab {
+    right: max(16px, calc((100vw - 520px) / 2 + 18px)) !important;
+  }
+}
+
+
+
+/* P0-04+ fix (v2): C7 壳内底部留白加 !important 防 iOS 皮肤覆盖 */
+@media (min-width: 768px) {
+  .c7-shell-center .app-content {
+    padding-bottom: 150px !important;
+  }
+  .c7-shell-center .sub-content {
+    padding-bottom: 132px !important;
+  }
+}
+
