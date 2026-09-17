@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://app.3dq.site/sitemap.xml

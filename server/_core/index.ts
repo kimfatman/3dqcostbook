@@ -36,6 +36,7 @@ async function startServer() {
   const isSelfHosted = process.env.VITE_SELF_HOSTED === "true";
   // 应用端口仅对 Caddy 所在内部网络开放；仅信任一层反向代理以让 req.ip 参与认证限流。
   app.set("trust proxy", 1);
+  app.disable("x-powered-by"); // S-05: 不泄露技术栈
   registerPublicRequestBodyParsers(app);
   app.get("/healthz", (_req, res) => res.status(200).json({ status: "ok" }));
   if (!isSelfHosted) {

@@ -150,7 +150,16 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+// Self-hosted builds skip Manus platform plugins (S-01/S-02/P-01/N-03 fixes)
+// — no inline manus-runtime → CSP can drop unsafe-inline; no sessionStorage Bearer fallback
+const isSelfHostedBuild = process.env.VITE_SELF_HOSTED === "true";
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  ...(isSelfHostedBuild ? [] : [vitePluginManusRuntime()]),
+  ...(isSelfHostedBuild ? [] : [vitePluginManusDebugCollector()]),
+];
 
 export default defineConfig({
   plugins,

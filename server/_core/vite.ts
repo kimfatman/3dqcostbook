@@ -58,10 +58,24 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Assets with content hash: cache for 1 year, immutable (P-02 fix)
+  const assetsPath = path.resolve(distPath, "assets");
+  if (fs.existsSync(assetsPath)) {
+    app.use("/assets", express.static(assetsPath, {
+      maxAge: "365d",
+      immutable: true,
+    }));
+  }
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // Other static files (robots.txt, favicon, etc.): short cache
+  app.use(express.static(distPath, { maxAge: "1h" }));
+
+  // SPA fallback: serve index.html for non-API routes (O-04 fix)
+  app.use("*", (req, res) => {
+    if (req.originalUrl.startsWith("/api/")) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
